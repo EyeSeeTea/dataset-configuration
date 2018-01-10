@@ -34,9 +34,8 @@ const getCategoryOptions = (categoryCombo) => {
     if (categoryCombo.isDefault) {
         return "";
     } else {
-        return !categoryCombo ? null : collectionToArray(categoryCombo.categories)
-            .map(category =>
-                collectionToArray(category.categoryOptions).map(co => co.displayName).join(" - "))
+        return collectionToArray(categoryCombo.categories)
+            .map(category => collectionToArray(category.categoryOptions).map(co => co.displayName).join(" - "))
             .join(" / ");
     }
 }

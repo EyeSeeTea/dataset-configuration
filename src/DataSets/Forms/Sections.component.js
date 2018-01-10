@@ -241,15 +241,29 @@ const Sections = React.createClass({
         });
     },
 
+
     _processDatasetSections() {
         const {store} = this.props;
+        const getErrorMessage = (errors, maxMessages = 10) => {
+            const errorsLimited = _.take(errors, maxMessages);
+            const diff = errors.length - errorsLimited.length;
+            const items = [
+                [this.getTranslation("validation_error")],
+                errorsLimited.map(s => "- " + s),
+                diff > 0 ? [this.getTranslation("more_errors", {n: diff})] : [],
+            ];
+            return _(items).flatten().join("\n");
+        }
         if (!this.state.sections) {
             return true;
         } else {
             const {errors, dataset} = store.processDatasetSections(store.dataset, this.state.sections);
             store.dataset = dataset;
-            this.setState({errors: errors});
-            return _(errors).isEmpty();
+            const isValid = _(errors).isEmpty();
+            if (!isValid) {
+                snackActions.show({message: getErrorMessage(errors)});
+            }
+            return isValid;
         }
     },
 

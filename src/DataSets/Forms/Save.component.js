@@ -4,6 +4,7 @@ import LinearProgress from 'material-ui/LinearProgress/LinearProgress';
 import Card from 'material-ui/Card/Card';
 import CardText from 'material-ui/Card/CardText';
 import snackActions from '../../Snackbar/snack.actions';
+import {collectionToArray} from '../../utils/Dhis2Helpers';
 
 const Save = React.createClass({
     mixins: [Translate],
@@ -81,6 +82,8 @@ const Save = React.createClass({
                             value={associations.coreCompetencies.map(cc => cc.name).join(", ")} />
                         <ListItem field="linked_project"
                             value={associations.project && associations.project.name} />
+                        <ListItem field="orgunits_settings"
+                            value={collectionToArray(dataset.organisationUnits || []).map(c => c.displayName).join(", ")} />
                         <ListItem field="countries"
                             value={(associations.countries || []).map(c => c.displayName).join(", ")} />
                     </ul>
