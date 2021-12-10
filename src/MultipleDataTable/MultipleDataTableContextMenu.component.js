@@ -5,11 +5,24 @@ import Translate from "d2-ui/lib/i18n/Translate.mixin";
 import Menu from "material-ui/Menu";
 import MenuItem from "material-ui/MenuItem";
 import FontIcon from "material-ui/FontIcon";
+import ArrowDropRight from "material-ui/svg-icons/navigation-arrow-drop-right";
 import Popover from "./PopoverNoFlicker";
 import Paper from "material-ui/Paper";
 
+const actionDefinition = PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    multiple: PropTypes.bool.isRequired,
+    icon: PropTypes.string.isRequired,
+    isActive: PropTypes.func,
+    onClick: PropTypes.func,
+    options: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.string, PropTypes.number])),
+});
+
+export const propTypesActionsDefinition = PropTypes.objectOf(actionDefinition);
+
 const MultipleDataTableContextMenu = createReactClass({
     propTypes: {
+        actionsDefinition: propTypesActionsDefinition.isRequired,
         actions: PropTypes.objectOf(PropTypes.func),
         showContextMenu: PropTypes.bool,
         activeItems: PropTypes.array,
@@ -40,6 +53,7 @@ const MultipleDataTableContextMenu = createReactClass({
             activeItems,
             icons,
             showContextMenu,
+            actionsDefinition,
             ...popoverProps
         } = this.props;
 
@@ -56,17 +70,26 @@ const MultipleDataTableContextMenu = createReactClass({
                 <Menu className="data-table__context-menu" desktop>
                     {actionList.map(action => {
                         const iconName = icons[action] ? icons[action] : action;
+                        const { options } = actionsDefinition[action];
 
                         return (
                             <MenuItem
                                 key={action}
                                 data-object-id={activeItems}
                                 className={"data-table__context-menu__item"}
-                                onClick={this.handleClick.bind(this, action)}
+                                onClick={options ? undefined : () => this.handleClick(action)}
                                 primaryText={this.getTranslation(action)}
                                 leftIcon={
                                     <FontIcon className="material-icons">{iconName}</FontIcon>
                                 }
+                                rightIcon={options ? <ArrowDropRight /> : undefined}
+                                menuItems={(options || []).map(option => (
+                                    <MenuItem
+                                        key={option}
+                                        primaryText={option}
+                                        onClick={() => this.handleClick(action, { year: option })}
+                                    />
+                                ))}
                             />
                         );
                     })}
@@ -75,8 +98,8 @@ const MultipleDataTableContextMenu = createReactClass({
         );
     },
 
-    handleClick(action) {
-        this.props.actions[action].apply(this.props.actions, this.props.activeItems);
+    handleClick(action, options) {
+        this.props.actions[action]({ selected: this.props.activeItems, options });
         this.props.onRequestClose && this.props.onRequestClose();
     },
 });

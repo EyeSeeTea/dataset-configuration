@@ -19,6 +19,7 @@ import Settings from "../models/Settings";
 import FormHelpers from "../forms/FormHelpers";
 import ObservedEvents from "../utils/ObservedEvents.mixin";
 import YearlyDateSelector from "../forms/YearlyDateSelector.component";
+import TimePeriodSelector from "../forms/TimePeriodSelector.component";
 
 const TabCard = ({ fields, onUpdateFormStatus, onUpdateField }) => (
     <Card style={{ padding: 10, margin: 10 }}>
@@ -49,6 +50,8 @@ const SettingsDialog = createReactClass({
             "expiryDays",
             "outputEndDate",
             "outcomeEndDate",
+            "outputLastYearEndDate",
+            "outcomeLastYearEndDate",
             "organisationUnitLevelForCountriesId",
             "createdByDataSetConfigurationAttributeId",
             "dataPeriodOutputDatesAttributeId",
@@ -120,6 +123,15 @@ const SettingsDialog = createReactClass({
                 return {
                     name: field.name,
                     component: YearlyDateSelector,
+                    value: config[field.name],
+                    props: {
+                        labelText: this.getTranslation(field.i18n_key),
+                    },
+                };
+            } else if (field.type === "timePeriod") {
+                return {
+                    name: field.name,
+                    component: TimePeriodSelector,
                     value: config[field.name],
                     props: {
                         labelText: this.getTranslation(field.i18n_key),

@@ -5,11 +5,14 @@ import PropTypes from "prop-types";
 import update from "immutability-helper";
 import MultipleDataTableRow from "./MultipleDataTableRow.component";
 import DataTableHeader from "d2-ui/lib/data-table/DataTableHeader.component";
-import MultipleDataTableContextMenu from "./MultipleDataTableContextMenu.component";
+import MultipleDataTableContextMenu, {
+    propTypesActionsDefinition,
+} from "./MultipleDataTableContextMenu.component";
 import _ from "../utils/lodash-mixins";
 
 const MultipleDataTable = createReactClass({
     propTypes: {
+        actionsDefinition: propTypesActionsDefinition.isRequired,
         contextMenuActions: PropTypes.object,
         contextMenuIcons: PropTypes.object,
         primaryAction: PropTypes.func,
@@ -75,6 +78,7 @@ const MultipleDataTable = createReactClass({
                 target={this.state.contextMenuTarget}
                 onRequestClose={this._hideContextMenu}
                 actions={actionsToShow}
+                actionsDefinition={this.props.actionsDefinition}
                 activeItems={this.state.activeRows}
                 showContextMenu={hasActions && this.state.showContextMenu}
                 icons={this.props.contextMenuIcons}
@@ -190,13 +194,8 @@ const MultipleDataTable = createReactClass({
     handlePrimaryClick(event, rowSource) {
         //Click -> Clears selection, Invoke external action (passing event)
         if (!this.isEventCtrlClick(event)) {
-            this.setState(
-                {
-                    activeRows: [],
-                },
-                this.notifyActiveRows
-            );
-            this.props.primaryAction(rowSource);
+            this.setState({ activeRows: [] }, this.notifyActiveRows);
+            this.props.primaryAction({ selected: rowSource });
             return;
         }
 
@@ -212,13 +211,7 @@ const MultipleDataTable = createReactClass({
     },
 
     _hideContextMenu() {
-        this.setState(
-            {
-                activeRows: [],
-                showContextMenu: false,
-            },
-            this.notifyActiveRows
-        );
+        this.setState({ showContextMenu: false }, this.notifyActiveRows);
     },
 
     updateContextSelection(rowSource) {

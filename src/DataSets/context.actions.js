@@ -14,6 +14,9 @@ import {
 } from "../utils/Dhis2Helpers";
 import _ from "lodash";
 import periodsStore from "./periods.store";
+import Store from "d2-ui/lib/store/Store";
+
+export const endDateForYearStore = Store.create();
 
 const setupActions = actions => {
     const actionsByName = _.keyBy(actions, "name");
@@ -42,44 +45,65 @@ const setupActions = actions => {
         .filter(a => a.onClick)
         .forEach(action => {
             contextActions[action.name].subscribe(({ data }) => {
-                const arg = action.multiple && !_.isArray(data) ? [data] : data;
-                action.onClick(arg);
+                const { selected, options } = data;
+
+                let arg;
+                if (action.multiple) {
+                    arg = _.isArray(selected) ? selected : [selected];
+                } else {
+                    arg = _.isArray(selected) ? selected[0] : selected;
+                }
+
+                if (arg) action.onClick(arg, options);
             });
         });
 
-    return { contextActions, contextMenuIcons, isContextActionAllowed };
+    return { contextActions, contextMenuIcons, isContextActionAllowed, actions: actionsByName };
 };
 
-const { contextActions, contextMenuIcons, isContextActionAllowed } = setupActions([
+const currentYear = new Date().getFullYear();
+
+const { contextActions, contextMenuIcons, isContextActionAllowed, actions } = setupActions([
     {
         name: "edit",
         multiple: false,
+        icon: "edit",
         isActive: (d2, dataset) => canUpdate(d2, [dataset]),
         onClick: dataset => goToRoute(`/datasets/edit/${dataset.id}`),
     },
     {
         name: "share",
         multiple: true,
+        icon: "share",
         isActive: canManage,
-        onClick: datasets => sharingStore.setState(datasets),
+        onClick: datasets => sharingStore.setState({ datasets }),
     },
     {
         name: "define_associations",
         multiple: true,
         icon: "business",
         isActive: canUpdate,
-        onClick: datasets => orgUnitsStore.setState(datasets),
+        onClick: datasets => orgUnitsStore.setState({ datasets }),
     },
     {
         name: "period_dates",
         multiple: true,
         icon: "timeline",
         isActive: canUpdate,
-        onClick: datasets => periodsStore.setState(datasets),
+        onClick: datasets => periodsStore.setState({ datasets }),
+    },
+    {
+        name: "end_date_for_year",
+        multiple: true,
+        icon: "timeline",
+        isActive: canUpdate,
+        onClick: (datasets, options) => endDateForYearStore.setState({ datasets, options }),
+        options: [currentYear - 1, currentYear, currentYear + 1],
     },
     {
         name: "details",
         multiple: false,
+        icon: "details",
         onClick: dataset => detailsStore.setState(dataset),
     },
     {
@@ -92,6 +116,7 @@ const { contextActions, contextMenuIcons, isContextActionAllowed } = setupAction
     {
         name: "delete",
         multiple: true,
+        icon: "delete",
         isActive: canDelete,
         onClick: datasets => deleteStore.delete(datasets),
     },
@@ -107,3 +132,4 @@ const { contextActions, contextMenuIcons, isContextActionAllowed } = setupAction
 exports.contextActions = contextActions;
 exports.contextMenuIcons = contextMenuIcons;
 exports.isContextActionAllowed = isContextActionAllowed;
+exports.actions = actions;

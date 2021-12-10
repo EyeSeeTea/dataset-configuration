@@ -11,6 +11,7 @@ export default class DataSetPeriods extends React.Component {
     static propTypes = {
         store: PropTypes.object.isRequired,
         onFieldChange: PropTypes.func.isRequired,
+        endYear: PropTypes.number,
     };
 
     static contextTypes = {
@@ -30,7 +31,7 @@ export default class DataSetPeriods extends React.Component {
     }
 
     getPeriodFields(years) {
-        const { store, onFieldChange } = this.props;
+        const { store, onFieldChange, endYear } = this.props;
         const { currentUserHasAdminRole } = this;
         const { associations } = this.props.store;
         const { getFormLabel, getDateField, getBooleanField, separator } = FormHelpers;
@@ -44,7 +45,7 @@ export default class DataSetPeriods extends React.Component {
         const generateDateFieldPairs = type => {
             return _.flatMap(years, (year, index) => {
                 const disabled = index > 0 && associations.periodDatesApplyToAll[type];
-                const showApplyToAllYearsCheckbox = index === 0 && years.length > 1;
+                const showApplyToAllYearsCheckbox = !endYear && index === 0 && years.length > 1;
                 const validators = [
                     {
                         validator: value => {
@@ -66,28 +67,31 @@ export default class DataSetPeriods extends React.Component {
                               style: this.styles.applyToAll,
                           })
                         : null,
-                    getFormLabel({
-                        value: year,
-                        forSection: type,
-                        style: this.styles.periodYearLabel,
-                    }),
-                    getDateField({
-                        name: `associations.periodDates.${type}.${year}.start`,
-                        value: _(periodDates).get([type, year, "start"]),
-                        label: t(`${type}_start_date`) + " " + year,
-                        minDate: startDate,
-                        disabled,
-                        validators,
-                        wrapStyle: this.styles.dateFieldWrapStyle,
-                    }),
-                    getDateField({
-                        name: `associations.periodDates.${type}.${year}.end`,
-                        value: _(periodDates).get([type, year, "end"]),
-                        label: t(`${type}_end_date`) + " " + year,
-                        minDate: startDate,
-                        disabled,
-                        wrapStyle: this.styles.dateFieldWrapStyle,
-                    }),
+                    !endYear &&
+                        getFormLabel({
+                            value: year,
+                            forSection: type,
+                            style: this.styles.periodYearLabel,
+                        }),
+                    !endYear &&
+                        getDateField({
+                            name: `associations.periodDates.${type}.${year}.start`,
+                            value: _(periodDates).get([type, year, "start"]),
+                            label: t(`${type}_start_date`) + " " + year,
+                            minDate: startDate,
+                            disabled,
+                            validators,
+                            wrapStyle: this.styles.dateFieldWrapStyle,
+                        }),
+                    (!endYear || year === endYear) &&
+                        getDateField({
+                            name: `associations.periodDates.${type}.${year}.end`,
+                            value: _(periodDates).get([type, year, "end"]),
+                            label: t(`${type}_end_date`) + " " + year,
+                            minDate: startDate,
+                            disabled,
+                            wrapStyle: this.styles.dateFieldWrapStyle,
+                        }),
                     separator(`${type}-${year}-end`),
                 ]);
             });
@@ -104,25 +108,27 @@ export default class DataSetPeriods extends React.Component {
     }
 
     render() {
-        const { store, onFieldChange } = this.props;
+        const { store, onFieldChange, endYear } = this.props;
         const { associations } = store;
         const years = store.getPeriodYears();
         const formKey = JSON.stringify([years, store.associations.periodDatesApplyToAll]);
 
         const fields = [
-            FormHelpers.getDateField({
-                name: "associations.dataInputStartDate",
-                value: associations.dataInputStartDate,
-                label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
-                wrapStyle: this.styles.dateFieldWrapStyle,
-            }),
+            !endYear &&
+                FormHelpers.getDateField({
+                    name: "associations.dataInputStartDate",
+                    value: associations.dataInputStartDate,
+                    label: FormHelpers.getLabel(this.getTranslation("data_input_start_date")),
+                    wrapStyle: this.styles.dateFieldWrapStyle,
+                }),
 
-            FormHelpers.getDateField({
-                name: "associations.dataInputEndDate",
-                value: associations.dataInputEndDate,
-                label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
-                wrapStyle: this.styles.dateFieldWrapStyle,
-            }),
+            !endYear &&
+                FormHelpers.getDateField({
+                    name: "associations.dataInputEndDate",
+                    value: associations.dataInputEndDate,
+                    label: FormHelpers.getLabel(this.getTranslation("data_input_end_date")),
+                    wrapStyle: this.styles.dateFieldWrapStyle,
+                }),
 
             FormHelpers.separator("period-fields"),
 

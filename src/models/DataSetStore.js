@@ -265,6 +265,11 @@ export default class DataSetStore {
         return factory.cloneFromDB(datasetId);
     }
 
+    static getPeriodAssociations(d2, config, dataset) {
+        const factory = new Factory(d2, config);
+        return factory.getPeriodAssociations(dataset);
+    }
+
     isSharingStepVisible() {
         return !this.associations.project;
     }
@@ -432,26 +437,35 @@ export default class DataSetStore {
     }
 
     setDefaultPeriodValues() {
-        const { outputEndDate, outcomeEndDate } = this.config;
+        const {
+            outputEndDate,
+            outcomeEndDate,
+            outputLastYearEndDate,
+            outcomeLastYearEndDate,
+        } = this.config;
         const { dataInputStartDate, dataInputEndDate } = this.associations;
         if (!(dataInputStartDate && dataInputEndDate)) return;
 
         const years = this.getPeriodYears();
+        const startYear = dataInputStartDate.getFullYear();
+        const lastYear = _.last(years);
 
-        const getPeriodDates = (years, { month = 4, day = 1 }) =>
-            _(years)
+        const getPeriodDates = (years, endDate, endDateOffset) => {
+            const { month = 4, day = 1 } = endDate;
+            const { units, value } = endDateOffset;
+
+            return _(years)
                 .map(year => {
-                    const period = {
-                        start:
-                            dataInputStartDate.getFullYear() === year
-                                ? dataInputStartDate
-                                : new Date(year, 0, 1),
-                        end: new Date(year + 1, month - 1, day),
-                    };
+                    const baseEndM = moment([year + 1, month - 1, day]);
+                    const endM =
+                        year === lastYear && units && value ? baseEndM.add(value, units) : baseEndM;
+                    const start = startYear === year ? dataInputStartDate : new Date(year, 0, 1);
+                    const period = { start, end: endM.toDate() };
                     return [year, period];
                 })
                 .fromPairs()
                 .value();
+        };
 
         _.assign(this.associations, {
             periodDatesApplyToAll: {
@@ -459,8 +473,8 @@ export default class DataSetStore {
                 outcome: false,
             },
             periodDates: {
-                output: getPeriodDates(years, outputEndDate),
-                outcome: getPeriodDates(years, outcomeEndDate),
+                output: getPeriodDates(years, outputEndDate, outputLastYearEndDate),
+                outcome: getPeriodDates(years, outcomeEndDate, outcomeLastYearEndDate),
             },
         });
     }
