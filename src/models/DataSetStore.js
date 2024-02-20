@@ -724,34 +724,18 @@ export default class DataSetStore {
         return update(categoryCombo, sharing.object);
     }
 
-    _getUserGroupName(_coreCompetency, countryCode) {
-        // https://app.clickup.com/t/865d6fte5 - Use only country code
-        return `${countryCode}_Users`;
-    }
-
     _addWarnings(saving, msgs) {
         return _.imerge(saving, { warnings: saving.warnings.concat(msgs) });
     }
 
     _addSharingToDataset(saving) {
         const { dataset } = saving;
-        const { coreCompetencies } = this.associations;
-
-        const coreCompetenciesSharing = _.cartesianProduct(
-            coreCompetencies,
-            saving.countryCodes
-        ).map(([coreCompetency, countryCode]) => {
-            const userGroupName = this._getUserGroupName(coreCompetency, countryCode);
-            return [userGroupName, { access: "r-rw----" }];
-        });
 
         const userGroupSharingByName = _(saving.countryCodes)
             .flatMap(countryCode => [
                 [countryCode + "_Users", { access: "r-rw----" }],
                 [countryCode + "_Administrators", { access: "rwrw----" }],
             ])
-            .concat(coreCompetenciesSharing)
-            .concat([["GL_GlobalAdministrator", { access: "rwrw----" }]])
             .fromPairs()
             .value();
 

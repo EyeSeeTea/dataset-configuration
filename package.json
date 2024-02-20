@@ -1,6 +1,6 @@
 {
     "name": "d2-dataset-configuration",
-    "version": "2.6.0",
+    "version": "2.6.1",
     "description": "Dataset Configuration User Interface",
     "main": "src/index.html",
     "scripts": {
