@@ -41,7 +41,7 @@ function getCategoryCombos(d2, { cocFields, filterIds } = {}) {
     return d2.models.categoryCombos.list({
         fields: _([
             "id,name,displayName,isDefault",
-            "categories[id,name,displayName,categoryOptions[id,name,displayName]]",
+            "categories[id,name,displayName,categoryOptions[id,name,displayName],translations]",
             cocFields ? `categoryOptionCombos[${cocFields}]` : null,
         ])
             .compact()
@@ -97,16 +97,19 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
     // Special category <default> should be used only when no other category is present, remove otherwise
     const allValidCategories =
         allCategories.length > 1
-            ? allCategories.filter(
-                  category => categoriesById[category.id].displayName !== "default"
-              )
+            ? allCategories.filter(category => categoriesById[category.id].name !== "default")
             : allCategories;
     const combinedCategoriesIds = getCategoryIds(allValidCategories);
-    const existingCategoryCombo = categoryCombos.find(cc =>
-        _(getCategoryIds(cc.categories))
-            .sortBy()
-            .isEqual(_.sortBy(combinedCategoriesIds))
-    );
+
+    // Get an existing categoryCombo (with the shortest name, if there are duplicates)
+    // with matching categories (in any order).
+    const existingCategoryCombo = _(categoryCombos)
+        .sortBy(categoryCombo => categoryCombo.name.length)
+        .find(categoryCombo =>
+            _(getCategoryIds(categoryCombo.categories))
+                .sortBy()
+                .isEqual(_.sortBy(combinedCategoriesIds))
+        );
     const cacheKey = combinedCategoriesIds.join(".");
     const cachedCategoryCombo = cachedCategoryCombos[cacheKey];
 
@@ -125,7 +128,7 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
             categoryCombo: { id: newCategoryComboId },
             categoryOptions: cos,
         }));
-        const ccName = allValidCategories.map(cc => cc.name).join("/");
+        const ccName = categories.map(cc => cc.name).join("/");
         const newCategoryCombo = d2.models.categoryCombo.create({
             id: newCategoryComboId,
             dataDimensionType: "DISAGGREGATION",
@@ -133,10 +136,31 @@ function getDisaggregationForCategories(d2, dataElement, categoryCombos, categor
             displayName: ccName,
             categories: categories,
             categoryOptionCombos: categoryOptionCombos,
+            translations: getCategoryComboTranslations(categories),
         });
         cachedCategoryCombos[cacheKey] = newCategoryCombo;
         return newCategoryCombo;
     }
+}
+
+function getCategoryComboTranslations(categories) {
+    //  category.translations[] -> {property: 'NAME', locale: 'fr', value: 'Âge'}
+    const locales = _(categories)
+        .flatMap(category => category.translations)
+        .map(category => category.locale)
+        .uniq()
+        .value();
+
+    return locales.map(locale => {
+        const names = categories.map(category => {
+            const translation = (category.translations || []).find(
+                translation => translation.property === "NAME" && translation.locale === locale
+            );
+            return translation ? translation.value : category.name;
+        });
+
+        return { property: "NAME", locale: locale, value: names.join("/") };
+    });
 }
 
 function getAsyncUniqueValidator(model, field, uid = null) {
