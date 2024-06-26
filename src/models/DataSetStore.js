@@ -700,15 +700,11 @@ export default class DataSetStore {
     _setDatasetShortName(saving) {
         const { dataset, warnings } = saving;
         const shortName = dataset.name.slice(0, 50);
-        const validator = getAsyncUniqueValidator(this.d2.models.dataSet, "shortName");
+        const validateShortName = getAsyncUniqueValidator(this.d2.models.dataSet, "shortName");
 
-        return validator(shortName)
+        return validateShortName(shortName)
             .then(() => _.imerge(saving, { dataset: update(dataset, { shortName: shortName }) }))
-            .catch(_err =>
-                _.imerge(saving, {
-                    warnings: warnings.concat(["Dataset shortName already used: " + shortName]),
-                })
-            );
+            .catch(() => Promise.reject(`Data set shortName already exists: ${shortName}`));
     }
 
     _addSharingToCategoryCombo(saving, categoryCombo) {
