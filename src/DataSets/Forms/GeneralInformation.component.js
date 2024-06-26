@@ -7,7 +7,7 @@ import FormBuilder from "d2-ui/lib/forms/FormBuilder.component";
 import Validators from "d2-ui/lib/forms/Validators";
 import LinearProgress from "material-ui/LinearProgress/LinearProgress";
 import FormHelpers from "../../forms/FormHelpers";
-import { currentUserHasAdminRole } from "../../utils/Dhis2Helpers";
+import { currentUserHasAdminRole, getAsyncUniqueValidator } from "../../utils/Dhis2Helpers";
 import DataSetPeriods from "../DataSetPeriods";
 import snackActions from "../../Snackbar/snack.actions";
 import { getPeriodsValidationsErrors } from "../../models/data-periods";
@@ -141,16 +141,31 @@ const GeneralInformation = createReactClass({
         this.props.onFieldsChange(fieldPath, newValue);
     },
 
-    getErrorMessage() {
-        const messages = getPeriodsValidationsErrors(this.props.store, {
+    async getErrorMessage() {
+        const periodsErrors = getPeriodsValidationsErrors(this.props.store, {
             validateOutputOutcome: this.state.currentUserHasAdminRole,
         });
+
+        const { dataset } = this.props.store;
+        const shortName = dataset.name.slice(0, 50);
+        const validateShortName = getAsyncUniqueValidator(
+            this.context.d2.models.dataSet,
+            "shortName",
+            dataset.id
+        );
+        const shortNameError = await validateShortName(shortName)
+            .then(() => undefined)
+            .catch(() => `Data set shortName already exists: ${shortName}`);
+
+        const messages = [shortNameError, ...periodsErrors];
+
         return messages.join("\n");
     },
 
-    _onUpdateFormStatus(status) {
+    async _onUpdateFormStatus(status) {
         const statusIsValid = Boolean(!status.validating && status.valid);
-        const isValid = statusIsValid && !this.getErrorMessage();
+        const message = await this.getErrorMessage();
+        const isValid = statusIsValid && !message;
 
         this.setState({ isValid: statusIsValid });
         this.props.formStatus(isValid);
@@ -159,8 +174,8 @@ const GeneralInformation = createReactClass({
     async UNSAFE_componentWillReceiveProps(props) {
         if (!props.validateOnRender) return;
 
-        const message = this.getErrorMessage();
-        const isValid = this.state.isValid && !message;
+        const message = await this.getErrorMessage();
+        const isValid = Boolean(!message);
 
         if (message) snackActions.show({ message });
         this.props.formStatus(isValid);
