@@ -1,77 +1,77 @@
-# dataset-configuration
-
-A DHIS2 webapp for managing dataset objects.
-
 ## Setup
 
 ```
-$ nvm use
+$ nvm use # uses node version in .nvmrc
 $ yarn install
 ```
 
 ## Build
 
-Create DHIS2 app zip:
+Build a production distributable DHIS2 zip file:
 
 ```
 $ yarn build
 ```
 
-## Start a development server
+## Development
 
-Clone the repository and execute:
+Copy `.env` to `.env.local` and configure DHIS2 instance to use. Then start the development server:
 
 ```
 $ yarn start
 ```
 
-## Use the development version of d2-ui
+Now in your browser, go to `http://localhost:8081`.
 
-Clone the d2-ui repository, checkout the branch you want to test and create a link using `yarn`:
-
-```
-$ git clone https://github.com/eyeseetea/d2-ui
-$ cd d2-ui
-$ git checkout BRANCH_TO_TEST
-$ yarn install && yarn build
-$ yarn link
-```
-
-And now, on `dataset-configuration`, run:
+## Tests
 
 ```
-$ yarn link d2-ui
+$ yarn test
 ```
 
-## Enable CORS
+## Some development tips
 
-To set up your DHIS2 instance to work with the development service you will need to add the development servers address to the CORS whitelist. You can do this within the DHIS2 Settings app under the _access_ tab. On the access tab add `http://localhost:8081` to the CORS Whitelist.
+### Clean architecture folder structure
 
-The starter app will look for a DHIS 2 development instance configuration in
-`$DHIS2_HOME/config`. So for example if your `DHIS2_HOME` environment variable is
-set to `~/.dhis2`, the starter app will look for `~/.dhis2/config.js` and then
-`~/.dhis2/config.json` and load the first one it can find. You can use `config/config.template.json` as reference.
+-   `src/domain`: Domain layer of the app (entities, use cases, repository definitions)
+-   `src/data`: Data of the app (repository implementations)
+-   `src/webapp/pages`: Main React components.
+-   `src/webapp/components`: React components.
+-   `src/utils`: Misc utilities.
+-   `i18n/`: Contains literal translations (gettext format)
+-   `public/`: General non-React webapp resources.
 
-The config should export an object with the properties `baseUrl` and
-`authorization`, where authorization is the base64 encoding of your username and
-password. You can obtain this value by opening the console in your browser and
-typing `btoa('user:pass')`.
+## Data structures
 
-If no config is found, the default `baseUrl` is `http://localhost:8080/` and
-the default username and password is `admin` and `district`, respectively.
+-   `Future.ts`: Async values, similar to promises, but cancellables and with type-safe errors.
+-   `Collection.ts`: Similar to Lodash, provides a wrapper over JS arrays.
+-   `Obj.ts`: Similar to Lodash, provides a wrapper over JS objects.
+-   `HashMap.ts`: Similar to ES6 map, but immutable.
+-   `Struct.ts`: Base class for typical classes with attributes. Features: create, update.
+-   `Either.ts`: Either a success value or an error.
 
-See `webpack.config.js` for details.
+## Docs
 
-## Frameworks/libraries
+We use [TypeDoc](https://typedoc.org/example/):
 
-### React
+```
+$ yarn generate-docs
+```
 
-[React](https://facebook.github.io/react/) is the _view_ part of the front-end applications, it has a component based architecture. At DHIS2 we also use JSX syntax that is generally used with React.
+### i18n
 
-### d2 / d2-ui
+Update i18n .po files from `i18n.t(...)` calls in the source code:
 
-[d2](https://github.com/dhis2/d2) is the DHIS2 abstraction library that allows you to communicate with the DHIS2 api in a programatic way. [d2-ui](https://github.com/dhis2/d2-ui) is the ui component library that is build on top of d2 to allow reuse of common components that are used within DHIS2 applications. d2-ui also contains our own application wiring code through its _stores_ and _actions_.
+```
+$ yarn localize
+```
 
-### material-ui
+### Scripts
 
-d2-ui makes use of [material-ui](http://www.material-ui.com) for rendering more basic components like TextFields and Lists. It is therefore quite useful to look into this library too when building DHIS2 apps and making use of d2-ui.
+Check the example script, entry `"script-example"`in `package.json`->scripts and `src/scripts/example.ts`.
+
+### Misc Notes
+
+-   Requests to DHIS2 will be transparently proxied (see `vite.config.ts` -> `server.proxy`) from `http://localhost:8081/dhis2/xyz` to `${VITE_DHIS2_BASE_URL}/xyz`. This prevents CORS and cross-domain problems.
+
+-   You can use `.env` variables within the React app: `const value = import.meta.env.NAME;`
