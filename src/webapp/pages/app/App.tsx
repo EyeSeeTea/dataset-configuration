@@ -1,6 +1,6 @@
 import styled from "styled-components";
 import { HeaderBar } from "@dhis2/ui";
-import { SnackbarProvider } from "@eyeseetea/d2-ui-components";
+import { LoadingProvider, SnackbarProvider } from "@eyeseetea/d2-ui-components";
 import { MuiThemeProvider } from "@material-ui/core/styles";
 //@ts-ignore
 import OldMuiThemeProvider from "material-ui/styles/MuiThemeProvider";
@@ -11,13 +11,15 @@ import { Router } from "$/webapp/pages/Router";
 import "./App.css";
 import muiThemeLegacy from "./themes/dhis2-legacy.theme";
 import { muiTheme } from "./themes/dhis2.theme";
+import { D2Api } from "$/types/d2-api";
 
 export interface AppProps {
     compositionRoot: CompositionRoot;
+    api: D2Api;
 }
 
 function App(props: AppProps) {
-    const { compositionRoot } = props;
+    const { api, compositionRoot } = props;
     const [loading, setLoading] = useState(true);
     const [appContext, setAppContext] = useState<AppContextState | null>(null);
 
@@ -26,26 +28,29 @@ function App(props: AppProps) {
             const currentUser = await compositionRoot.users.getCurrent.execute().toPromise();
             if (!currentUser) throw new Error("User not logged in");
 
-            setAppContext({ currentUser, compositionRoot });
+            setAppContext({ api, currentUser, compositionRoot });
             setLoading(false);
         }
         setup();
-    }, [compositionRoot]);
+    }, [compositionRoot, api]);
 
     if (loading) return null;
 
     return (
         <MuiThemeProvider theme={muiTheme}>
             <OldMuiThemeProvider muiTheme={muiThemeLegacy}>
-                <SnackbarProvider>
-                    <StyledHeaderBar appName="Project Configuration app" />
+                {/* @ts-ignore */}
+                <LoadingProvider>
+                    <SnackbarProvider>
+                        <StyledHeaderBar appName="Project Configuration app" />
 
-                    <div id="app" className="content">
-                        <AppContext.Provider value={appContext}>
-                            <Router />
-                        </AppContext.Provider>
-                    </div>
-                </SnackbarProvider>
+                        <div id="app" className="content">
+                            <AppContext.Provider value={appContext}>
+                                <Router />
+                            </AppContext.Provider>
+                        </div>
+                    </SnackbarProvider>
+                </LoadingProvider>
             </OldMuiThemeProvider>
         </MuiThemeProvider>
     );

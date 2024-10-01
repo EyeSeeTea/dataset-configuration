@@ -134,6 +134,10 @@ export class Future<E, D> {
         return Future.success(undefined);
     }
 
+    toVoid(): Future<E, void> {
+        return this.map(() => undefined);
+    }
+
     static block<E, U>(blockFn: (capture: CaptureAsync<E>) => Promise<U>): Future<E, U> {
         return new Future((): rcpromise.CancellablePromise<U> => {
             return rcpromise.buildCancellablePromise(capturePromise => {
