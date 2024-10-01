@@ -46,7 +46,7 @@ export const DataSetLogs = React.memo((props: DataSetLogsProps) => {
         >
             {logs?.map(log => {
                 return (
-                    <LogsContainer>
+                    <LogsContainer key={`${log.date}_${log.actionDescription}`}>
                         <LogItem label={i18n.t("Date")} value={log.date} />
                         <LogItem label={i18n.t("Action")} value={log.actionDescription} />
                         <LogItem label={i18n.t("Status")} value={log.status} />

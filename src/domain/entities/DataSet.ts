@@ -43,7 +43,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
         )}${DataSet.convertPermissionToOctal(dataSet.dataPermissions)}----`;
     }
 
-    static joinShortNames(dataSets: DataSet[], separator: string = ", "): string {
+    static joinShortNames(dataSets: DataSet[], separator = ", "): string {
         return dataSets.map(dataSet => dataSet.shortName).join(separator);
     }
 
