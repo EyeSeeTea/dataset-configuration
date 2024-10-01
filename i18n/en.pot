@@ -5,8 +5,23 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-01T02:32:06.505Z\n"
-"PO-Revision-Date: 2024-10-01T02:32:06.505Z\n"
+"POT-Creation-Date: 2024-10-01T18:51:44.288Z\n"
+"PO-Revision-Date: 2024-10-01T18:51:44.288Z\n"
+
+msgid "edit dataset"
+msgstr ""
+
+msgid "create new dataset"
+msgstr ""
+
+msgid "change sharing settings"
+msgstr ""
+
+msgid "change organisation units"
+msgstr ""
+
+msgid "clone dataset"
+msgstr ""
 
 msgid "No public access"
 msgstr ""
@@ -33,6 +48,30 @@ msgid "Delete"
 msgstr ""
 
 msgid "Cancel"
+msgstr ""
+
+msgid "Loading logs..."
+msgstr ""
+
+msgid "Logs"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Datasets"
 msgstr ""
 
 msgid "Id"
@@ -86,9 +125,6 @@ msgstr ""
 msgid "Clone"
 msgstr ""
 
-msgid "Logs"
-msgstr ""
-
 msgid "Search"
 msgstr ""
 
@@ -110,13 +146,7 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-msgid "Close"
-msgstr ""
-
 msgid "Bulk update strategy: {{actionLabel}}"
-msgstr ""
-
-msgid "Loading data sets"
 msgstr ""
 
 msgid "Saving sharing settings..."
