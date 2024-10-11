@@ -2,7 +2,7 @@ import { createTheme } from "@material-ui/core/styles";
 
 // Color palette from https://projects.invisionapp.com/share/A7LT4TJYETS#/screens/302550228_Color
 const colors = {
-    accentPrimary: "#1976d2",
+    accentPrimary: "#fd5a00",
     accentPrimaryDark: "#004BA0",
     accentPrimaryLight: "#63A4FF",
     accentPrimaryLightest: "#EAF4FF",

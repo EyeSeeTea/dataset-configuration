@@ -23,6 +23,7 @@ import { ConfirmationModal } from "$/webapp/components/confirmation-modal/Confir
 import { EditSharing } from "$/webapp/components/edit-sharing/EditSharing";
 import { EditOrgUnits } from "$/webapp/components/edit-orgunits/EditOrgUnits";
 import { DataSetLogs } from "$/webapp/components/dataset-logs/DataSetLogs";
+import { useHistory } from "react-router";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 export type TableAction = {
@@ -40,6 +41,7 @@ function checkIdsAndAction(
 
 export const DataSetTable: React.FC = React.memo(() => {
     const { compositionRoot } = useAppContext();
+    const history = useHistory();
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
     const snackbar = useSnackbar();
@@ -99,6 +101,12 @@ export const DataSetTable: React.FC = React.memo(() => {
                         text: i18n.t("Edit"),
                         icon: <EditIcon />,
                         multiple: false,
+                        primary: true,
+                        onClick(selectedIds) {
+                            const dataSetId = _(selectedIds).first();
+                            if (!dataSetId) return;
+                            history.push(`/dataSets/${dataSetId}/edit`);
+                        },
                     },
                     {
                         name: "sharing",
@@ -165,7 +173,7 @@ export const DataSetTable: React.FC = React.memo(() => {
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
             };
-        }, [setTableAction]),
+        }, [history, setTableAction]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);
@@ -234,9 +242,13 @@ export const DataSetTable: React.FC = React.memo(() => {
         setRefreshTable,
     ]);
 
+    const goToCreateDataSet = React.useCallback(() => {
+        history.push("/dataSets/create");
+    }, [history]);
+
     return (
         <div>
-            <ObjectsTable {...tableConfig} />
+            <ObjectsTable onActionButtonClick={goToCreateDataSet} {...tableConfig} />
             {checkIdsAndAction(tableAction, "remove") && (
                 <ConfirmationModal visible onCancel={closeModal} onSave={removeDataSets} />
             )}
