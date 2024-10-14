@@ -1,11 +1,11 @@
 import React from "react";
+import { ConfirmationDialog, OrgUnitsSelector } from "@eyeseetea/d2-ui-components";
+import { Grid, IconButton, Typography, TextField, Button } from "@material-ui/core";
+import OpenInNewIcon from "@material-ui/icons/OpenInNew";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { ConfirmationDialog, OrgUnitsSelector } from "@eyeseetea/d2-ui-components";
-import { Grid, IconButton, Typography, TextField, Button } from "@material-ui/core";
-import OpenInNewIcon from "@material-ui/icons/OpenInNew";
 
 export type SetupDataSetProps = { dataSet?: DataSet };
 
