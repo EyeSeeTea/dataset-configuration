@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2024-10-01T18:51:44.288Z\n"
+"POT-Creation-Date: 2024-10-14T16:24:18.021Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -133,6 +133,76 @@ msgid "Removing DataSets"
 msgstr ""
 
 msgid "DataSets removed"
+msgstr ""
+
+msgid "Setup"
+msgstr ""
+
+msgid "Indicators"
+msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Summary and Save"
+msgstr ""
+
+msgid "Create"
+msgstr ""
+
+msgid "{{action}} dataSet"
+msgstr ""
+
+msgid "Filters"
+msgstr ""
+
+msgid "Scope"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Theme"
+msgstr ""
+
+msgid "Group"
+msgstr ""
+
+msgid "Disaggregation"
+msgstr ""
+
+msgid "Active Filters"
+msgstr ""
+
+msgid "Selected"
+msgstr ""
+
+msgid "No Selected"
+msgstr ""
+
+msgid "Select Project"
+msgstr ""
+
+msgid "DataSet name"
+msgstr ""
+
+#, fuzzy
+msgid "DataSet description"
+msgstr "Sección"
+
+msgid "Start Date"
+msgstr ""
+
+msgid "End Date"
+msgstr ""
+
+msgid "Select org units"
+msgstr ""
+
+msgid "Please select the regions you want to share this dataSet with"
+msgstr ""
+
+msgid "The dataSet is finished. Press the button Save to save the data"
 msgstr ""
 
 msgid "Replace"

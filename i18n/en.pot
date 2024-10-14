@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-01T18:51:44.288Z\n"
-"PO-Revision-Date: 2024-10-01T18:51:44.288Z\n"
+"POT-Creation-Date: 2024-10-14T16:24:18.021Z\n"
+"PO-Revision-Date: 2024-10-14T16:24:18.021Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -132,6 +132,75 @@ msgid "Removing DataSets"
 msgstr ""
 
 msgid "DataSets removed"
+msgstr ""
+
+msgid "Setup"
+msgstr ""
+
+msgid "Indicators"
+msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Summary and Save"
+msgstr ""
+
+msgid "Create"
+msgstr ""
+
+msgid "{{action}} dataSet"
+msgstr ""
+
+msgid "Filters"
+msgstr ""
+
+msgid "Scope"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Theme"
+msgstr ""
+
+msgid "Group"
+msgstr ""
+
+msgid "Disaggregation"
+msgstr ""
+
+msgid "Active Filters"
+msgstr ""
+
+msgid "Selected"
+msgstr ""
+
+msgid "No Selected"
+msgstr ""
+
+msgid "Select Project"
+msgstr ""
+
+msgid "DataSet name"
+msgstr ""
+
+msgid "DataSet description"
+msgstr ""
+
+msgid "Start Date"
+msgstr ""
+
+msgid "End Date"
+msgstr ""
+
+msgid "Select org units"
+msgstr ""
+
+msgid "Please select the regions you want to share this dataSet with"
+msgstr ""
+
+msgid "The dataSet is finished. Press the button Save to save the data"
 msgstr ""
 
 msgid "Replace"
