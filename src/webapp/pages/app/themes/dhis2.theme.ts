@@ -4,8 +4,8 @@ import { createTheme } from "@material-ui/core/styles";
 const colors = {
     accentPrimary: "#fd5a00",
     accentPrimaryDark: "#d14b00",
-    accentPrimaryLight: "#63A4FF",
-    accentPrimaryLightest: "#EAF4FF",
+    accentPrimaryLight: "#ff9b63",
+    accentPrimaryLightest: "#fff2ea",
 
     accentSecondary: "#fb8c00",
     accentSecondaryLight: "#f57c00",
@@ -21,7 +21,7 @@ const colors = {
     white: "#FFFFFF", // Not included in palette!
 
     negative: "#E53935",
-    warning: "#F19C02",
+    warning: "#f1c902",
     positive: "#3D9305",
     info: "#EAF4FF",
 };
