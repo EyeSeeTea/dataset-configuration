@@ -2,10 +2,10 @@ import { createTheme } from "@material-ui/core/styles";
 
 // Color palette from https://projects.invisionapp.com/share/A7LT4TJYETS#/screens/302550228_Color
 const colors = {
-    accentPrimary: "#1976d2",
-    accentPrimaryDark: "#004BA0",
-    accentPrimaryLight: "#63A4FF",
-    accentPrimaryLightest: "#EAF4FF",
+    accentPrimary: "#fd5a00",
+    accentPrimaryDark: "#d14b00",
+    accentPrimaryLight: "#ff9b63",
+    accentPrimaryLightest: "#fff2ea",
 
     accentSecondary: "#fb8c00",
     accentSecondaryLight: "#f57c00",
@@ -21,7 +21,7 @@ const colors = {
     white: "#FFFFFF", // Not included in palette!
 
     negative: "#E53935",
-    warning: "#F19C02",
+    warning: "#f1c902",
     positive: "#3D9305",
     info: "#EAF4FF",
 };

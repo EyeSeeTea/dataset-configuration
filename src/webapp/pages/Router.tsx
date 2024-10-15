@@ -1,18 +1,13 @@
-import React from "react";
 import { HashRouter, Route, Switch } from "react-router-dom";
-import { ExamplePage } from "./example/ExamplePage";
 import { LandingPage } from "./landing/LandingPage";
+import { RegisterDataSetPage } from "$/webapp/pages/register-dataset/RegisterDataSetPage";
 
 export function Router() {
     return (
         <HashRouter>
             <Switch>
-                <Route
-                    path="/for/:name?"
-                    render={({ match }) => <ExamplePage name={match.params.name ?? "Stranger"} />}
-                />
-
-                {/* Default route */}
+                <Route path="/dataSets/create" render={() => <RegisterDataSetPage />} />
+                <Route path="/dataSets/:id/edit" render={() => <RegisterDataSetPage />} />
                 <Route render={() => <LandingPage />} />
             </Switch>
         </HashRouter>
