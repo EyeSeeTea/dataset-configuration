@@ -1,7 +1,9 @@
 import { Permission } from "$/domain/entities/Permission";
+import { Project } from "$/domain/entities/Project";
 import { Id, ISODateString, OctalNotationPermission } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
+import { Maybe } from "$/utils/ts-utils";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -11,6 +13,7 @@ export type DataSetAttrs = {
     lastUpdated: ISODateString;
     dataPermissions: Permission;
     metadataPermissions: Permission;
+    project: Maybe<Project>;
     shortName: string;
     coreCompetencies: CoreCompetency[];
     access: AccessData[];

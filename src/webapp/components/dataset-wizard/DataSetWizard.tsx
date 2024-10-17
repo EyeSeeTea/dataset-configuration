@@ -53,7 +53,7 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
 
     const goBackToHome = React.useCallback(() => {
         history.push("/");
-    }, []);
+    }, [history]);
 
     return (
         <Grid container className={classes.root}>

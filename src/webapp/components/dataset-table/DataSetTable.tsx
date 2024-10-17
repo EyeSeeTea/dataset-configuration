@@ -24,12 +24,10 @@ import { EditSharing } from "$/webapp/components/edit-sharing/EditSharing";
 import { EditOrgUnits } from "$/webapp/components/edit-orgunits/EditOrgUnits";
 import { DataSetLogs } from "$/webapp/components/dataset-logs/DataSetLogs";
 import { useHistory } from "react-router";
+import { HomeTabs } from "$/webapp/components/home-tabs/HomeTabs";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
-export type TableAction = {
-    ids: Id[];
-    action: "remove" | "sharing" | "orgUnits" | "logs";
-};
+export type TableAction = { ids: Id[]; action: "remove" | "sharing" | "orgUnits" | "logs" };
 
 function checkIdsAndAction(
     tableAction: TableAction | undefined,
@@ -80,6 +78,13 @@ export const DataSetTable: React.FC = React.memo(() => {
                     { name: "created", text: i18n.t("Created") },
                     { name: "lastUpdated", text: i18n.t("Last updated") },
                     { name: "id", text: i18n.t("ID") },
+                    {
+                        name: "project",
+                        text: i18n.t("Linked project"),
+                        getValue: dataSet => {
+                            return dataSet.project?.name || i18n.t("No project linked");
+                        },
+                    },
                     {
                         name: "coreCompetencies",
                         text: i18n.t("Core competencies"),
@@ -247,8 +252,11 @@ export const DataSetTable: React.FC = React.memo(() => {
     }, [history]);
 
     return (
-        <div>
+        <>
+            <HomeTabs activeTab="dataSets" />
+
             <ObjectsTable onActionButtonClick={goToCreateDataSet} {...tableConfig} />
+
             {checkIdsAndAction(tableAction, "remove") && (
                 <ConfirmationModal visible onCancel={closeModal} onSave={removeDataSets} />
             )}
@@ -267,7 +275,7 @@ export const DataSetTable: React.FC = React.memo(() => {
             {checkIdsAndAction(tableAction, "logs") && (
                 <DataSetLogs onCancel={clearTableAction} dataSetIds={tableAction?.ids || []} />
             )}
-        </div>
+        </>
     );
 });
 

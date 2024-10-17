@@ -6,6 +6,7 @@ import { Id } from "$/domain/entities/Ref";
 export interface DataSetRepository {
     get(options: GetDataSetOptions): FutureData<Paginated<DataSet>>;
     getByIds(ids: Id[]): FutureData<DataSet[]>;
+    getAll(): FutureData<DataSet[]>;
     remove(ids: Id[]): FutureData<void>;
     save(dataSets: DataSet[]): FutureData<void>;
 }
@@ -13,5 +14,5 @@ export interface DataSetRepository {
 export type GetDataSetOptions = {
     paging: { page: number; pageSize: number };
     sorting: { field: string; order: "asc" | "desc" };
-    filters: { search?: string; ids?: Id[] };
+    filters: { search?: string; ids?: Id[]; projectsIds?: Id[] };
 };

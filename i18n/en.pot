@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-14T16:24:18.021Z\n"
-"PO-Revision-Date: 2024-10-14T16:24:18.021Z\n"
+"POT-Creation-Date: 2024-10-16T21:59:19.258Z\n"
+"PO-Revision-Date: 2024-10-16T21:59:19.258Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -30,6 +30,12 @@ msgid "Public view/edit"
 msgstr ""
 
 msgid "Public view"
+msgstr ""
+
+msgid "Project id is required"
+msgstr ""
+
+msgid "Project name is required"
 msgstr ""
 
 msgid "Add"
@@ -96,6 +102,12 @@ msgid "Created"
 msgstr ""
 
 msgid "ID"
+msgstr ""
+
+msgid "Linked project"
+msgstr ""
+
+msgid "No project linked"
 msgstr ""
 
 msgid "Core competencies"
@@ -224,10 +236,25 @@ msgstr ""
 msgid "Sharing settings saved"
 msgstr ""
 
+msgid "DataSets"
+msgstr ""
+
+msgid "Projects"
+msgstr ""
+
 msgid "Back"
 msgstr ""
 
 msgid "Help"
+msgstr ""
+
+msgid "Org. Units"
+msgstr ""
+
+msgid "Core Competencies"
+msgstr ""
+
+msgid "Loading projects..."
 msgstr ""
 
 msgid "Public Access"
@@ -237,6 +264,9 @@ msgid "User access"
 msgstr ""
 
 msgid "Groups"
+msgstr ""
+
+msgid "and {{number}} more..."
 msgstr ""
 
 msgid "Hello {{name}}"

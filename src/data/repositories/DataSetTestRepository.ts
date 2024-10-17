@@ -5,6 +5,9 @@ import { Future } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 
 export class DataSetTestRepository implements DataSetRepository {
+    getAll(): FutureData<DataSet[]> {
+        throw new Error("Method not implemented.");
+    }
     getByIds(): FutureData<DataSet[]> {
         throw new Error("Method not implemented.");
     }
