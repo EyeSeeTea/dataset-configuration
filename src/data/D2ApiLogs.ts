@@ -1,11 +1,13 @@
-import { FutureData, apiToFuture } from "$/data/api-futures";
+import { apiToFuture } from "$/data/api-futures";
 import { Log } from "$/domain/entities/Log";
 import { ISODateString, Id } from "$/domain/entities/Ref";
-import { Future } from "$/domain/entities/generic/Future";
+import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { GetLogsOptions } from "$/domain/repositories/LogRepository";
 import { D2Api } from "$/types/d2-api";
-import i18n from "$/utils/i18n";
 import { DataStore } from "@eyeseetea/d2-api/api";
+import _ from "$/domain/entities/generic/Collection";
+import { D2LogsCodec } from "$/data/LogCodec";
+import i18n from "$/utils/i18n";
 
 const LOGS_NAMESPACE = "dataset-configuration";
 const LOGS_PAGE_CURRENT_KEY = "logs-page-current";
@@ -19,16 +21,51 @@ export class D2ApiLogs {
 
     getByDate(options: GetLogsOptions): FutureData<Log[]> {
         return this.getCurrentPage().flatMap(currentPage => {
-            return apiToFuture(this.dataStore.get<D2Logs[]>(LOGS_PAGE_PREFIX + currentPage)).map(
-                d2Logs => {
-                    if (!d2Logs) return [];
-                    const logs = d2Logs?.map(d2Log => this.buildLog(d2Log));
-                    return logs.filter(log =>
-                        log.dataSets.some(dataset => options.dataSetsIds?.includes(dataset.id))
-                    );
+            return apiToFuture(
+                this.dataStore.get<D2Logs[]>(LOGS_PAGE_PREFIX + currentPage)
+            ).flatMap(d2Logs => {
+                if (!d2Logs) return Future.success([]);
+                const errors = this.getErrors(d2Logs);
+
+                if (errors.length > 0) {
+                    return Future.error(new Error(errors.join("\n")));
                 }
-            );
+
+                const logs = d2Logs.map(d2Log => this.buildLog(d2Log));
+                const filterLogs = logs.filter(log =>
+                    log.dataSets.some(dataset => options.dataSetsIds.includes(dataset.id))
+                );
+                return Future.success(filterLogs);
+            });
         });
+    }
+
+    private getLegacyActionsNames(): Record<string, D2LegacyAction> {
+        return {
+            "edit dataset": { action: "edit", description: i18n.t("edit dataset") },
+            "create new dataset": { action: "create", description: i18n.t("create new dataset") },
+            "change sharing settings": {
+                action: "sharing",
+                description: i18n.t("change sharing settings"),
+            },
+            delete: { action: "delete", description: "delete" },
+            "change organisation units": {
+                action: "orgunits",
+                description: i18n.t("change organisation units"),
+            },
+            "clone dataset": { action: "clone", description: i18n.t("clone dataset") },
+        };
+    }
+
+    private getErrors(d2Logs: D2Logs[]): string[] {
+        const logsValidation = d2Logs.map(d2Log => D2LogsCodec.decode(d2Log));
+        const errors = _(logsValidation)
+            .compactMap(either => {
+                const value = either.leftOrDefault("");
+                return value ? value : undefined;
+            })
+            .value();
+        return errors;
     }
 
     private buildLog(d2Log: D2Logs): Log {
@@ -49,7 +86,8 @@ export class D2ApiLogs {
     }
 
     private buildActionFromLegacyDescription(description: string): D2LegacyAction {
-        const action = legacyActionsNames[description];
+        const actionNames = this.getLegacyActionsNames();
+        const action = actionNames[description];
         if (!action) return { description: "unknown action", action: "unknown" };
         return action;
     }
@@ -74,17 +112,3 @@ export type D2Logs = {
 };
 
 export type D2LegacyAction = { action: Log["action"]; description: string };
-const legacyActionsNames: Record<string, D2LegacyAction> = {
-    "edit dataset": { action: "edit", description: i18n.t("edit dataset") },
-    "create new dataset": { action: "create", description: i18n.t("create new dataset") },
-    "change sharing settings": {
-        action: "sharing",
-        description: i18n.t("change sharing settings"),
-    },
-    delete: { action: "delete", description: "delete" },
-    "change organisation units": {
-        action: "orgunits",
-        description: i18n.t("change organisation units"),
-    },
-    "clone dataset": { action: "clone", description: i18n.t("clone dataset") },
-};

@@ -12,6 +12,7 @@ import { ProjectAttrs } from "$/domain/entities/Project";
 import i18n from "$/utils/i18n";
 import { TooltipTruncate } from "$/webapp/components/tooltip-truncate/TooltipTruncate";
 import { useAppContext } from "$/webapp/contexts/app-context";
+import { parseSortField } from "$/webapp/utils";
 
 type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
 
@@ -94,11 +95,12 @@ export const ProjectTable = React.memo(() => {
         React.useCallback(
             (search, pagination, sorting) => {
                 loading.show(true, i18n.t("Loading projects..."));
+
                 return new Promise((resolve, reject) => {
                     return compositionRoot.projects.get
                         .execute({
                             paging: { page: pagination.page, pageSize: pagination.pageSize },
-                            sorting: { field: sorting.field, order: sorting.order },
+                            sorting: { field: parseSortField(sorting.field), order: sorting.order },
                             filters: { search },
                         })
                         .run(
@@ -132,9 +134,5 @@ export const ProjectTable = React.memo(() => {
         )
     );
 
-    return (
-        <>
-            <ObjectsTable {...tableConfig} />
-        </>
-    );
+    return <ObjectsTable {...tableConfig} />;
 });

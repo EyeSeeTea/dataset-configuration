@@ -1,11 +1,12 @@
 import React from "react";
 import i18n from "$/utils/i18n";
 import { MultiSelector } from "@eyeseetea/d2-ui-components";
+import { component } from "$/webapp/utils";
 
 export type ShareOptionsDataSetProps = {};
 export type SelectorItem = { text: string; value: string };
 
-export const ShareOptionsDataSet = React.memo((_props: ShareOptionsDataSetProps) => {
+export const ShareOptionsDataSet_ = React.memo((_props: ShareOptionsDataSetProps) => {
     const [selected, setSelected] = React.useState<string[]>([]);
 
     const items: SelectorItem[] = [
@@ -37,4 +38,4 @@ export const ShareOptionsDataSet = React.memo((_props: ShareOptionsDataSetProps)
     );
 });
 
-ShareOptionsDataSet.displayName = "ShareOptionsDataSet";
+export const ShareOptionsDataSet = component(ShareOptionsDataSet_);

@@ -1,8 +1,8 @@
-import { Id, OctalNotationPermission } from "$/domain/entities/Ref";
+import { Id } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 
 export type SharingAttrs = {
-    publicAccess: OctalNotationPermission;
+    publicAccess: string;
     userAccesses: AccessDetails[];
     userGroupAccesses: AccessDetails[];
 };

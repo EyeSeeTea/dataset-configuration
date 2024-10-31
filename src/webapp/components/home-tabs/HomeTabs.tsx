@@ -1,10 +1,10 @@
 import React from "react";
-import { useHistory } from "react-router-dom";
 import { Tabs, Tab, Tooltip } from "@material-ui/core";
 import StorageIcon from "@material-ui/icons/Storage";
 import FolderIcon from "@material-ui/icons/Folder";
 import i18n from "$/utils/i18n";
 import styled from "styled-components";
+import { useNavigateTo } from "$/webapp/routes";
 
 export const activeTabs = ["dataSets", "projects"] as const;
 export type HomeTabsProps = { activeTab: ActiveTab };
@@ -12,17 +12,15 @@ export type HomeTabsProps = { activeTab: ActiveTab };
 export type ActiveTab = (typeof activeTabs)[number];
 
 export const HomeTabs = React.memo((props: HomeTabsProps) => {
-    const history = useHistory();
+    const { navigateTo } = useNavigateTo();
     const tabIndex = activeTabs.indexOf(props.activeTab);
 
     const goToUrl = React.useCallback(
         (_event: React.ChangeEvent<{}>, value: number) => {
             const path = activeTabs[value];
-            if (path) {
-                history.push(`/${path}`);
-            }
+            if (path) navigateTo(path);
         },
-        [history]
+        [navigateTo]
     );
 
     return (

@@ -2,7 +2,6 @@ import { command, run, string, option } from "cmd-ts";
 import path from "path";
 import { D2Api } from "$/types/d2-api";
 import { getWebappCompositionRoot } from "$/CompositionRoot";
-import { MetadataD2Repository } from "$/data/repositories/MetadataD2Repository";
 import { DataSet } from "$/domain/entities/DataSet";
 import { writeFileSync } from "fs";
 
@@ -31,8 +30,7 @@ function main() {
         handler: async args => {
             const auth = { username: args.username, password: args.password };
             const api = new D2Api({ baseUrl: args.url, auth: auth });
-            const metadata = await new MetadataD2Repository(api).get().toPromise();
-            const compositionRoot = getWebappCompositionRoot(api, metadata);
+            const compositionRoot = getWebappCompositionRoot(api);
             compositionRoot.dataSets.migrateProjects.execute().run(
                 response => {
                     console.debug("DataSets saved");

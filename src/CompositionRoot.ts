@@ -2,17 +2,13 @@ import { DataSetD2Repository } from "$/data/repositories/DataSetD2Repository";
 import { DataSetTestRepository } from "$/data/repositories/DataSetTestRepository";
 import { LogD2Repository } from "$/data/repositories/LogD2Repository";
 import { LogTestRepository } from "$/data/repositories/LogTestRepository";
-import { MetadataD2Repository } from "$/data/repositories/MetadataD2Repository";
-import { MetadataTestRepository } from "$/data/repositories/MetadataTestRepository";
 import { ProjectD2Repository } from "$/data/repositories/ProjectD2Repository";
 import { ProjectTestRepository } from "$/data/repositories/ProjectTestRepository";
 import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
-import { MetadataItem } from "$/domain/entities/MetadataItem";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { LogRepository } from "$/domain/repositories/LogRepository";
-import { MetadataRepository } from "$/domain/repositories/MetadataRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -37,7 +33,6 @@ type Repositories = {
     dataSetsRepository: DataSetRepository;
     logRepository: LogRepository;
     projectRepository: ProjectRepository;
-    metadataRepository: MetadataRepository;
 };
 
 function getCompositionRoot(repositories: Repositories) {
@@ -69,14 +64,13 @@ function getCompositionRoot(repositories: Repositories) {
     };
 }
 
-export function getWebappCompositionRoot(api: D2Api, metadata: MetadataItem) {
+export function getWebappCompositionRoot(api: D2Api) {
     const repositories: Repositories = {
         usersRepository: new UserD2Repository(api),
-        dataSetsRepository: new DataSetD2Repository(api, metadata),
+        dataSetsRepository: new DataSetD2Repository(api),
         sharingRepository: new SharingD2Repository(api),
         logRepository: new LogD2Repository(api),
-        projectRepository: new ProjectD2Repository(api, metadata),
-        metadataRepository: new MetadataD2Repository(api),
+        projectRepository: new ProjectD2Repository(api),
     };
 
     return getCompositionRoot(repositories);
@@ -89,7 +83,6 @@ export function getTestCompositionRoot() {
         sharingRepository: new SharingTestRepository(),
         logRepository: new LogTestRepository(),
         projectRepository: new ProjectTestRepository(),
-        metadataRepository: new MetadataTestRepository(),
     };
 
     return getCompositionRoot(repositories);

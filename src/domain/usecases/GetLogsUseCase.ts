@@ -1,4 +1,4 @@
-import { FutureData } from "$/data/api-futures";
+import { FutureData } from "$/domain/entities/generic/Future";
 import { Log } from "$/domain/entities/Log";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { GetLogsOptions, LogRepository } from "$/domain/repositories/LogRepository";

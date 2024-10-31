@@ -21,6 +21,16 @@ export type IndicatorsColumns = {
     disaggregation: string;
 };
 
+const scopes = ["Core", "Donor", "Local"];
+const coreCompetencies = [
+    "Education",
+    "Icla",
+    "Livelihood & Food Security Themes",
+    "Protection from vehicle",
+    "Other",
+    "Wash",
+];
+
 export const IndicatorsDataSet = React.memo(() => {
     const [showFilterModal, setShowFilterModal] = React.useState(false);
     const [scope, setScope] = React.useState("Core");
@@ -65,7 +75,7 @@ export const IndicatorsDataSet = React.memo(() => {
         React.useCallback(() => {
             return Promise.resolve({
                 objects: [],
-                pager: { page: 1, pageCount: 1, total: 1, pageSize: 1 },
+                pager: { page: 1, pageCount: 1, total: 1, pageSize: 50 },
             });
         }, [])
     );
@@ -75,10 +85,13 @@ export const IndicatorsDataSet = React.memo(() => {
     }, []);
 
     const updateFilter = React.useCallback((value: string, filterType: FilterType) => {
-        if (filterType === "scope") {
-            setScope(value);
-        } else if (filterType === "core") {
-            setCore(value);
+        switch (filterType) {
+            case "scope":
+                setScope(value);
+                break;
+            case "core":
+                setCore(value);
+                break;
         }
     }, []);
 
@@ -90,17 +103,10 @@ export const IndicatorsDataSet = React.memo(() => {
                     showDrawer={showFilterModal}
                 >
                     <FilterIndicators
-                        scopes={["Core", "Donor", "Local"]}
+                        scopes={scopes}
                         scopeValue={scope}
                         onFilterChange={updateFilter}
-                        coreCompetencies={[
-                            "Education",
-                            "Icla",
-                            "Livelihood & Food Security Themes",
-                            "Protection from vehicle",
-                            "Other",
-                            "Wash",
-                        ]}
+                        coreCompetencies={coreCompetencies}
                         showCloseButton={!isLargeDesktop}
                         coreValue={core}
                         types={["Outputs", "Outcomes"]}
@@ -136,19 +142,21 @@ export const IndicatorsDataSet = React.memo(() => {
 });
 
 export const FilterTable = React.memo(() => {
-    const [value, setValue] = React.useState(1);
+    const [value, setValue] = React.useState<"selected" | "non-selected">("selected");
+    const isSelected = value === "selected";
+
     return (
         <div>
             <Button
-                onClick={() => setValue(1)}
-                variant={value === 1 ? "outlined" : "text"}
+                onClick={() => setValue("selected")}
+                variant={isSelected ? "outlined" : "text"}
                 color="primary"
             >
                 {i18n.t("Selected")}
             </Button>
             <Button
-                onClick={() => setValue(2)}
-                variant={value === 2 ? "outlined" : "text"}
+                onClick={() => setValue("non-selected")}
+                variant={!isSelected ? "outlined" : "text"}
                 color="primary"
             >
                 {i18n.t("No Selected")}

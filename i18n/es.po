@@ -9,7 +9,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
 
 msgid "edit dataset"
-msgstr ""
+msgstr "editar dataset"
 
 msgid "create new dataset"
 msgstr ""
@@ -60,7 +60,7 @@ msgid "Loading logs..."
 msgstr ""
 
 msgid "Logs"
-msgstr ""
+msgstr "Registros"
 
 msgid "Close"
 msgstr ""
@@ -69,10 +69,10 @@ msgid "Date"
 msgstr ""
 
 msgid "Action"
-msgstr ""
+msgstr "Acción"
 
 msgid "Status"
-msgstr ""
+msgstr "Estado"
 
 msgid "User"
 msgstr ""

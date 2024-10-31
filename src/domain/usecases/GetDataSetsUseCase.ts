@@ -1,4 +1,4 @@
-import { FutureData } from "$/data/api-futures";
+import { FutureData } from "$/domain/entities/generic/Future";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { DataSetRepository, GetDataSetOptions } from "$/domain/repositories/DataSetRepository";

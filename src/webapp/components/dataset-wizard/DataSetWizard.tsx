@@ -5,36 +5,10 @@ import { makeStyles } from "@material-ui/styles";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 
 import i18n from "$/utils/i18n";
-import { IndicatorsDataSet } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
-import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
-import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
-import { SummaryDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
-import { useHistory } from "react-router-dom";
+import { useDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
+import { useNavigateTo } from "$/webapp/routes";
 
 export type DataSetWizardProps = { id?: string };
-
-const steps = [
-    {
-        component: () => <SetupDataSet />,
-        label: i18n.t("Setup"),
-        key: "setup",
-    },
-    {
-        component: () => <IndicatorsDataSet />,
-        label: i18n.t("Indicators"),
-        key: "indicators",
-    },
-    {
-        component: () => <ShareOptionsDataSet />,
-        label: i18n.t("Share"),
-        key: "share",
-    },
-    {
-        component: () => <SummaryDataSet />,
-        label: i18n.t("Summary and Save"),
-        key: "summary",
-    },
-];
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -47,13 +21,13 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const { id } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
-
+    const steps = useDataSetSteps();
     const classes = useStyles();
-    const history = useHistory();
+    const { navigateTo } = useNavigateTo();
 
     const goBackToHome = React.useCallback(() => {
-        history.push("/");
-    }, [history]);
+        navigateTo("dataSets");
+    }, [navigateTo]);
 
     return (
         <Grid container className={classes.root}>

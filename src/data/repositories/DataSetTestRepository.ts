@@ -1,4 +1,4 @@
-import { FutureData } from "$/data/api-futures";
+import { FutureData } from "$/domain/entities/generic/Future";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Future } from "$/domain/entities/generic/Future";
@@ -14,7 +14,7 @@ export class DataSetTestRepository implements DataSetRepository {
     save(): FutureData<void> {
         throw new Error("Method not implemented.");
     }
-    remove(): FutureData<void> {
+    delete(): FutureData<void> {
         throw new Error("Method not implemented.");
     }
     get(): FutureData<Paginated<DataSet>> {

@@ -1,5 +1,5 @@
 import { D2Api } from "$/types/d2-api";
-import { FutureData, apiToFuture } from "$/data/api-futures";
+import { apiToFuture } from "$/data/api-futures";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Project } from "$/domain/entities/Project";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
@@ -9,17 +9,24 @@ import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
 import { Id } from "$/domain/entities/Ref";
 import { DataSet } from "$/domain/entities/DataSet";
 import { D2CategoryOptionType } from "$/data/repositories/D2ApiCategoryOption";
-import { MetadataItem } from "$/domain/entities/MetadataItem";
-import { Future } from "$/domain/entities/generic/Future";
+import { Future, FutureData } from "$/domain/entities/generic/Future";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
-    constructor(private api: D2Api, private metadata: MetadataItem) {
-        this.d2DataSetApi = new DataSetD2Api(this.api, metadata);
+    private d2ApiConfig: D2ApiConfig;
+
+    constructor(private api: D2Api) {
+        this.d2DataSetApi = new DataSetD2Api(this.api);
+        this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 
     getAll(): FutureData<Project[]> {
         return this.getAllProjects(1, []);
+    }
+
+    private getCategories(): FutureData<D2Config["categories"]> {
+        return this.d2ApiConfig.get().map(({ categories }) => categories);
     }
 
     private getAllProjects(initialPage: number, projects: Project[]): FutureData<Project[]> {
@@ -42,31 +49,33 @@ export class ProjectD2Repository implements ProjectRepository {
     }
 
     get(options: GetDataSetOptions): FutureData<Paginated<Project>> {
-        return apiToFuture(
-            this.api.models.categoryOptions.get({
-                filter: {
-                    "categories.code": { eq: this.metadata.categories.project.code },
-                    identifiable: { token: options.filters.search },
-                },
-                page: options.paging.page,
-                pageSize: options.paging.pageSize,
-                fields: { id: true, displayName: true, lastUpdated: true },
-                order: this.buildOrderParam(options),
-            })
-        ).flatMap(d2Response => {
-            const projects = d2Response.objects.map(d2Category => {
-                return this.buildProject(d2Category);
-            });
+        return this.getCategories().flatMap(categories => {
+            return apiToFuture(
+                this.api.models.categoryOptions.get({
+                    filter: {
+                        "categories.code": { eq: categories.project.code },
+                        identifiable: { token: options.filters.search },
+                    },
+                    page: options.paging.page,
+                    pageSize: options.paging.pageSize,
+                    fields: { id: true, displayName: true, lastUpdated: true },
+                    order: this.buildOrderParam(options),
+                })
+            ).flatMap(d2Response => {
+                const projects = d2Response.objects.map(d2Category => {
+                    return this.buildProject(d2Category);
+                });
 
-            const projectsIds = projects.map(project => project.id);
-            return this.getDataSets(projectsIds).map(dataSets => {
-                return {
-                    page: d2Response.pager.page,
-                    pageCount: d2Response.pager.pageCount,
-                    total: d2Response.pager.total,
-                    pageSize: d2Response.pager.pageSize,
-                    data: this.buildProjectsWithDataSets(projects, dataSets),
-                };
+                const projectsIds = projects.map(project => project.id);
+                return this.getDataSets(projectsIds).map(dataSets => {
+                    return {
+                        page: d2Response.pager.page,
+                        pageCount: d2Response.pager.pageCount,
+                        total: d2Response.pager.total,
+                        pageSize: d2Response.pager.pageSize,
+                        data: this.buildProjectsWithDataSets(projects, dataSets),
+                    };
+                });
             });
         });
     }

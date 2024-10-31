@@ -117,17 +117,15 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
                 <strong>{label}</strong>
             </Typography>
             <ScopeContainer>
-                {items.map(item => {
-                    return (
-                        <Chip
-                            key={item}
-                            color={item === value ? "primary" : "default"}
-                            variant="default"
-                            label={item}
-                            onClick={() => onChange(item)}
-                        />
-                    );
-                })}
+                {items.map(item => (
+                    <Chip
+                        key={item}
+                        color={item === value ? "primary" : "default"}
+                        label={item}
+                        onClick={() => onChange(item)}
+                        variant="default"
+                    />
+                ))}
             </ScopeContainer>
         </BodyFilterContainer>
     );
