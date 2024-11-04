@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-16T21:59:19.258Z\n"
-"PO-Revision-Date: 2024-10-16T21:59:19.258Z\n"
+"POT-Creation-Date: 2024-10-31T03:19:38.721Z\n"
+"PO-Revision-Date: 2024-10-31T03:19:38.721Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -80,6 +80,9 @@ msgstr ""
 msgid "Datasets"
 msgstr ""
 
+msgid "DataSets removed"
+msgstr ""
+
 msgid "Id"
 msgstr ""
 
@@ -140,24 +143,6 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-msgid "Removing DataSets"
-msgstr ""
-
-msgid "DataSets removed"
-msgstr ""
-
-msgid "Setup"
-msgstr ""
-
-msgid "Indicators"
-msgstr ""
-
-msgid "Share"
-msgstr ""
-
-msgid "Summary and Save"
-msgstr ""
-
 msgid "Create"
 msgstr ""
 
@@ -215,6 +200,18 @@ msgstr ""
 msgid "The dataSet is finished. Press the button Save to save the data"
 msgstr ""
 
+msgid "Setup"
+msgstr ""
+
+msgid "Indicators"
+msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Summary and Save"
+msgstr ""
+
 msgid "Replace"
 msgstr ""
 
@@ -269,8 +266,5 @@ msgstr ""
 msgid "and {{number}} more..."
 msgstr ""
 
-msgid "Hello {{name}}"
-msgstr ""
-
-msgid "Detail page"
+msgid "Removing DataSets"
 msgstr ""

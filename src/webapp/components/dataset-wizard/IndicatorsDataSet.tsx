@@ -22,6 +22,7 @@ export type IndicatorsColumns = {
 };
 
 const scopes = ["Core", "Donor", "Local"];
+const types = ["Outputs", "Outcomes"];
 const coreCompetencies = [
     "Education",
     "Icla",
@@ -109,7 +110,7 @@ export const IndicatorsDataSet = React.memo(() => {
                         coreCompetencies={coreCompetencies}
                         showCloseButton={!isLargeDesktop}
                         coreValue={core}
-                        types={["Outputs", "Outcomes"]}
+                        types={types}
                         themes={[]}
                         groups={[]}
                         onClose={() => setShowFilterModal(false)}
