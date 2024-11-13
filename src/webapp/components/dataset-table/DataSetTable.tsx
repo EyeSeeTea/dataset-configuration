@@ -29,7 +29,7 @@ export const DataSetTable: React.FC = React.memo(() => {
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
 
-    const { navigateTo } = useNavigateTo();
+    const navigateTo = useNavigateTo();
     const snackbar = useSnackbar();
     const action = getSelectedAction(tableAction);
     const selectedIds = getSelectedIds(tableAction);

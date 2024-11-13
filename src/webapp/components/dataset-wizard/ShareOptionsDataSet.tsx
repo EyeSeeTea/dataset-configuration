@@ -1,7 +1,7 @@
 import React from "react";
 import i18n from "$/utils/i18n";
 import { MultiSelector } from "@eyeseetea/d2-ui-components";
-import { component } from "$/webapp/utils";
+import { component } from "$/utils/react";
 
 export type ShareOptionsDataSetProps = {};
 export type SelectorItem = { text: string; value: string };

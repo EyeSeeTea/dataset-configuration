@@ -1,24 +1,8 @@
-import React from "react";
-import { DataSetOrderFields } from "$/domain/repositories/DataSetRepository";
 import { Maybe } from "$/utils/ts-utils";
-import { NO_ACCESS_NOTATION, Permission } from "$/domain/entities/Permission";
+import { Permission } from "$/domain/entities/Permission";
 import { Permissions } from "$/domain/entities/DataSet";
 
-export function parseSortField(sortFieldName: string): DataSetOrderFields {
-    switch (sortFieldName) {
-        case "name":
-            return "name";
-        case "lastUpdated":
-            return "lastUpdated";
-        default:
-            throw new Error(`Unknown sort field: ${sortFieldName}`);
-    }
-}
-
-export function component<Props>(comp: React.FC<Props>) {
-    comp.displayName = comp.name?.replace(/_+$/, "") || "UnknownComponent";
-    return React.memo(comp);
-}
+export const NO_ACCESS_NOTATION = "--------";
 
 export function buildDataPermissions(
     value: Maybe<string>,

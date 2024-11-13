@@ -14,16 +14,16 @@ import ListIcon from "@material-ui/icons/List";
 import _ from "$/domain/entities/generic/Collection";
 import i18n from "$/utils/i18n";
 import { SharingDetails } from "$/webapp/components/sharing-details/SharingDetails";
-import { parseSortField } from "$/webapp/utils";
 import { TableAction } from "$/webapp/components/dataset-table/DataSetTable";
 import { useNavigateTo } from "$/webapp/routes";
+import { parseSortField } from "$/utils/parse-sort-field";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 
 export function useTableConfig(props: TableConfigProps) {
     const { onAction, refreshTable } = props;
     const { compositionRoot } = useAppContext();
-    const { navigateTo } = useNavigateTo();
+    const navigateTo = useNavigateTo();
 
     const tableConfig = useObjectsTable<DataSetColumns>(
         React.useMemo(() => {

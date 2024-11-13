@@ -2,11 +2,9 @@ import { Struct } from "$/domain/entities/generic/Struct";
 
 export type PermissionAttrs = { read: boolean; write: boolean };
 
-export const NO_ACCESS_NOTATION = "--------";
-
 export class Permission extends Struct<PermissionAttrs>() {
     noAccess(): boolean {
-        return this.read === false && this.write === false;
+        return !this.read && !this.write;
     }
 
     static buildWithOutAccess(): Permission {

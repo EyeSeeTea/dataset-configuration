@@ -5,14 +5,12 @@ import { useHistory } from "react-router-dom";
 const routes = {
     dataSets: () => "/",
     createDataSets: () => "/dataSets/create",
-    editDataSets: ({ id }: Ref) => `/dataSets/:${id}/edit`,
+    editDataSets: ({ id }: Ref) => `/dataSets/${id}/edit`,
     projects: () => "/projects",
 };
 
+type Routes = typeof routes;
 type RouteKey = keyof typeof routes;
-type RouteParams<T extends RouteKey> = Parameters<(typeof routes)[T]>[0] extends undefined
-    ? void
-    : Parameters<(typeof routes)[T]>[0];
 
 export function buildRoute<T extends RouteKey>(
     route: T,
@@ -26,12 +24,20 @@ export function useNavigateTo() {
     const history = useHistory();
 
     const navigateTo = React.useCallback(
-        <T extends RouteKey>(route: T, params?: RouteParams<T>) => {
-            const path = (routes[route] as any)(params);
+        <Key extends RouteKey>(route: Key, ...args: Parameters<(typeof routes)[Key]>) => {
+            const path = (routes[route] as any)(...args);
             history.push(path);
         },
         [history]
     );
 
-    return { navigateTo };
+    return navigateTo;
+}
+
+export function generateUrl<Name extends keyof Routes>(
+    name: Name,
+    params: Parameters<Routes[Name]>[0] = undefined
+): string {
+    const fn = routes[name];
+    return params ? fn(params as any) : fn(undefined as any);
 }

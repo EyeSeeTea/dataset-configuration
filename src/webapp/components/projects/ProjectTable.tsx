@@ -12,7 +12,7 @@ import { ProjectAttrs } from "$/domain/entities/Project";
 import i18n from "$/utils/i18n";
 import { TooltipTruncate } from "$/webapp/components/tooltip-truncate/TooltipTruncate";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { parseSortField } from "$/webapp/utils";
+import { parseSortField } from "$/utils/parse-sort-field";
 
 type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
 

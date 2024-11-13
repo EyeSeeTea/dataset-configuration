@@ -40,11 +40,10 @@ export class DataSetD2Repository implements DataSetRepository {
     }
 
     private getDataSets(page: number, pageSize: number) {
-        return this.d2DataSetApi.get({
+        return this.d2DataSetApi.getWithOrgUnits({
             paging: { page, pageSize },
             filters: {},
             sorting: { field: "name", order: "asc" },
-            includeOrgUnits: true,
         });
     }
 
@@ -70,11 +69,10 @@ export class DataSetD2Repository implements DataSetRepository {
                             },
                         },
                     })
-                ).map(d2Response => [d2Response]);
+                ).map(d2Response => d2Response.objects);
             });
 
-            return $requests.map(d2Response => {
-                const allDataSets = d2Response.flatMap(d2Response => d2Response.objects);
+            return $requests.map(allDataSets => {
                 const dataSets = allDataSets.map(d2DataSet => {
                     return this.d2DataSetApi.buildDataSet(
                         d2DataSet,
@@ -114,8 +112,9 @@ export class DataSetD2Repository implements DataSetRepository {
                             ...(existingDataSet || {}),
                             ...this.buildD2DataSet(dataSet, existingAttributes, config.attributes),
                         };
-                        delete result.sharing;
-                        return result;
+
+                        const { sharing: _, ...rest } = result;
+                        return rest;
                     });
 
                     return apiToFuture(this.api.metadata.post({ dataSets: dataSetsToSave })).map(
@@ -131,20 +130,20 @@ export class DataSetD2Repository implements DataSetRepository {
     delete(ids: string[]): FutureData<void> {
         if (ids.length === 0) return Future.success(undefined);
 
-        const $requests = chunkRequest(ids, dataSetIds => {
+        const $requests = chunkRequest<void>(ids, dataSetIds => {
             return apiToFuture(
                 this.api.metadata.post(
                     { dataSets: dataSetIds.map(id => ({ id })) },
                     { importStrategy: "DELETE" }
                 )
-            ).map(response => {
+            ).flatMap(response => {
                 const allErrors = response.typeReports.flatMap(typeReport =>
                     typeReport.objectReports.flatMap(objectReport =>
                         objectReport.errorReports.flatMap(errorReport => errorReport.message)
                     )
                 );
-                if (allErrors.length > 0) throw new Error(allErrors.join("\n"));
-                return [];
+                if (allErrors.length > 0) return Future.error(new Error(allErrors.join("\n")));
+                return Future.success([]);
             });
         });
 

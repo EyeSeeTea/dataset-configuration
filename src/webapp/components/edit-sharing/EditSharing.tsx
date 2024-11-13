@@ -19,7 +19,7 @@ import {
     buildDataPermissions,
     generateFullPermission,
     generatePermissionsFromString,
-} from "$/webapp/utils";
+} from "$/utils/permission";
 
 export type EditSharingProps = { dataSetIds: Id[]; onCancel: () => void };
 

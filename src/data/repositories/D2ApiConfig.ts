@@ -37,28 +37,14 @@ export class D2ApiConfig {
 
     private getMetadata(): FutureData<D2Config> {
         return apiToFuture(this.api.metadata.get(metadataFields)).map(d2Response => {
-            const attributes = d2Response.attributes.map((d2Attribute): D2NamedCodeRef => {
-                return { id: d2Attribute.id, name: d2Attribute.name, code: d2Attribute.code };
-            });
-
-            const categories = d2Response.categories.map((d2Attribute): D2NamedCodeRef => {
-                return { id: d2Attribute.id, name: d2Attribute.name, code: d2Attribute.code };
-            });
-
-            const dataElementGroupSets = d2Response.dataElementGroupSets.map(
-                (d2Attribute): D2NamedCodeRef => {
-                    return { id: d2Attribute.id, name: d2Attribute.name, code: d2Attribute.code };
-                }
-            );
-
             return {
-                attributes: { ...this.buildAttributes(attributes) },
+                attributes: this.buildAttributes(d2Response.attributes),
                 categories: {
-                    project: this.getOrThrow(categories, metadataCodes.categories.project),
+                    project: getOrThrow(d2Response.categories, metadataCodes.categories.project),
                 },
                 dataElementGroupSets: {
-                    coreCompetency: this.getOrThrow(
-                        dataElementGroupSets,
+                    coreCompetency: getOrThrow(
+                        d2Response.dataElementGroupSets,
                         metadataCodes.dataElementGroupSets.coreCompetency
                     ),
                 },
@@ -68,17 +54,17 @@ export class D2ApiConfig {
 
     private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
         return {
-            project: this.getOrThrow(attributes, metadataCodes.attributes.project),
-            createdByApp: this.getOrThrow(attributes, metadataCodes.attributes.createdByApp),
+            project: getOrThrow(attributes, metadataCodes.attributes.project),
+            createdByApp: getOrThrow(attributes, metadataCodes.attributes.createdByApp),
         };
     }
+}
 
-    private getOrThrow(modelData: D2NamedCodeRef[], code: string): D2NamedCodeRef {
-        const model = modelData.find(attribute => attribute.code === code);
-        if (!model) throw new Error(`Metadata object not found: code="${code}"`);
+function getOrThrow(modelData: D2NamedCodeRef[], code: string): D2NamedCodeRef {
+    const model = modelData.find(attribute => attribute.code === code);
+    if (!model) throw new Error(`Metadata object not found: code="${code}"`);
 
-        return model;
-    }
+    return model;
 }
 
 export type D2Config = {

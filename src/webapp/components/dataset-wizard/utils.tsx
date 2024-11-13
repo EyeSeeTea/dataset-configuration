@@ -4,7 +4,7 @@ import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
 import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
 import { SummaryDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
 
-export function useDataSetSteps() {
+export function getDataSetSteps() {
     const steps = [
         {
             component: () => <SetupDataSet />,

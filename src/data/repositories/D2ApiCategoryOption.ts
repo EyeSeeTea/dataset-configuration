@@ -16,9 +16,7 @@ export class D2ApiCategoryOption {
                     fields: { id: true, displayName: true, lastUpdated: true },
                     paging: false,
                 })
-            ).map(response => [response]);
-        }).map(d2Request => {
-            return d2Request.flatMap(d2Response => d2Response.objects);
+            ).map(response => response.objects);
         });
     }
 }

@@ -10,7 +10,6 @@ export class SharingD2Repository implements SharingRepository {
     getByName(name: string): FutureData<Sharing> {
         return apiToFuture(this.api.sharing.search({ key: name })).map(d2Response => {
             return Sharing.create({
-                publicAccess: "",
                 userAccesses: d2Response.users.map(user => {
                     return { id: user.id, name: user.displayName };
                 }),

@@ -5,7 +5,7 @@ import { makeStyles } from "@material-ui/styles";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 
 import i18n from "$/utils/i18n";
-import { useDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
+import { getDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
 import { useNavigateTo } from "$/webapp/routes";
 
 export type DataSetWizardProps = { id?: string };
@@ -21,9 +21,9 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const { id } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
-    const steps = useDataSetSteps();
+    const steps = getDataSetSteps();
     const classes = useStyles();
-    const { navigateTo } = useNavigateTo();
+    const navigateTo = useNavigateTo();
 
     const goBackToHome = React.useCallback(() => {
         navigateTo("dataSets");

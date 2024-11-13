@@ -12,7 +12,7 @@ export type HomeTabsProps = { activeTab: ActiveTab };
 export type ActiveTab = (typeof activeTabs)[number];
 
 export const HomeTabs = React.memo((props: HomeTabsProps) => {
-    const { navigateTo } = useNavigateTo();
+    const navigateTo = useNavigateTo();
     const tabIndex = activeTabs.indexOf(props.activeTab);
 
     const goToUrl = React.useCallback(
