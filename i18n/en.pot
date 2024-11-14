@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-31T03:19:38.721Z\n"
-"PO-Revision-Date: 2024-10-31T03:19:38.721Z\n"
+"POT-Creation-Date: 2024-11-14T05:07:50.716Z\n"
+"PO-Revision-Date: 2024-11-14T05:07:50.716Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -80,31 +80,22 @@ msgstr ""
 msgid "Datasets"
 msgstr ""
 
-msgid "DataSets removed"
-msgstr ""
-
-msgid "Id"
+msgid "Loading details..."
 msgstr ""
 
 msgid "Name"
 msgstr ""
 
-msgid "Access"
-msgstr ""
-
-msgid "Last updated"
-msgstr ""
-
-msgid "Short Name"
-msgstr ""
-
-msgid "Description"
+msgid "Short name"
 msgstr ""
 
 msgid "Created"
 msgstr ""
 
-msgid "ID"
+msgid "Last updated"
+msgstr ""
+
+msgid "Id"
 msgstr ""
 
 msgid "Linked project"
@@ -117,6 +108,12 @@ msgid "Core competencies"
 msgstr ""
 
 msgid "Sharing"
+msgstr ""
+
+msgid "DataSets removed"
+msgstr ""
+
+msgid "Access"
 msgstr ""
 
 msgid "Edit"
