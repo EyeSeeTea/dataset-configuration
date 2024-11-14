@@ -1,14 +1,14 @@
+import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
 import { D2Api } from "$/types/d2-api";
+
 import { apiToFuture } from "$/data/api-futures";
-import { DataSet, DataSetToSave } from "$/domain/entities/DataSet";
+import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { DataSetRepository, GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { getUid } from "$/utils/uid";
-
 import _ from "$/domain/entities/generic/Collection";
-import { DataSetD2Api, dataSetFields } from "$/data/repositories/DataSetD2Api";
-import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
+import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/DataSetD2Api";
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiConfig";
@@ -20,8 +20,8 @@ export class DataSetD2Repository implements DataSetRepository {
         this.d2DataSetApi = new DataSetD2Api(this.api);
     }
 
-    get(options: GetDataSetOptions): FutureData<Paginated<DataSet>> {
-        return this.d2DataSetApi.get(options);
+    getList(options: GetDataSetOptions): FutureData<Paginated<DataSetList>> {
+        return this.d2DataSetApi.getList(options);
     }
 
     getAll(): FutureData<DataSet[]> {
@@ -60,14 +60,7 @@ export class DataSetD2Repository implements DataSetRepository {
                             "attributeValues.value": { eq: "true" },
                             id: { in: dataSetIds },
                         },
-                        fields: {
-                            ...dataSetFields,
-                            organisationUnits: {
-                                id: true,
-                                displayName: true,
-                                path: true,
-                            },
-                        },
+                        fields: dataSetFieldsWithOrgUnits,
                     })
                 ).map(d2Response => d2Response.objects);
             });

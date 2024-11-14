@@ -29,6 +29,7 @@ export type AccessData = { id: Id; permissions: Permissions; name: string; type:
 export type AccessType = "users" | "groups";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
+export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
     setOrgUnits(orgUnits: Ref[]): DataSetToSave {
@@ -39,9 +40,9 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return DataSet.create({ ...this, orgUnits });
     }
 
-    buildAccess(data: DataSet): string {
-        const dataDescription = DataSet.buildAccessDescription(data.permissions.data);
-        const metadataDescription = DataSet.buildAccessDescription(data.permissions.metadata);
+    static buildAccess(permissions: Permissions): string {
+        const dataDescription = DataSet.buildAccessDescription(permissions.data);
+        const metadataDescription = DataSet.buildAccessDescription(permissions.metadata);
         return `Data: ${dataDescription}, Metadata: ${metadataDescription}`;
     }
 

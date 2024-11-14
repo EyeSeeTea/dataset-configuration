@@ -1,5 +1,5 @@
 import React from "react";
-import { DataSetAttrs } from "$/domain/entities/DataSet";
+import { DataSet, DataSetAttrs, DataSetList } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { useObjectsTable } from "@eyeseetea/d2-ui-components";
 import SharingIcon from "@material-ui/icons/Share";
@@ -13,7 +13,6 @@ import ListIcon from "@material-ui/icons/List";
 
 import _ from "$/domain/entities/generic/Collection";
 import i18n from "$/utils/i18n";
-import { SharingDetails } from "$/webapp/components/sharing-details/SharingDetails";
 import { TableAction } from "$/webapp/components/dataset-table/DataSetTable";
 import { useNavigateTo } from "$/webapp/routes";
 import { parseSortField } from "$/utils/parse-sort-field";
@@ -25,7 +24,7 @@ export function useTableConfig(props: TableConfigProps) {
     const { compositionRoot } = useAppContext();
     const navigateTo = useNavigateTo();
 
-    const tableConfig = useObjectsTable<DataSetColumns>(
+    const tableConfig = useObjectsTable<DataSetList>(
         React.useMemo(() => {
             return {
                 columns: [
@@ -41,44 +40,15 @@ export function useTableConfig(props: TableConfigProps) {
                         getValue: dataSet => dataSet.name,
                     },
                     {
-                        name: "permissionDescription",
+                        name: "permissions",
                         text: i18n.t("Access"),
                         sortable: false,
-                        getValue: dataSet => dataSet.permissionDescription,
+                        getValue: dataSet => DataSet.buildAccess(dataSet.permissions),
                     },
                     {
                         name: "lastUpdated",
                         text: i18n.t("Last updated"),
                         getValue: dataSet => dataSet.lastUpdated,
-                    },
-                ],
-                details: [
-                    { name: "name", text: i18n.t("Name") },
-                    { name: "shortName", text: i18n.t("Short Name") },
-                    { name: "description", text: i18n.t("Description") },
-                    { name: "created", text: i18n.t("Created") },
-                    { name: "lastUpdated", text: i18n.t("Last updated") },
-                    { name: "id", text: i18n.t("ID") },
-                    {
-                        name: "project",
-                        text: i18n.t("Linked project"),
-                        getValue: dataSet => {
-                            return dataSet.project?.name || i18n.t("No project linked");
-                        },
-                    },
-                    {
-                        name: "coreCompetencies",
-                        text: i18n.t("Core competencies"),
-                        getValue: value => {
-                            return value.coreCompetencies.map(cc => cc.name).join(", ");
-                        },
-                    },
-                    {
-                        name: "access",
-                        text: i18n.t("Sharing"),
-                        getValue: dataSet => {
-                            return <SharingDetails dataSet={dataSet} />;
-                        },
                     },
                 ],
                 actions: [
@@ -125,10 +95,13 @@ export function useTableConfig(props: TableConfigProps) {
                         multiple: true,
                     },
                     {
-                        name: "details",
+                        name: "show_details",
                         text: i18n.t("Details"),
                         icon: <DetailsIcon />,
                         multiple: false,
+                        onClick: selectedIds => {
+                            onAction({ ids: selectedIds, action: "details" });
+                        },
                     },
                     {
                         name: "clone",
@@ -173,12 +146,7 @@ export function useTableConfig(props: TableConfigProps) {
                         .run(
                             response => {
                                 resolve({
-                                    objects: response.data.map(dataSet => {
-                                        return {
-                                            ...dataSet,
-                                            permissionDescription: dataSet.buildAccess(dataSet),
-                                        };
-                                    }),
+                                    objects: response.data,
                                     pager: {
                                         page: response.page,
                                         pageCount: response.pageCount,

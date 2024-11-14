@@ -5,6 +5,7 @@ import {
     AccessType,
     CoreCompetency,
     DataSet,
+    DataSetList,
     OrgUnit,
     Permissions,
 } from "$/domain/entities/DataSet";
@@ -29,49 +30,45 @@ export class DataSetD2Api {
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 
-    get(options: GetDataSetOptions): FutureData<Paginated<DataSet>> {
-        return this.getBaseData().flatMap(({ attributes, coreCompetencies }) => {
-            const attributesToFilter = options.filters.projectsIds
-                ? [attributes.project.id]
-                : [attributes.createdByApp.id];
-            return this.getDataSets(options, attributes, coreCompetencies, attributesToFilter);
+    getList(options: GetDataSetOptions): FutureData<Paginated<DataSetList>> {
+        return this.getBaseData().flatMap(({ attributes }) => {
+            return apiToFuture(
+                this.api.models.dataSets.get({
+                    fields: {
+                        id: true,
+                        displayName: true,
+                        lastUpdated: true,
+                        sharing: { public: true },
+                    },
+                    filter: {
+                        "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
+                        "attributeValues.value": { eq: "true" },
+                        identifiable: { token: options.filters.search },
+                    },
+                    page: options.paging.page,
+                    pageSize: options.paging.pageSize,
+                    order: `${options.sorting.field}:${options.sorting.order}`,
+                })
+            ).map(d2Response => {
+                const dataSets = d2Response.objects.map((d2DataSet): DataSetList => {
+                    return {
+                        id: d2DataSet.id,
+                        name: d2DataSet.displayName,
+                        lastUpdated: d2DataSet.lastUpdated,
+                        permissions: {
+                            data: this.buildPermission(d2DataSet.sharing.public, "data"),
+                            metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
+                        },
+                    };
+                });
+                return { ...d2Response.pager, data: dataSets };
+            });
         });
     }
 
     getWithOrgUnits(options: GetDataSetOptions): FutureData<Paginated<DataSet>> {
         return this.getBaseData().flatMap(({ attributes, coreCompetencies }) => {
             return this.getDataSetsWithOrgUnits(options, attributes, coreCompetencies);
-        });
-    }
-
-    private getDataSets(
-        options: GetDataSetOptions,
-        attributes: D2Config["attributes"],
-        coreCompetencies: CoreCompetency[],
-        attributesToFilter: Id[]
-    ): FutureData<Paginated<DataSet>> {
-        return apiToFuture(
-            this.api.models.dataSets.get({
-                pageSize: options.paging.pageSize,
-                page: options.paging.page,
-                filter: {
-                    "attributeValues.attribute.id": { in: attributesToFilter },
-                    "attributeValues.value": options.filters.projectsIds
-                        ? { in: [...this.getOrThrow(options.filters.projectsIds)] }
-                        : { eq: "true" },
-                    identifiable: { token: options.filters.search },
-                    id: { in: options.filters.ids },
-                },
-                fields: dataSetFields,
-                order: `${options.sorting.field}:${options.sorting.order}`,
-            })
-        ).flatMap(d2Response => {
-            return this.buildDataSetsFromResponse(
-                d2Response.objects,
-                attributes,
-                coreCompetencies,
-                d2Response.pager
-            );
         });
     }
 
@@ -99,14 +96,13 @@ export class DataSetD2Api {
             this.api.models.dataSets.get({
                 pageSize: options.paging.pageSize,
                 page: options.paging.page,
-                filter: {
-                    "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
-                    "attributeValues.value": { eq: "true" },
-                },
-                fields: {
-                    ...dataSetFields,
-                    organisationUnits: { id: true, path: true, displayName: true },
-                },
+                filter: options.filters.projectsIds
+                    ? {
+                          "attributeValues.attribute.id": { eq: attributes.project.id },
+                          "attributeValues.value": { in: options.filters.projectsIds },
+                      }
+                    : undefined,
+                fields: dataSetFieldsWithOrgUnits,
             })
         ).flatMap(d2Response => {
             return this.buildDataSetsFromResponse(
@@ -313,6 +309,11 @@ export const dataSetFields = {
     userAccesses: { id: true, displayName: true, access: true },
     attributeValues: { value: true, attribute: { id: true } },
 } as const;
+
+export const dataSetFieldsWithOrgUnits = {
+    ...dataSetFields,
+    organisationUnits: { id: true, displayName: true, path: true },
+};
 
 type D2DataSetFields = MetadataPick<{
     dataSets: { fields: typeof dataSetFields };

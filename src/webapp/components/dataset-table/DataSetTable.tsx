@@ -13,9 +13,13 @@ import { Maybe } from "$/utils/ts-utils";
 import { useDeleteDataSets } from "$/webapp/hooks/useDataSets";
 import { useTableConfig } from "$/webapp/components/dataset-table/DataSetTableConfig";
 import { useNavigateTo } from "$/webapp/routes";
+import { DataSetDetails } from "$/webapp/components/dataset-table/DataSetDetails";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
-export type TableAction = { ids: Id[]; action: "remove" | "sharing" | "orgUnits" | "logs" };
+export type TableAction = {
+    ids: Id[];
+    action: "remove" | "sharing" | "orgUnits" | "logs" | "details";
+};
 
 function getSelectedIds(tableAction: Maybe<TableAction>): Id[] {
     return tableAction?.ids || [];
@@ -88,7 +92,17 @@ export const DataSetTable: React.FC = React.memo(() => {
     return (
         <>
             <HomeTabs activeTab="dataSets" />
-            <ObjectsTable onActionButtonClick={goToCreateDataSet} {...tableConfig} />
+            <ObjectsTable
+                onActionButtonClick={goToCreateDataSet}
+                {...tableConfig}
+                sideComponents={
+                    <DataSetDetails
+                        visible={tableAction?.action === "details"}
+                        id={tableAction?.ids[0] || ""}
+                        onClose={clearTableAction}
+                    />
+                }
+            />
             {renderActions()}
         </>
     );
