@@ -18,6 +18,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
+import { Pager } from "@eyeseetea/d2-api/api";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -28,7 +29,7 @@ export class DataSetD2Api {
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 
-    get(options: D2DataSetOptions): FutureData<Paginated<DataSet>> {
+    get(options: GetDataSetOptions): FutureData<Paginated<DataSet>> {
         return this.getBaseData().flatMap(({ attributes, coreCompetencies }) => {
             const attributesToFilter = options.filters.projectsIds
                 ? [attributes.project.id]
@@ -37,16 +38,14 @@ export class DataSetD2Api {
         });
     }
 
-    getWithOrgUnits(options: D2DataSetOptions): FutureData<Paginated<DataSet>> {
+    getWithOrgUnits(options: GetDataSetOptions): FutureData<Paginated<DataSet>> {
         return this.getBaseData().flatMap(({ attributes, coreCompetencies }) => {
-            return this.getDataSetsWithOrgUnits(options, attributes, coreCompetencies, [
-                attributes.createdByApp.id,
-            ]);
+            return this.getDataSetsWithOrgUnits(options, attributes, coreCompetencies);
         });
     }
 
     private getDataSets(
-        options: D2DataSetOptions,
+        options: GetDataSetOptions,
         attributes: D2Config["attributes"],
         coreCompetencies: CoreCompetency[],
         attributesToFilter: Id[]
@@ -67,52 +66,55 @@ export class DataSetD2Api {
                 order: `${options.sorting.field}:${options.sorting.order}`,
             })
         ).flatMap(d2Response => {
-            const projectIds = this.getProjectIds(d2Response.objects, attributes);
-            return this.getProjectsByIds(projectIds).map(projects => {
-                const dataSets = d2Response.objects.map(d2DataSet => {
-                    return this.buildDataSet(d2DataSet, coreCompetencies, projects, attributes);
-                });
-                return { ...d2Response.pager, data: dataSets };
+            return this.buildDataSetsFromResponse(
+                d2Response.objects,
+                attributes,
+                coreCompetencies,
+                d2Response.pager
+            );
+        });
+    }
+
+    private buildDataSetsFromResponse(
+        d2DataSets: D2DataSet[],
+        attributes: D2Config["attributes"],
+        coreCompetencies: CoreCompetency[],
+        pager: Pager
+    ): FutureData<Paginated<DataSet>> {
+        const projectIds = this.getProjectIds(d2DataSets, attributes);
+        return this.getProjectsByIds(projectIds).map(projects => {
+            const dataSets = d2DataSets.map(d2DataSet => {
+                return this.buildDataSet(d2DataSet, coreCompetencies, projects, attributes);
             });
+            return { ...pager, data: dataSets };
         });
     }
 
     private getDataSetsWithOrgUnits(
-        options: D2DataSetOptions,
+        options: GetDataSetOptions,
         attributes: D2Config["attributes"],
-        coreCompetencies: CoreCompetency[],
-        attributesToFilter: Id[]
+        coreCompetencies: CoreCompetency[]
     ): FutureData<Paginated<DataSet>> {
         return apiToFuture(
             this.api.models.dataSets.get({
                 pageSize: options.paging.pageSize,
                 page: options.paging.page,
                 filter: {
-                    "attributeValues.attribute.id": { in: attributesToFilter },
-                    "attributeValues.value": options.filters.projectsIds
-                        ? { in: [...this.getOrThrow(options.filters.projectsIds)] }
-                        : { eq: "true" },
-                    identifiable: { token: options.filters.search },
-                    id: { in: options.filters.ids },
+                    "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
+                    "attributeValues.value": { eq: "true" },
                 },
                 fields: {
                     ...dataSetFields,
-                    organisationUnits: {
-                        id: true,
-                        path: true,
-                        displayName: true,
-                    },
+                    organisationUnits: { id: true, path: true, displayName: true },
                 },
-                order: `${options.sorting.field}:${options.sorting.order}`,
             })
         ).flatMap(d2Response => {
-            const projectIds = this.getProjectIds(d2Response.objects, attributes);
-            return this.getProjectsByIds(projectIds).map(projects => {
-                const dataSets = d2Response.objects.map(d2DataSet => {
-                    return this.buildDataSet(d2DataSet, coreCompetencies, projects, attributes);
-                });
-                return { ...d2Response.pager, data: dataSets };
-            });
+            return this.buildDataSetsFromResponse(
+                d2Response.objects,
+                attributes,
+                coreCompetencies,
+                d2Response.pager
+            );
         });
     }
 
@@ -318,5 +320,4 @@ type D2DataSetFields = MetadataPick<{
 
 type D2DataSet = { organisationUnits?: D2OrgUnit[] } & D2DataSetFields;
 type D2OrgUnit = { id: Id; path: string; displayName: string };
-type D2DataSetOptions = GetDataSetOptions & { includeOrgUnits?: boolean };
 export type OctalNotationPermission = string;

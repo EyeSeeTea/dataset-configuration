@@ -92,11 +92,10 @@ export class ProjectD2Repository implements ProjectRepository {
 
     private getDataSets(projectsIds: Id[]): FutureData<DataSet[]> {
         return this.d2DataSetApi
-            .get({
+            .getWithOrgUnits({
                 paging: { page: 1, pageSize: 1e6 },
                 sorting: { field: "lastUpdated", order: "desc" },
                 filters: { search: "", projectsIds: projectsIds },
-                includeOrgUnits: true,
             })
             .map(response => {
                 return response.data;
