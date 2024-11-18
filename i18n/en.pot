@@ -5,13 +5,154 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-06-26T10:58:19.149Z\n"
-"PO-Revision-Date: 2024-06-26T10:58:19.149Z\n"
+"POT-Creation-Date: 2024-10-01T18:51:44.288Z\n"
+"PO-Revision-Date: 2024-10-01T18:51:44.288Z\n"
+
+msgid "edit dataset"
+msgstr ""
+
+msgid "create new dataset"
+msgstr ""
+
+msgid "change sharing settings"
+msgstr ""
+
+msgid "change organisation units"
+msgstr ""
+
+msgid "clone dataset"
+msgstr ""
+
+msgid "No public access"
+msgstr ""
+
+msgid "Public view/edit"
+msgstr ""
+
+msgid "Public view"
+msgstr ""
 
 msgid "Add"
 msgstr ""
 
 msgid "List"
+msgstr ""
+
+msgid "Are you sure you want to delete this/those dataset(s)?"
+msgstr ""
+
+msgid "This action cannot be undone."
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "Loading logs..."
+msgstr ""
+
+msgid "Logs"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Date"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "User"
+msgstr ""
+
+msgid "Datasets"
+msgstr ""
+
+msgid "Id"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Access"
+msgstr ""
+
+msgid "Last updated"
+msgstr ""
+
+msgid "Short Name"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Created"
+msgstr ""
+
+msgid "ID"
+msgstr ""
+
+msgid "Core competencies"
+msgstr ""
+
+msgid "Sharing"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Sharing Settings"
+msgstr ""
+
+msgid "Assign to Organisation Units"
+msgstr ""
+
+msgid "Set output/outcome period dates"
+msgstr ""
+
+msgid "Change output/outcome end date for year"
+msgstr ""
+
+msgid "Details"
+msgstr ""
+
+msgid "Clone"
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+msgid "Removing DataSets"
+msgstr ""
+
+msgid "DataSets removed"
+msgstr ""
+
+msgid "Replace"
+msgstr ""
+
+msgid "Merge"
+msgstr ""
+
+msgid "Organisation Units"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Bulk update strategy: {{actionLabel}}"
+msgstr ""
+
+msgid "Saving sharing settings..."
+msgstr ""
+
+msgid "Sharing settings saved"
 msgstr ""
 
 msgid "Back"
@@ -20,11 +161,17 @@ msgstr ""
 msgid "Help"
 msgstr ""
 
+msgid "Public Access"
+msgstr ""
+
+msgid "User access"
+msgstr ""
+
+msgid "Groups"
+msgstr ""
+
 msgid "Hello {{name}}"
 msgstr ""
 
 msgid "Detail page"
-msgstr ""
-
-msgid "Section"
 msgstr ""
