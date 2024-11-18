@@ -1,52 +1,16 @@
-import { ShareUpdate } from "@eyeseetea/d2-ui-components";
-
-import { FutureData } from "$/data/api-futures";
-import { AccessData, DataSet } from "$/domain/entities/DataSet";
-import { OctalNotationPermission } from "$/domain/entities/Ref";
+import { FutureData } from "$/domain/entities/generic/Future";
+import { AccessData, AccessType, DataSet } from "$/domain/entities/DataSet";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
-import { NO_ACCESS_NOTATION, Permission } from "$/domain/entities/Permission";
+import { Permission } from "$/domain/entities/Permission";
+import { Maybe } from "$/utils/ts-utils";
 
 export class SaveSharingDataSetsUseCase {
     constructor(private dataSetRepository: DataSetRepository) {}
 
     execute(options: SaveDataSetOptions): FutureData<DataSet[]> {
-        const { publicAccess, userAccesses, userGroupAccesses } = options.shareUpdate;
         const dataSetsIds = options.dataSets.map(dataSet => dataSet.id);
         return this.getDataSetsByIds(dataSetsIds).flatMap(dataSets => {
-            const dataSetsWithPermissions = dataSets.map(dataSet => {
-                const users = userAccesses
-                    ? userAccesses.map((user): AccessData => {
-                          return {
-                              id: user.id,
-                              name: user.displayName,
-                              type: "users",
-                              value: user.access,
-                          };
-                      })
-                    : dataSet.access.filter(access => access.type === "users");
-
-                const groups = userGroupAccesses
-                    ? userGroupAccesses.map((user): AccessData => {
-                          return {
-                              id: user.id,
-                              name: user.displayName,
-                              type: "groups",
-                              value: user.access,
-                          };
-                      })
-                    : dataSet.access.filter(access => access.type === "groups");
-
-                return DataSet.create({
-                    ...dataSet,
-                    access: [...users, ...groups],
-                    dataPermissions: publicAccess
-                        ? this.buildDataPermissions(publicAccess, "data")
-                        : dataSet.dataPermissions,
-                    metadataPermissions: publicAccess
-                        ? this.buildDataPermissions(publicAccess, "metadata")
-                        : dataSet.metadataPermissions,
-                });
-            });
+            const dataSetsWithPermissions = this.setPermissionsToDataSets(dataSets, options);
 
             return this.dataSetRepository
                 .save(dataSetsWithPermissions)
@@ -54,25 +18,43 @@ export class SaveSharingDataSetsUseCase {
         });
     }
 
-    private getDataSetsByIds(ids: string[]): FutureData<DataSet[]> {
-        return this.dataSetRepository.getByIds(ids);
+    private setPermissionsToDataSets(dataSets: DataSet[], options: SaveDataSetOptions) {
+        const accessUserData = this.getAccessDataByType("users", options.accessData);
+        const accessGroupData = this.getAccessDataByType("groups", options.accessData);
+        return dataSets.map(dataSet => {
+            const users =
+                accessUserData.length > 0
+                    ? accessUserData
+                    : dataSet.access.filter(access => access.type === "users");
+
+            const groups =
+                accessGroupData.length > 0
+                    ? accessGroupData
+                    : dataSet.access.filter(access => access.type === "groups");
+
+            return DataSet.create({
+                ...dataSet,
+                access: [...users, ...groups],
+                permissions: {
+                    data: options.dataPermission || dataSet.permissions.data,
+                    metadata: options.metadataPermission || dataSet.permissions.metadata,
+                },
+            });
+        });
     }
 
-    private buildDataPermissions(
-        value: OctalNotationPermission,
-        permissionType: "data" | "metadata"
-    ): Permission {
-        if (value === NO_ACCESS_NOTATION) {
-            return { canRead: false, canWrite: false, noAccess: true };
-        }
-        const initialIndex = permissionType === "metadata" ? 0 : 2;
-        const canRead = value[initialIndex] === "r";
-        const canWrite = value[initialIndex + 1] === "w";
-        return { canRead, canWrite, noAccess: false };
+    private getAccessDataByType(type: AccessType, access: AccessData[]): AccessData[] {
+        return access.filter(access => access.type === type);
+    }
+
+    private getDataSetsByIds(ids: string[]): FutureData<DataSet[]> {
+        return this.dataSetRepository.getByIds(ids);
     }
 }
 
 export type SaveDataSetOptions = {
     dataSets: DataSet[];
-    shareUpdate: ShareUpdate;
+    accessData: AccessData[];
+    dataPermission: Maybe<Permission>;
+    metadataPermission: Maybe<Permission>;
 };

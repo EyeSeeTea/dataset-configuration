@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-10-01T18:51:44.288Z\n"
-"PO-Revision-Date: 2024-10-01T18:51:44.288Z\n"
+"POT-Creation-Date: 2024-11-14T05:07:50.716Z\n"
+"PO-Revision-Date: 2024-11-14T05:07:50.716Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -30,6 +30,12 @@ msgid "Public view/edit"
 msgstr ""
 
 msgid "Public view"
+msgstr ""
+
+msgid "Project id is required"
+msgstr ""
+
+msgid "Project name is required"
 msgstr ""
 
 msgid "Add"
@@ -74,34 +80,40 @@ msgstr ""
 msgid "Datasets"
 msgstr ""
 
-msgid "Id"
+msgid "Loading details..."
 msgstr ""
 
 msgid "Name"
 msgstr ""
 
-msgid "Access"
-msgstr ""
-
-msgid "Last updated"
-msgstr ""
-
-msgid "Short Name"
-msgstr ""
-
-msgid "Description"
+msgid "Short name"
 msgstr ""
 
 msgid "Created"
 msgstr ""
 
-msgid "ID"
+msgid "Last updated"
+msgstr ""
+
+msgid "Id"
+msgstr ""
+
+msgid "Linked project"
+msgstr ""
+
+msgid "No project linked"
 msgstr ""
 
 msgid "Core competencies"
 msgstr ""
 
 msgid "Sharing"
+msgstr ""
+
+msgid "DataSets removed"
+msgstr ""
+
+msgid "Access"
 msgstr ""
 
 msgid "Edit"
@@ -128,10 +140,73 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
-msgid "Removing DataSets"
+msgid "Create"
 msgstr ""
 
-msgid "DataSets removed"
+msgid "{{action}} dataSet"
+msgstr ""
+
+msgid "Filters"
+msgstr ""
+
+msgid "Scope"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Theme"
+msgstr ""
+
+msgid "Group"
+msgstr ""
+
+msgid "Disaggregation"
+msgstr ""
+
+msgid "Active Filters"
+msgstr ""
+
+msgid "Selected"
+msgstr ""
+
+msgid "No Selected"
+msgstr ""
+
+msgid "Select Project"
+msgstr ""
+
+msgid "DataSet name"
+msgstr ""
+
+msgid "DataSet description"
+msgstr ""
+
+msgid "Start Date"
+msgstr ""
+
+msgid "End Date"
+msgstr ""
+
+msgid "Select org units"
+msgstr ""
+
+msgid "Please select the regions you want to share this dataSet with"
+msgstr ""
+
+msgid "The dataSet is finished. Press the button Save to save the data"
+msgstr ""
+
+msgid "Setup"
+msgstr ""
+
+msgid "Indicators"
+msgstr ""
+
+msgid "Share"
+msgstr ""
+
+msgid "Summary and Save"
 msgstr ""
 
 msgid "Replace"
@@ -155,10 +230,25 @@ msgstr ""
 msgid "Sharing settings saved"
 msgstr ""
 
+msgid "DataSets"
+msgstr ""
+
+msgid "Projects"
+msgstr ""
+
 msgid "Back"
 msgstr ""
 
 msgid "Help"
+msgstr ""
+
+msgid "Org. Units"
+msgstr ""
+
+msgid "Core Competencies"
+msgstr ""
+
+msgid "Loading projects..."
 msgstr ""
 
 msgid "Public Access"
@@ -170,8 +260,8 @@ msgstr ""
 msgid "Groups"
 msgstr ""
 
-msgid "Hello {{name}}"
+msgid "and {{number}} more..."
 msgstr ""
 
-msgid "Detail page"
+msgid "Removing DataSets"
 msgstr ""

@@ -55,12 +55,12 @@ async function getData(): Promise<CompositionRootResult> {
     const api = auth
         ? new D2Api({ baseUrl: baseUrl, auth: { username, password } })
         : new D2Api({ baseUrl: baseUrl });
-    const compositionRoot = getWebappCompositionRoot(api);
-
-    const userSettings = await api.get<{ keyUiLocale: string }>("/userSettings").getData();
-    configI18n(userSettings);
 
     try {
+        const compositionRoot = getWebappCompositionRoot(api);
+
+        const userSettings = await api.get<{ keyUiLocale: string }>("/userSettings").getData();
+        configI18n(userSettings);
         return { type: "loaded", data: { baseUrl, compositionRoot, api } };
     } catch (err) {
         return { type: "error", error: { baseUrl, error: err as Error } };

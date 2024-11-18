@@ -12,9 +12,14 @@ import { Id } from "$/domain/entities/Ref";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import _ from "$/domain/entities/generic/Collection";
-import { AccessType, DataSet } from "$/domain/entities/DataSet";
+import { AccessData, AccessType, DataSet } from "$/domain/entities/DataSet";
 import { Maybe } from "$/utils/ts-utils";
 import { useGetDataSetsByIds } from "$/webapp/hooks/useDataSets";
+import {
+    buildDataPermissions,
+    generateFullPermission,
+    generatePermissionsFromString,
+} from "$/utils/permission";
 
 export type EditSharingProps = { dataSetIds: Id[]; onCancel: () => void };
 
@@ -42,8 +47,19 @@ export const EditSharing = React.memo((props: EditSharingProps) => {
         async (shareUpdate: ShareUpdate) => {
             if (!dataSets) return Promise.resolve();
             loading.show(true, i18n.t("Saving sharing settings..."));
+
+            const accessDataUsers = buildAccessData("users", shareUpdate.userAccesses);
+            const accessDataGroups = buildAccessData("groups", shareUpdate.userGroupAccesses);
+            const dataPermission = buildDataPermissions(shareUpdate.publicAccess, "data");
+            const metadataPermission = buildDataPermissions(shareUpdate.publicAccess, "metadata");
+
             return compositionRoot.dataSets.save
-                .execute({ dataSets: dataSets, shareUpdate: shareUpdate })
+                .execute({
+                    dataSets: dataSets,
+                    accessData: accessDataUsers.concat(accessDataGroups),
+                    dataPermission,
+                    metadataPermission,
+                })
                 .toPromise()
                 .then(dataSets => {
                     setSharingValue(shareUpdate);
@@ -87,7 +103,7 @@ export const EditSharing = React.memo((props: EditSharingProps) => {
             externalAccess: false,
             publicAccess:
                 dataSet && !sharingValue?.publicAccess
-                    ? DataSet.generateFullPermission(dataSet)
+                    ? generateFullPermission(dataSet.permissions)
                     : sharingValue?.publicAccess,
             userAccesses: buildAccessByType(multipleDataSets, dataSet, "users", sharingValue),
             userGroupAccesses: buildAccessByType(multipleDataSets, dataSet, "groups", sharingValue),
@@ -125,7 +141,11 @@ function buildAccessByType(
     const dataSetAccess = _(dataSet?.access || [])
         .filter(access => access.type === type)
         .map((access): SharingRule => {
-            return { access: access.value, displayName: access.name, id: access.id };
+            return {
+                access: generateFullPermission(access.permissions),
+                displayName: access.name,
+                id: access.id,
+            };
         })
         .value();
 
@@ -134,6 +154,22 @@ function buildAccessByType(
         : _([...dataSetAccess, ...(selectedValues || [])])
               .uniqBy(access => access.id)
               .value();
+}
+
+function buildAccessData(type: AccessType, access: Maybe<SharingRule[]>): AccessData[] {
+    return access
+        ? access.map((user): AccessData => {
+              return {
+                  id: user.id,
+                  name: user.displayName,
+                  type: type,
+                  permissions: {
+                      data: generatePermissionsFromString(user.access, "data"),
+                      metadata: generatePermissionsFromString(user.access, "metadata"),
+                  },
+              };
+          })
+        : [];
 }
 
 EditSharing.displayName = "EditSharing";

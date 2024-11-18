@@ -2,11 +2,9 @@ import i18n from "$/utils/i18n";
 import styled from "styled-components";
 import React from "react";
 import _ from "$/domain/entities/generic/Collection";
-import { DataSetColumns } from "$/webapp/components/dataset-table/DataSetTable";
+import { DataSet } from "$/domain/entities/DataSet";
 
-export type SharingDetailsProps = {
-    dataSet: DataSetColumns;
-};
+export type SharingDetailsProps = { dataSet: DataSet };
 
 export const SharingDetails = React.memo((props: SharingDetailsProps) => {
     const { dataSet } = props;
@@ -16,7 +14,7 @@ export const SharingDetails = React.memo((props: SharingDetailsProps) => {
         <div>
             <PermissionItem
                 label={i18n.t("Public Access")}
-                description={dataSet.permissionDescription}
+                description={DataSet.buildAccess(dataSet.permissions)}
             />
             {accessByType
                 .mapValues(([type, accessData]) => {

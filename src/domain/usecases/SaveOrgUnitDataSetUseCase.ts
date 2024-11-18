@@ -1,6 +1,6 @@
-import { FutureData } from "$/data/api-futures";
-import { DataSet, OrgUnit } from "$/domain/entities/DataSet";
-import { Id } from "$/domain/entities/Ref";
+import { FutureData } from "$/domain/entities/generic/Future";
+import { DataSet, DataSetToSave } from "$/domain/entities/DataSet";
+import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import _ from "$/domain/entities/generic/Collection";
 
@@ -21,30 +21,28 @@ export class SaveOrgUnitDataSetUseCase {
         return this.dataSetRepository.getByIds(ids);
     }
 
-    private replaceOrgUnits(dataSets: DataSet[], orgUnitsIds: Id[]): DataSet[] {
+    private replaceOrgUnits(dataSets: DataSet[], orgUnitsIds: Id[]): DataSetToSave[] {
         return dataSets.map(dataSet => {
-            return DataSet.create({ ...dataSet, ...this.buildOrgUnit(orgUnitsIds) });
+            return dataSet.setOrgUnits(this.buildOrgUnit(orgUnitsIds));
         });
     }
 
-    private mergeOrgUnits(dataSets: DataSet[], orgUnitsIds: Id[]): DataSet[] {
+    private mergeOrgUnits(dataSets: DataSet[], orgUnitsIds: Id[]): DataSetToSave[] {
         return dataSets.map(dataSet => {
-            return DataSet.create({
-                ...dataSet,
-                orgUnits: this.mergeAndUniqueOrgUnits(dataSet, orgUnitsIds),
-            });
+            return dataSet.setOrgUnits(this.mergeAndUniqueOrgUnits(dataSet, orgUnitsIds));
         });
     }
 
-    private mergeAndUniqueOrgUnits(dataSet: DataSet, orgUnitsIds: Id[]): OrgUnit[] {
-        return _([...dataSet.orgUnits, ...this.buildOrgUnit(orgUnitsIds)])
+    private mergeAndUniqueOrgUnits(dataSet: DataSet, orgUnitsIds: Id[]): Ref[] {
+        const existingIds = dataSet.orgUnits.map(orgUnit => ({ id: orgUnit.id }));
+        return _(existingIds.concat(this.buildOrgUnit(orgUnitsIds)))
             .uniqBy(orgUnit => orgUnit.id)
             .value();
     }
 
-    private buildOrgUnit(orgUnitsIds: Id[]): OrgUnit[] {
-        return orgUnitsIds.map(orgUnitId => {
-            return { id: orgUnitId, name: "", paths: [] };
+    private buildOrgUnit(orgUnitsIds: Id[]): Ref[] {
+        return orgUnitsIds.map((orgUnitId): Ref => {
+            return { id: orgUnitId };
         });
     }
 }

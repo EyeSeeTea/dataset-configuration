@@ -1,15 +1,15 @@
 import { D2Api } from "$/types/d2-api";
-import { FutureData, apiToFuture } from "$/data/api-futures";
+import { apiToFuture } from "$/data/api-futures";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { Sharing } from "$/domain/entities/Sharing";
+import { FutureData } from "$/domain/entities/generic/Future";
 
 export class SharingD2Repository implements SharingRepository {
     constructor(private api: D2Api) {}
 
-    getBy(search: string): FutureData<Sharing> {
-        return apiToFuture(this.api.sharing.search({ key: search })).map(d2Response => {
+    getByName(name: string): FutureData<Sharing> {
+        return apiToFuture(this.api.sharing.search({ key: name })).map(d2Response => {
             return Sharing.create({
-                publicAccess: "",
                 userAccesses: d2Response.users.map(user => {
                     return { id: user.id, name: user.displayName };
                 }),

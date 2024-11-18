@@ -1,11 +1,11 @@
-import { FutureData } from "$/data/api-futures";
+import { FutureData } from "$/domain/entities/generic/Future";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { Sharing } from "$/domain/entities/Sharing";
 
 export class SearchSharingUseCase {
     constructor(private sharingRepository: SharingRepository) {}
 
-    execute(search: string): FutureData<Sharing> {
-        return this.sharingRepository.getBy(search);
+    execute(name: string): FutureData<Sharing> {
+        return this.sharingRepository.getByName(name);
     }
 }

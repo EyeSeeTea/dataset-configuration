@@ -1,5 +1,6 @@
 import * as rcpromise from "real-cancellable-promise";
 import { Cancellation } from "real-cancellable-promise";
+import _ from "$/domain/entities/generic/Collection";
 
 /**
  * Futures are async values similar to promises, with some differences:
@@ -67,6 +68,10 @@ export class Future<E, D> {
 
     toPromise(): Promise<D> {
         return this._promise();
+    }
+
+    static flatten<E, D>(futures: Array<Future<E, D[]>>): Future<E, D[]> {
+        return Future.sequential(futures).map(listOfValues => _(listOfValues).flatten().value());
     }
 
     static join2<E, T, S>(async1: Future<E, T>, async2: Future<E, S>): Future<E, [T, S]> {
@@ -195,3 +200,5 @@ export function getJSON<U>(url: string): Future<TypeError | SyntaxError, U> {
 function isNamedError(error: unknown): error is { name: string } {
     return Boolean(error && typeof error === "object" && "name" in error);
 }
+
+export type FutureData<D> = Future<Error, D>;

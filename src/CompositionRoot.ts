@@ -2,14 +2,19 @@ import { DataSetD2Repository } from "$/data/repositories/DataSetD2Repository";
 import { DataSetTestRepository } from "$/data/repositories/DataSetTestRepository";
 import { LogD2Repository } from "$/data/repositories/LogD2Repository";
 import { LogTestRepository } from "$/data/repositories/LogTestRepository";
+import { ProjectD2Repository } from "$/data/repositories/ProjectD2Repository";
+import { ProjectTestRepository } from "$/data/repositories/ProjectTestRepository";
 import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { LogRepository } from "$/domain/repositories/LogRepository";
+import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
 import { GetLogsUseCase } from "$/domain/usecases/GetLogsUseCase";
+import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
+import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
 import { SaveOrgUnitDataSetUseCase } from "$/domain/usecases/SaveOrgUnitDataSetUseCase";
 import { SaveSharingDataSetsUseCase } from "$/domain/usecases/SaveSharingDataSetsUseCase";
@@ -27,6 +32,7 @@ type Repositories = {
     usersRepository: UserRepository;
     dataSetsRepository: DataSetRepository;
     logRepository: LogRepository;
+    projectRepository: ProjectRepository;
 };
 
 function getCompositionRoot(repositories: Repositories) {
@@ -37,12 +43,19 @@ function getCompositionRoot(repositories: Repositories) {
             remove: new RemoveDataSetsUseCase(repositories.dataSetsRepository),
             save: new SaveSharingDataSetsUseCase(repositories.dataSetsRepository),
             saveOrgUnits: new SaveOrgUnitDataSetUseCase(repositories.dataSetsRepository),
+            migrateProjects: new MigrateDataSetProjectsUseCase(
+                repositories.dataSetsRepository,
+                repositories.projectRepository
+            ),
         },
         logs: {
             getByDataSets: new GetLogsUseCase(
                 repositories.dataSetsRepository,
                 repositories.logRepository
             ),
+        },
+        projects: {
+            get: new GetProjectsUseCase(repositories.projectRepository),
         },
         sharing: {
             search: new SearchSharingUseCase(repositories.sharingRepository),
@@ -57,6 +70,7 @@ export function getWebappCompositionRoot(api: D2Api) {
         dataSetsRepository: new DataSetD2Repository(api),
         sharingRepository: new SharingD2Repository(api),
         logRepository: new LogD2Repository(api),
+        projectRepository: new ProjectD2Repository(api),
     };
 
     return getCompositionRoot(repositories);
@@ -68,6 +82,7 @@ export function getTestCompositionRoot() {
         dataSetsRepository: new DataSetTestRepository(),
         sharingRepository: new SharingTestRepository(),
         logRepository: new LogTestRepository(),
+        projectRepository: new ProjectTestRepository(),
     };
 
     return getCompositionRoot(repositories);

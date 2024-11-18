@@ -1,8 +1,10 @@
+import React from "react";
+import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
+
 import { DataSet } from "$/domain/entities/DataSet";
 import { Id } from "$/domain/entities/Ref";
+import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
-import React from "react";
 
 export function useGetDataSetsByIds(ids: Id[]) {
     const { compositionRoot } = useAppContext();
@@ -62,3 +64,29 @@ export function useSaveOrgUnits() {
 
     return { saveOrgUnits };
 }
+
+export function useDeleteDataSets(props: DeleteDataSetsProps) {
+    const { ids, onError, onSuccess } = props;
+    const { compositionRoot } = useAppContext();
+    const loading = useLoading();
+
+    const deleteDataSets = React.useCallback(() => {
+        if (!ids.length) return;
+
+        loading.show(true, i18n.t("Removing DataSets"));
+        return compositionRoot.dataSets.remove.execute(ids).run(
+            () => {
+                loading.hide();
+                onSuccess();
+            },
+            err => {
+                loading.hide();
+                onError(err.message);
+            }
+        );
+    }, [compositionRoot.dataSets.remove, ids, onError, onSuccess, loading]);
+
+    return { deleteDataSets };
+}
+
+type DeleteDataSetsProps = { ids: Id[]; onError: (message: string) => void; onSuccess: () => void };

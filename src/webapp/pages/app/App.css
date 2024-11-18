@@ -11,3 +11,11 @@ body {
 li {
     line-height: 1.75;
 }
+
+.dropdown {
+    width: 100%;
+}
+
+.dropdown > div {
+    margin-left: 0;
+}

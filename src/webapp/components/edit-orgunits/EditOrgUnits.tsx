@@ -29,7 +29,7 @@ export const EditOrgUnits = React.memo((props: EditOrgUnitsProps) => {
         ? selectedOrgUnits
         : multipleDataSets
         ? []
-        : firstDataSet?.orgUnits.map(ou => `/${ou.paths.join("/")}`) || [];
+        : firstDataSet?.orgUnits.map(ou => `/${ou.path.join("/")}`) || [];
 
     const onSaveOrgUnits = React.useCallback(() => {
         if (!selectedOrgUnits) return;
