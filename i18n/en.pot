@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-11-14T05:07:50.716Z\n"
-"PO-Revision-Date: 2024-11-14T05:07:50.716Z\n"
+"POT-Creation-Date: 2024-11-26T05:08:32.550Z\n"
+"PO-Revision-Date: 2024-11-26T05:08:32.550Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -36,6 +36,15 @@ msgid "Project id is required"
 msgstr ""
 
 msgid "Project name is required"
+msgstr ""
+
+msgid "Cannot be blank: {{fieldName}}"
+msgstr ""
+
+msgid "{{fieldName}} must be a positive number"
+msgstr ""
+
+msgid "At least one org. unit is required"
 msgstr ""
 
 msgid "Add"
@@ -173,6 +182,15 @@ msgstr ""
 msgid "No Selected"
 msgstr ""
 
+msgid "Show closed projects"
+msgstr ""
+
+msgid "Filter projects"
+msgstr ""
+
+msgid "<No value>"
+msgstr ""
+
 msgid "Select Project"
 msgstr ""
 
@@ -182,19 +200,52 @@ msgstr ""
 msgid "DataSet description"
 msgstr ""
 
-msgid "Start Date"
+msgid "Expiry Days"
 msgstr ""
 
-msgid "End Date"
+msgid ""
+"How many days after the period before the dataSet is locked for changing "
+"data. Example: 5 means: after February 5th it's not possible to make "
+"changes to January anymore. 0 is no lock"
+msgstr ""
+
+msgid "Open future periods for data entry"
 msgstr ""
 
 msgid "Select org units"
 msgstr ""
 
+msgid "There is already a dataset with this name"
+msgstr ""
+
+msgid "Validating..."
+msgstr ""
+
 msgid "Please select the regions you want to share this dataSet with"
 msgstr ""
 
+msgid "Saving..."
+msgstr ""
+
+msgid "Data set saved successfully"
+msgstr ""
+
 msgid "The dataSet is finished. Press the button Save to save the data"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "and {{number}} more."
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid "Linked Project"
+msgstr ""
+
+msgid "Organisation Units"
 msgstr ""
 
 msgid "Setup"
@@ -213,12 +264,6 @@ msgid "Replace"
 msgstr ""
 
 msgid "Merge"
-msgstr ""
-
-msgid "Organisation Units"
-msgstr ""
-
-msgid "Save"
 msgstr ""
 
 msgid "Bulk update strategy: {{actionLabel}}"
@@ -264,4 +309,7 @@ msgid "and {{number}} more..."
 msgstr ""
 
 msgid "Removing DataSets"
+msgstr ""
+
+msgid "Loading..."
 msgstr ""

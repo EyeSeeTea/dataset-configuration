@@ -53,7 +53,7 @@ export const EditSharing = React.memo((props: EditSharingProps) => {
             const dataPermission = buildDataPermissions(shareUpdate.publicAccess, "data");
             const metadataPermission = buildDataPermissions(shareUpdate.publicAccess, "metadata");
 
-            return compositionRoot.dataSets.save
+            return compositionRoot.dataSets.saveSharing
                 .execute({
                     dataSets: dataSets,
                     accessData: accessDataUsers.concat(accessDataGroups),
@@ -72,7 +72,14 @@ export const EditSharing = React.memo((props: EditSharingProps) => {
                     loading.hide();
                 });
         },
-        [compositionRoot.dataSets.save, dataSets, loading, snackbar, setDataSets, setSharingValue]
+        [
+            compositionRoot.dataSets.saveSharing,
+            dataSets,
+            loading,
+            snackbar,
+            setDataSets,
+            setSharingValue,
+        ]
     );
 
     const searchSharing = React.useCallback(

@@ -6,7 +6,7 @@ import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
-import { Id } from "$/domain/entities/Ref";
+import { ISODateString, Id } from "$/domain/entities/Ref";
 import { DataSet } from "$/domain/entities/DataSet";
 import { D2CategoryOptionType } from "$/data/repositories/D2ApiCategoryOption";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
@@ -21,8 +21,50 @@ export class ProjectD2Repository implements ProjectRepository {
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 
+    getList(): FutureData<Project[]> {
+        return this.getCategories().flatMap(categories => {
+            return apiToFuture(
+                this.api.models.categoryOptions.get({
+                    fields: {
+                        id: true,
+                        displayName: true,
+                        startDate: true,
+                        endDate: true,
+                        lastUpdated: true,
+                    },
+                    filter: { "categories.code": { eq: categories.project.code } },
+                    order: "displayName:asc",
+                    paging: false,
+                })
+            ).map(d2Response => {
+                return d2Response.objects.map((d2CategoryOption): Project => {
+                    return Project.build({
+                        dataSets: [],
+                        id: d2CategoryOption.id,
+                        name: d2CategoryOption.displayName,
+                        lastUpdated: d2CategoryOption.lastUpdated,
+                        isOpen: this.isProjectOpen(
+                            d2CategoryOption.startDate,
+                            d2CategoryOption.endDate
+                        ),
+                    });
+                });
+            });
+        });
+    }
+
     getAll(): FutureData<Project[]> {
         return this.getAllProjects(1, []);
+    }
+
+    private isProjectOpen(date1: ISODateString, date2: ISODateString): boolean {
+        if (!date1 || !date2) return false;
+
+        const today = new Date();
+        const startDate = new Date(date1);
+        const endDate = new Date(date2);
+
+        return today >= startDate && today <= endDate;
     }
 
     private getCategories(): FutureData<D2Config["categories"]> {
@@ -108,6 +150,7 @@ export class ProjectD2Repository implements ProjectRepository {
             name: d2CategoryOption.displayName,
             lastUpdated: d2CategoryOption.lastUpdated,
             dataSets: [],
+            isOpen: false,
         });
     }
 

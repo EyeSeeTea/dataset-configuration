@@ -4,6 +4,10 @@ import { Id, ISODateString, Ref } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
+import _ from "$/domain/entities/generic/Collection";
+import { Either } from "$/domain/entities/generic/Either";
+import { ValidationError } from "$/domain/entities/generic/Error";
+import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -17,6 +21,9 @@ export type DataSetAttrs = {
     coreCompetencies: CoreCompetency[];
     access: AccessData[];
     orgUnits: OrgUnit[];
+    expiryDays: number;
+    openFuturePeriods: number;
+    notifyUser: boolean;
 };
 
 export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
@@ -32,12 +39,47 @@ export type CoreCompetency = { id: Id; name: string; code: string };
 export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
+    validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
+        const errors: ValidationError<DataSet>[] = [
+            {
+                property: "name" as const,
+                errors: validateRequired(this.name),
+                value: this.name,
+            },
+            {
+                property: "orgUnits" as const,
+                errors: validateOrgUnits(this.orgUnits),
+                value: this.orgUnits,
+            },
+        ].filter(validation => validation.errors.length > 0);
+
+        return errors.length === 0 ? Either.success(this) : Either.error(errors);
+    }
+
+    updateProject(project: Maybe<Project>): DataSet {
+        const name = project ? `${project.name} DataSet` : "";
+        return this._update({ project, name });
+    }
+
+    update(fieldName: keyof DataSet, value: string | number | boolean): DataSet {
+        return this._update({ [fieldName]: value });
+    }
+
     setOrgUnits(orgUnits: Ref[]): DataSetToSave {
         const idsNotPresent = orgUnits.some(orgUnit => orgUnit.id === "");
         if (idsNotPresent) {
             throw new Error("Invalid org unit id");
         }
         return DataSet.create({ ...this, orgUnits });
+    }
+
+    static buildOrgUnitsFromPaths(paths: string[]): OrgUnit[] {
+        const orgUnits = paths.map(path => ({
+            id: _(path.split("/")).last() || "",
+            name: path,
+            path: path.split("/").slice(1),
+        }));
+        return orgUnits;
     }
 
     static buildAccess(permissions: Permissions): string {

@@ -6,6 +6,7 @@ import i18n from "$/utils/i18n";
 export type ProjectAttrs = {
     id: Id;
     name: string;
+    isOpen: boolean;
     dataSets: DataSet[];
     lastUpdated: ISODateString;
 };

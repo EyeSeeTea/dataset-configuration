@@ -1,9 +1,12 @@
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSet, DataSetList } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
-import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
+import { DataSetName, DataSetRepository } from "$/domain/repositories/DataSetRepository";
 
 export class DataSetTestRepository implements DataSetRepository {
+    getByName(): FutureData<DataSetName[]> {
+        throw new Error("Method not implemented.");
+    }
     getList(): FutureData<Paginated<DataSetList>> {
         return Future.success({ data: [], page: 1, pageCount: 1, total: 0, pageSize: 10 });
     }

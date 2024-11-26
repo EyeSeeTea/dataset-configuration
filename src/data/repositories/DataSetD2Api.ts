@@ -114,7 +114,7 @@ export class DataSetD2Api {
         });
     }
 
-    private getProjectIds(d2DataSets: D2DataSet[], attributes: D2Config["attributes"]): Id[] {
+    getProjectIds(d2DataSets: D2DataSet[], attributes: D2Config["attributes"]): Id[] {
         return _(d2DataSets)
             .compactMap(d2DataSet => {
                 const projectAttribute = d2DataSet.attributeValues.find(
@@ -140,7 +140,7 @@ export class DataSetD2Api {
         return this.d2ApiConfig.get();
     }
 
-    private getProjectsByIds(ids: Id[]): FutureData<Project[]> {
+    getProjectsByIds(ids: Id[]): FutureData<Project[]> {
         return this.d2ApiCategoryOption.getByIds(ids).map(categoryOptions => {
             return categoryOptions.map(categoryOption => {
                 return Project.create({
@@ -148,14 +148,10 @@ export class DataSetD2Api {
                     dataSets: [],
                     name: categoryOption.displayName,
                     lastUpdated: categoryOption.lastUpdated,
+                    isOpen: false,
                 });
             });
         });
-    }
-
-    private getOrThrow<T>(value: Maybe<T>): T {
-        if (!value) throw new Error("Value not found");
-        return value;
     }
 
     private getAllCompetencies(d2Config: D2Config): FutureData<CoreCompetency[]> {
@@ -233,6 +229,9 @@ export class DataSetD2Api {
                 .compactMap(degCode => coreCompetencies.find(cc => cc.code === degCode))
                 .value(),
             project: projectDetails ? projectDetails : undefined,
+            notifyUser: d2DataSet.notifyCompletingUser,
+            expiryDays: d2DataSet.expiryDays,
+            openFuturePeriods: d2DataSet.openFuturePeriods,
         });
     }
 
@@ -300,6 +299,9 @@ export const dataSetFields = {
     created: true,
     displayDescription: true,
     displayName: true,
+    expiryDays: true,
+    openFuturePeriods: true,
+    notifyCompletingUser: true,
     id: true,
     lastUpdated: true,
     sharing: { public: true },

@@ -7,11 +7,13 @@ export interface DataSetRepository {
     getByIds(ids: Id[]): FutureData<DataSet[]>;
     getAll(): FutureData<DataSet[]>;
     getList(options: GetDataSetOptions): FutureData<Paginated<DataSetList>>;
+    getByName(name: string): FutureData<DataSetName[]>;
     delete(ids: Id[]): FutureData<void>;
     save(dataSets: DataSetToSave[]): FutureData<void>;
 }
 
 export type DataSetOrderFields = keyof Pick<DataSet, "name" | "lastUpdated">;
+export type DataSetName = Pick<DataSet, "id" | "name">;
 
 export type GetDataSetOptions = {
     paging: { page: number; pageSize: number };

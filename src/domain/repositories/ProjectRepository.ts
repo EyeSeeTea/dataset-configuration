@@ -6,4 +6,5 @@ import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 export interface ProjectRepository {
     get(options: GetDataSetOptions): FutureData<Paginated<Project>>;
     getAll(): FutureData<Project[]>;
+    getList(): FutureData<Project[]>;
 }

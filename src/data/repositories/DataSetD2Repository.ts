@@ -4,7 +4,11 @@ import { D2Api } from "$/types/d2-api";
 import { apiToFuture } from "$/data/api-futures";
 import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
-import { DataSetRepository, GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
+import {
+    DataSetName,
+    DataSetRepository,
+    GetDataSetOptions,
+} from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { getUid } from "$/utils/uid";
 import _ from "$/domain/entities/generic/Collection";
@@ -18,6 +22,16 @@ export class DataSetD2Repository implements DataSetRepository {
 
     constructor(private api: D2Api) {
         this.d2DataSetApi = new DataSetD2Api(this.api);
+    }
+
+    getByName(name: string): FutureData<DataSetName[]> {
+        return apiToFuture(
+            this.api.models.dataSets.get({
+                fields: { id: true, name: true },
+                filter: { name: { $ilike: name } },
+                paging: false,
+            })
+        ).map(response => response.objects);
     }
 
     getList(options: GetDataSetOptions): FutureData<Paginated<DataSetList>> {
@@ -65,16 +79,18 @@ export class DataSetD2Repository implements DataSetRepository {
                 ).map(d2Response => d2Response.objects);
             });
 
-            return $requests.map(allDataSets => {
-                const dataSets = allDataSets.map(d2DataSet => {
-                    return this.d2DataSetApi.buildDataSet(
-                        d2DataSet,
-                        coreCompetencies,
-                        [],
-                        attributes
-                    );
+            return $requests.flatMap(allDataSets => {
+                const projectIds = this.d2DataSetApi.getProjectIds(allDataSets, attributes);
+                return this.d2DataSetApi.getProjectsByIds(projectIds).map(projects => {
+                    return allDataSets.map(d2DataSet => {
+                        return this.d2DataSetApi.buildDataSet(
+                            d2DataSet,
+                            coreCompetencies,
+                            projects,
+                            attributes
+                        );
+                    });
                 });
-                return dataSets;
             });
         });
     }
@@ -151,6 +167,7 @@ export class DataSetD2Repository implements DataSetRepository {
         return {
             id: dataSet.id || getUid(dataSet.name),
             name: dataSet.name,
+            periodType: "Monthly",
             description: dataSet.description,
             shortName: dataSet.shortName,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
@@ -175,6 +192,9 @@ export class DataSetD2Repository implements DataSetRepository {
                 .value(),
             organisationUnits: dataSet.orgUnits.map(ou => ({ id: ou.id })),
             attributeValues: this.buildD2Attributes(existingAttributes, dataSet, attributes),
+            notifyCompletingUser: dataSet.notifyUser,
+            openFuturePeriods: dataSet.openFuturePeriods,
+            expiryDays: dataSet.expiryDays,
         };
     }
 
@@ -183,28 +203,25 @@ export class DataSetD2Repository implements DataSetRepository {
         dataSet: DataSetToSave,
         attributes: D2Config["attributes"]
     ) {
-        if (!dataSet.project) return existingAttributes || [];
-        const projectAttributeId = attributes.project.id;
-        const projectAttribute = existingAttributes?.find(
-            attribute => attribute.attribute.id === projectAttributeId
-        );
+        // if (!dataSet.project) return existingAttributes || [];
+        // const projectAttributeId = attributes.project.id;
+        // const projectAttribute = existingAttributes?.find(
+        //     attribute => attribute.attribute.id === projectAttributeId
+        // );
 
-        if (projectAttribute && existingAttributes) {
-            return existingAttributes.map(d2Attribute => {
-                if (!dataSet.project) return d2Attribute;
-                if (d2Attribute.attribute.id === projectAttributeId) {
-                    return { ...d2Attribute, value: dataSet.project.id };
-                }
-                return d2Attribute;
-            });
-        } else {
-            return [
-                ...(existingAttributes || []),
-                {
-                    attribute: { id: projectAttributeId },
-                    value: dataSet.project.id,
-                },
-            ];
-        }
+        const pa = { attribute: { id: attributes.project.id }, value: dataSet.project?.id };
+        const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
+
+        const attributesToSave = _([pa, createdByAttribute])
+            .compactMap(attribute => (attribute.value ? attribute : undefined))
+            .value();
+
+        const filteredExisting =
+            existingAttributes?.filter(
+                attr => !attributesToSave.some(save => save.attribute.id === attr.attribute.id)
+            ) || [];
+
+        // Combinar `filteredExisting` con `toSave`
+        return [...filteredExisting, ...attributesToSave];
     }
 }
