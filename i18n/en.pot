@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-11-26T05:08:32.550Z\n"
-"PO-Revision-Date: 2024-11-26T05:08:32.550Z\n"
+"POT-Creation-Date: 2024-12-02T01:42:54.131Z\n"
+"PO-Revision-Date: 2024-12-02T01:42:54.131Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -45,6 +45,12 @@ msgid "{{fieldName}} must be a positive number"
 msgstr ""
 
 msgid "At least one org. unit is required"
+msgstr ""
+
+msgid "At least one indicator is required"
+msgstr ""
+
+msgid "DataSet not found"
 msgstr ""
 
 msgid "Add"
@@ -174,6 +180,9 @@ msgid "Disaggregation"
 msgstr ""
 
 msgid "Active Filters"
+msgstr ""
+
+msgid "Search by name"
 msgstr ""
 
 msgid "Selected"

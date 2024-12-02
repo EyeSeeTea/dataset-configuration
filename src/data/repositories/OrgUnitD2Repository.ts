@@ -23,7 +23,6 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
         });
 
         return $requests.map(response => {
-            // const allRecords = response.flatMap(r => r);
             return response.map(d2OrgUnit => {
                 return {
                     id: d2OrgUnit.id,

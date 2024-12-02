@@ -1,5 +1,5 @@
 import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
-import { D2Api } from "$/types/d2-api";
+import { D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
 import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
@@ -16,6 +16,8 @@ import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/Dat
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiConfig";
+import { Indicator } from "$/domain/entities/Indicator";
+import { Id, Ref } from "$/domain/entities/Ref";
 
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -100,7 +102,7 @@ export class DataSetD2Repository implements DataSetRepository {
         const ids = dataSets.map(dataSet => dataSet.id);
 
         return this.d2DataSetApi.getConfig().flatMap(config => {
-            const $requests = chunkRequest(ids, dataSetIds => {
+            const $requests = chunkRequest<string[]>(ids, dataSetIds => {
                 return apiToFuture(
                     this.api.models.dataSets.get({
                         fields: { $owner: true },
@@ -126,9 +128,16 @@ export class DataSetD2Repository implements DataSetRepository {
                         return rest;
                     });
 
-                    return apiToFuture(this.api.metadata.post({ dataSets: dataSetsToSave })).map(
-                        () => []
-                    );
+                    return apiToFuture(
+                        this.api.metadata.post({ dataSets: dataSetsToSave })
+                    ).flatMap(response => {
+                        const allErrors = this.extractErrorsFromResponse(response);
+
+                        if (allErrors.length > 0)
+                            return Future.error(new Error(allErrors.join("\n")));
+
+                        return this.saveAllSections(dataSetsToSave, dataSets).map(() => []);
+                    });
                 });
             });
 
@@ -146,17 +155,122 @@ export class DataSetD2Repository implements DataSetRepository {
                     { importStrategy: "DELETE" }
                 )
             ).flatMap(response => {
-                const allErrors = response.typeReports.flatMap(typeReport =>
-                    typeReport.objectReports.flatMap(objectReport =>
-                        objectReport.errorReports.flatMap(errorReport => errorReport.message)
-                    )
-                );
+                const allErrors = this.extractErrorsFromResponse(response);
                 if (allErrors.length > 0) return Future.error(new Error(allErrors.join("\n")));
                 return Future.success([]);
             });
         });
 
         return $requests.toVoid();
+    }
+
+    private saveAllSections(dataSetsToSave: Ref[], dataSets: DataSetToSave[]): FutureData<void> {
+        const dataSetsIds = dataSetsToSave.map(dataSet => dataSet.id);
+
+        return this.getSectionsByIds(dataSetsIds).flatMap(sections => {
+            const sectionsActions = dataSetsToSave.flatMap(dataSetSaved => {
+                const dataSet = dataSets.find(dataSet => dataSet.id === dataSetSaved.id);
+                const sectionsToSave = this.buildDataSetSections(
+                    dataSet?.indicators || [],
+                    dataSetSaved.id
+                );
+                const existingSectionByDataSet = sections.filter(
+                    section => section.dataSet.id === dataSetSaved.id
+                );
+                const sectionsIdsToSave = new Set(sectionsToSave.map(section => section.id));
+                const idsToDelete = existingSectionByDataSet.filter(
+                    item => !sectionsIdsToSave.has(item.id)
+                );
+
+                return { toSave: sectionsToSave, toDelete: idsToDelete };
+            });
+
+            const sectionsToDelete = sectionsActions.flatMap(sectionAction =>
+                sectionAction.toDelete.map(item => ({ id: item.id }))
+            );
+
+            return this.deleteSections(sectionsToDelete).flatMap(() => {
+                const sectionsToSave = sectionsActions.flatMap(
+                    sectionAction => sectionAction.toSave
+                );
+                return apiToFuture(this.api.metadata.post({ sections: sectionsToSave })).flatMap(
+                    sectionResponse => {
+                        const allErrors = this.extractErrorsFromResponse(sectionResponse);
+                        if (allErrors.length > 0)
+                            return Future.error(new Error(allErrors.join("\n")));
+                        return Future.success(undefined);
+                    }
+                );
+            });
+        });
+    }
+
+    private deleteSections(ids: Ref[]): FutureData<void> {
+        if (ids.length === 0) return Future.success(undefined);
+        return apiToFuture(
+            this.api.metadata.post({ sections: ids }, { importStrategy: "DELETE" })
+        ).toVoid();
+    }
+
+    private getSectionsByIds(ids: Id[]) {
+        if (ids.length === 0) return Future.success([]);
+        return chunkRequest(ids, dataSetIds => {
+            return apiToFuture(
+                this.api.models.sections.get({
+                    fields: { $owner: true },
+                    filter: { "dataSet.id": { in: dataSetIds } },
+                    paging: false,
+                })
+            ).map(response => response.objects);
+        }).map(sections => sections.flatMap(section => section));
+    }
+
+    private extractErrorsFromResponse(response: MetadataResponse) {
+        return response.typeReports.flatMap(typeReport =>
+            typeReport.objectReports.flatMap(objectReport =>
+                objectReport.errorReports.flatMap(errorReport => errorReport.message)
+            )
+        );
+    }
+
+    private buildDataSetSections(indicators: Indicator[], id: string): D2DataSetSection[] {
+        return _(indicators)
+            .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.code}`)
+            .mapValues(([indicatorType, indicators]): D2DataSetSection => {
+                const [type, _sectionGroupCode] = indicatorType.split("_");
+                const coreCompetency = indicators[0]?.coreCompetency;
+                if (!coreCompetency || !type)
+                    throw Error(`Cannot find core competency name for ${indicatorType}`);
+
+                const typeLabel = this.getIndicatorTypeName(type);
+                const code = `${id}_${typeLabel.toUpperCase()}_${coreCompetency.code}`;
+
+                const indicatorOutComes = indicators.filter(
+                    indicator => indicator.type === "outcomes"
+                );
+
+                const relatedDataElements = indicatorOutComes.flatMap(
+                    indicator => indicator.relatedDataElements
+                );
+
+                const refDataElements = relatedDataElements.map(dataElement => ({
+                    id: dataElement.id,
+                }));
+
+                return {
+                    id: getUid(code),
+                    code,
+                    dataSet: { id: id },
+                    name: `${coreCompetency.name} ${typeLabel}`,
+                    greyedFields: [],
+                    dataElements: indicators
+                        .filter(x => x.type === "outputs")
+                        .map(indicator => ({ id: indicator.id }))
+                        .concat(refDataElements),
+                    indicators: indicatorOutComes.map(indicator => ({ id: indicator.id })),
+                };
+            })
+            .values();
     }
 
     private buildD2DataSet(
@@ -171,6 +285,10 @@ export class DataSetD2Repository implements DataSetRepository {
             description: dataSet.description,
             shortName: dataSet.shortName,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
+            dataSetElements: this.buildDataSetElements(dataSet),
+            indicators: dataSet.indicators
+                .filter(indicator => indicator.type === "outcomes")
+                .map(indicator => ({ id: indicator.id })),
             userAccesses: dataSet.access
                 .filter(access => access.type === "users")
                 .map(access => {
@@ -198,21 +316,46 @@ export class DataSetD2Repository implements DataSetRepository {
         };
     }
 
+    private buildDataSetElements(dataSet: DataSetToSave) {
+        const relatedDataElements = dataSet.indicators
+            .filter(indicator => indicator.type === "outcomes")
+            .flatMap(indicator => indicator.relatedDataElements)
+            .map(dataElement => {
+                return {
+                    dataSet: { id: dataSet.id },
+                    dataElement: { id: dataElement.id },
+                    categoryOptionCombo: dataElement.disaggregation
+                        ? { id: dataElement.disaggregation.id }
+                        : undefined,
+                };
+            });
+
+        const selectedIndicators = dataSet.indicators
+            .filter(indicator => indicator.type === "outputs")
+            .map(indicator => ({
+                dataSet: { id: dataSet.id },
+                dataElement: { id: indicator.id },
+                categoryOptionCombo: indicator.disaggregation
+                    ? { id: indicator.disaggregation.id }
+                    : undefined,
+            }));
+
+        return relatedDataElements.concat(selectedIndicators);
+    }
+
     private buildD2Attributes(
         existingAttributes: Maybe<D2AttributeValue[]>,
         dataSet: DataSetToSave,
         attributes: D2Config["attributes"]
     ) {
-        // if (!dataSet.project) return existingAttributes || [];
-        // const projectAttributeId = attributes.project.id;
-        // const projectAttribute = existingAttributes?.find(
-        //     attribute => attribute.attribute.id === projectAttributeId
-        // );
+        const projectAttribute = {
+            attribute: { id: attributes.project.id },
+            value: dataSet.project?.id,
+        };
 
-        const pa = { attribute: { id: attributes.project.id }, value: dataSet.project?.id };
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
 
-        const attributesToSave = _([pa, createdByAttribute])
+        const attributesToSave = _([projectAttribute, createdByAttribute])
             .compactMap(attribute => (attribute.value ? attribute : undefined))
             .value();
 
@@ -221,7 +364,29 @@ export class DataSetD2Repository implements DataSetRepository {
                 attr => !attributesToSave.some(save => save.attribute.id === attr.attribute.id)
             ) || [];
 
-        // Combinar `filteredExisting` con `toSave`
         return [...filteredExisting, ...attributesToSave];
     }
+
+    private getIndicatorTypeName(type: string): string {
+        switch (type) {
+            case "outputs":
+                return indicatorTypeLabel.outputs;
+            case "outcomes":
+                return indicatorTypeLabel.outcomes;
+            default:
+                return "";
+        }
+    }
 }
+
+type D2DataSetSection = {
+    id: string;
+    code: string;
+    dataSet: Ref;
+    name: string;
+    greyedFields: Array<{ dataElement: Ref; categoryOptionCombo: Ref }>;
+    dataElements: Ref[];
+    indicators: Ref[];
+};
+
+const indicatorTypeLabel = { outcomes: "Outcomes", outputs: "Outputs" };

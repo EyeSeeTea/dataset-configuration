@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2024-11-26T05:08:32.550Z\n"
+"POT-Creation-Date: 2024-12-02T01:42:54.131Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -46,6 +46,13 @@ msgstr ""
 
 msgid "At least one org. unit is required"
 msgstr ""
+
+msgid "At least one indicator is required"
+msgstr ""
+
+#, fuzzy
+msgid "DataSet not found"
+msgstr "Sección"
 
 msgid "Add"
 msgstr "Añadir"
@@ -174,6 +181,9 @@ msgid "Disaggregation"
 msgstr ""
 
 msgid "Active Filters"
+msgstr ""
+
+msgid "Search by name"
 msgstr ""
 
 msgid "Selected"

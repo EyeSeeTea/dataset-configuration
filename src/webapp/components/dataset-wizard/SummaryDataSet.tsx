@@ -71,12 +71,16 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
     const orgUnitMessage =
         extraOrgUnits > 0 ? i18n.t("and {{number}} more.", { number: extraOrgUnits }) : "";
 
+    const coreCompetenciesNames = dataSet.indicators
+        .map(indicator => indicator.coreCompetency?.name || "")
+        .join(", ");
+
     return (
         <Grid item xs={12}>
             <ul>
                 <SummaryItem label={i18n.t("Name")} value={dataSet.name} />
                 <SummaryItem label={i18n.t("Description")} value={dataSet.description} />
-                <SummaryItem label={i18n.t("Core competencies")} value=" - " />
+                <SummaryItem label={i18n.t("Core competencies")} value={coreCompetenciesNames} />
                 <SummaryItem label={i18n.t("Linked Project")} value={dataSet.project?.name || ""} />
                 <SummaryItem
                     label={i18n.t("Organisation Units")}

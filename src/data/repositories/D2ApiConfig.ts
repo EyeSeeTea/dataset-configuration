@@ -6,11 +6,27 @@ import { apiToFuture } from "$/data/api-futures";
 
 export const metadataCodes = {
     attributes: {
+        group: "DE_IND_GROUP",
         project: "GL_DATASET_PROJECT",
         createdByApp: "GL_CREATED_BY_DATASET_CONFIGURATION",
     },
     categories: { project: "GL_Project" },
-    dataElementGroupSets: { coreCompetency: "GL_CoreComp_DEGROUPSET" },
+    dataElementGroupSets: {
+        coreCompetency: "GL_CoreComp_DEGROUPSET",
+        theme: "GL_DETHEME_DEGROUPSET",
+        status: "GL_DESTATUS_DEGROUPSET",
+    },
+    dataElementGroups: {
+        coreIndicator: "GL_MAND_DEGROUP",
+        localIndicator: "GL_Local_DEGROUP",
+        donorIndicator: "GL_Donor_DEGROUP",
+    },
+    indicatorGroup: {
+        coreIndicator: "Global Indicators (Mandatory)",
+        donorIndicator: "Donor Indicators",
+        localIndicator: "Local Indicators",
+    },
+    indicatorGroupSets: { theme: "Theme", status: "Status" },
 };
 
 const metadataFields = {
@@ -22,9 +38,21 @@ const metadataFields = {
         fields: { id: true, name: true, code: true },
         filter: { identifiable: { in: rec(metadataCodes.categories).values() } },
     },
+    dataElementGroups: {
+        fields: { id: true, name: true, code: true },
+        filter: { identifiable: { in: rec(metadataCodes.dataElementGroups).values() } },
+    },
     dataElementGroupSets: {
         fields: { id: true, name: true, code: true },
         filter: { identifiable: { in: rec(metadataCodes.dataElementGroupSets).values() } },
+    },
+    indicatorGroups: {
+        fields: { id: true, name: true, code: true },
+        filter: { name: { in: rec(metadataCodes.indicatorGroup).values() } },
+    },
+    indicatorGroupSets: {
+        fields: { id: true, name: true, code: true },
+        filter: { name: { in: rec(metadataCodes.indicatorGroupSets).values() } },
     },
 };
 
@@ -47,6 +75,52 @@ export class D2ApiConfig {
                         d2Response.dataElementGroupSets,
                         metadataCodes.dataElementGroupSets.coreCompetency
                     ),
+                    theme: getOrThrow(
+                        d2Response.dataElementGroupSets,
+                        metadataCodes.dataElementGroupSets.theme
+                    ),
+                    status: getOrThrow(
+                        d2Response.dataElementGroupSets,
+                        metadataCodes.dataElementGroupSets.status
+                    ),
+                },
+                dataElementGroups: {
+                    localIndicator: getOrThrow(
+                        d2Response.dataElementGroups,
+                        metadataCodes.dataElementGroups.localIndicator
+                    ),
+                    donorIndicator: getOrThrow(
+                        d2Response.dataElementGroups,
+                        metadataCodes.dataElementGroups.donorIndicator
+                    ),
+                    coreIndicator: getOrThrow(
+                        d2Response.dataElementGroups,
+                        metadataCodes.dataElementGroups.coreIndicator
+                    ),
+                },
+                indicatorGroups: {
+                    coreIndicator: getOrThrow(
+                        d2Response.indicatorGroups,
+                        metadataCodes.indicatorGroup.coreIndicator
+                    ),
+                    donorIndicator: getOrThrow(
+                        d2Response.indicatorGroups,
+                        metadataCodes.indicatorGroup.donorIndicator
+                    ),
+                    localIndicator: getOrThrow(
+                        d2Response.indicatorGroups,
+                        metadataCodes.indicatorGroup.localIndicator
+                    ),
+                },
+                indicatorGroupSets: {
+                    theme: getOrThrow(
+                        d2Response.indicatorGroupSets,
+                        metadataCodes.indicatorGroupSets.theme
+                    ),
+                    status: getOrThrow(
+                        d2Response.indicatorGroupSets,
+                        metadataCodes.indicatorGroupSets.status
+                    ),
                 },
             };
         });
@@ -54,6 +128,7 @@ export class D2ApiConfig {
 
     private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
         return {
+            group: getOrThrow(attributes, metadataCodes.attributes.group),
             project: getOrThrow(attributes, metadataCodes.attributes.project),
             createdByApp: getOrThrow(attributes, metadataCodes.attributes.createdByApp),
         };
@@ -61,16 +136,31 @@ export class D2ApiConfig {
 }
 
 function getOrThrow(modelData: D2NamedCodeRef[], code: string): D2NamedCodeRef {
-    const model = modelData.find(attribute => attribute.code === code);
+    const model = modelData.find(attribute => attribute.code === code || attribute.name === code);
     if (!model) throw new Error(`Metadata object not found: code="${code}"`);
 
     return model;
 }
 
 export type D2Config = {
-    attributes: { project: D2NamedCodeRef; createdByApp: D2NamedCodeRef };
+    attributes: { project: D2NamedCodeRef; createdByApp: D2NamedCodeRef; group: D2NamedCodeRef };
     categories: { project: D2NamedCodeRef };
-    dataElementGroupSets: { coreCompetency: D2NamedCodeRef };
+    dataElementGroupSets: {
+        coreCompetency: D2NamedCodeRef;
+        status: D2NamedCodeRef;
+        theme: D2NamedCodeRef;
+    };
+    dataElementGroups: {
+        coreIndicator: D2NamedCodeRef;
+        localIndicator: D2NamedCodeRef;
+        donorIndicator: D2NamedCodeRef;
+    };
+    indicatorGroups: {
+        coreIndicator: D2NamedCodeRef;
+        localIndicator: D2NamedCodeRef;
+        donorIndicator: D2NamedCodeRef;
+    };
+    indicatorGroupSets: { theme: D2NamedCodeRef; status: D2NamedCodeRef };
 };
 
 type D2NamedCodeRef = NamedRef & { code: string };

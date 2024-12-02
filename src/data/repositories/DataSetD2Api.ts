@@ -203,6 +203,7 @@ export class DataSetD2Api {
         const dataElementGroups = this.buildDataElementsGroupsCodes(d2DataSet);
 
         return DataSet.create({
+            indicators: [],
             orgUnits: d2DataSet.organisationUnits
                 ? d2DataSet.organisationUnits.map((ou): OrgUnit => {
                       return {

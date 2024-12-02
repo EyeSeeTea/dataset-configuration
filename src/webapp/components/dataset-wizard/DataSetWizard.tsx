@@ -11,12 +11,14 @@ import { DataSet } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { getErrors } from "$/domain/entities/generic/Error";
 import { Project } from "$/domain/entities/Project";
+import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 
 export type DataSetWizardProps = {
     id?: string;
     projects: Project[];
     dataSet: DataSet;
     updateDataSet: React.Dispatch<React.SetStateAction<DataSet>>;
+    dataSetSettings: DataSetSettings;
 };
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -30,7 +32,7 @@ export type ValidationStatusType = "idle" | "loading" | "error" | "success";
 
 export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const { compositionRoot } = useAppContext();
-    const { id, dataSet, projects, updateDataSet } = props;
+    const { dataSet, id, projects, updateDataSet, dataSetSettings } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
     const steps = getDataSetSteps();
@@ -39,7 +41,7 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const [validationStatus, setValidationStatus] = React.useState<ValidationStatusType>("idle");
 
     const goBackToHome = React.useCallback(() => {
-        navigateTo("dataSets");
+        navigateTo("createDataSets");
     }, [navigateTo]);
 
     const validateDataSetName = React.useCallback(
@@ -70,10 +72,19 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                     validationStatus,
                     onChange: updateDataSet,
                     projects,
+                    dataSetSettings,
                 },
             };
         });
-    }, [dataSet, projects, steps, validateDataSetName, validationStatus, updateDataSet]);
+    }, [
+        dataSet,
+        dataSetSettings,
+        projects,
+        steps,
+        validateDataSetName,
+        validationStatus,
+        updateDataSet,
+    ]);
 
     const validationInProgressOrError =
         !validationStatus || validationStatus === "error" || validationStatus === "loading";
@@ -84,6 +95,11 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                 return Promise.resolve(["Validation name in progress"]);
             if (currentStep.key === "setup") {
                 const result = dataSet.validateSetup();
+                if (result.isError()) {
+                    return Promise.resolve(getErrors(result.value.error));
+                }
+            } else if (currentStep.key === "indicators") {
+                const result = dataSet.validateIndicatorsStep();
                 if (result.isError()) {
                     return Promise.resolve(getErrors(result.value.error));
                 }
@@ -110,7 +126,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                     onStepChangeRequest={validateSteps}
                     useSnackFeedback
                     steps={stepsWithProps}
-                    initialStepKey="setup"
                 />
             </Grid>
         </Grid>

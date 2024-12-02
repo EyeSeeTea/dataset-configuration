@@ -1,5 +1,8 @@
+import { CoreCompetencyD2Repository } from "$/data/repositories/CoreCompetencyD2Repository";
+import { DataElementD2Repository } from "$/data/repositories/DataElementD2Repository";
 import { DataSetD2Repository } from "$/data/repositories/DataSetD2Repository";
 import { DataSetTestRepository } from "$/data/repositories/DataSetTestRepository";
+import { IndicatorD2Repository } from "$/data/repositories/IndicatorD2Repository";
 import { LogD2Repository } from "$/data/repositories/LogD2Repository";
 import { LogTestRepository } from "$/data/repositories/LogTestRepository";
 import { OrgUnitD2Repository } from "$/data/repositories/OrgUnitD2Repository";
@@ -9,13 +12,19 @@ import { ProjectTestRepository } from "$/data/repositories/ProjectTestRepository
 import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
+import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
+import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
+import { IndicatorRepository } from "$/domain/repositories/IndicatorRepository";
 import { LogRepository } from "$/domain/repositories/LogRepository";
 import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
+import { GetCoreCompetencyUseCase } from "$/domain/usecases/GetCoreCompetencyUseCase";
+import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
+import { GetIndicatorsUseCase } from "$/domain/usecases/GetIndicatorsUseCase";
 import { GetLogsUseCase } from "$/domain/usecases/GetLogsUseCase";
 import { GetOrgUnitsByIdsUseCase } from "$/domain/usecases/GetOrgUnitsByIdsUseCase";
 import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
@@ -41,6 +50,9 @@ type Repositories = {
     logRepository: LogRepository;
     projectRepository: ProjectRepository;
     orgUnitRepository: OrgUnitRepository;
+    coreCompetencyRepository: CoreCompetencyRepository;
+    indicatorRepository: IndicatorRepository;
+    dataElementRepository: DataElementRepository;
 };
 
 function getCompositionRoot(repositories: Repositories) {
@@ -56,7 +68,15 @@ function getCompositionRoot(repositories: Repositories) {
                 repositories.projectRepository
             ),
             validateName: new ValidateNameUseCase(repositories.dataSetsRepository),
-            save: new SaveDataSetUseCase(repositories.dataSetsRepository),
+            save: new SaveDataSetUseCase(
+                repositories.dataSetsRepository,
+                repositories.dataElementRepository
+            ),
+            getSettings: new GetDataSetSettingsUseCase(
+                repositories.coreCompetencyRepository,
+                repositories.indicatorRepository,
+                repositories.dataSetsRepository
+            ),
         },
         logs: {
             getByDataSets: new GetLogsUseCase(
@@ -75,6 +95,12 @@ function getCompositionRoot(repositories: Repositories) {
         orgUnits: {
             getByIds: new GetOrgUnitsByIdsUseCase(repositories.orgUnitRepository),
         },
+        coreCompetencies: {
+            getAll: new GetCoreCompetencyUseCase(repositories.coreCompetencyRepository),
+        },
+        indicators: {
+            get: new GetIndicatorsUseCase(repositories.indicatorRepository),
+        },
     };
 }
 
@@ -86,6 +112,9 @@ export function getWebappCompositionRoot(api: D2Api) {
         logRepository: new LogD2Repository(api),
         projectRepository: new ProjectD2Repository(api),
         orgUnitRepository: new OrgUnitD2Repository(api),
+        coreCompetencyRepository: new CoreCompetencyD2Repository(api),
+        indicatorRepository: new IndicatorD2Repository(api),
+        dataElementRepository: new DataElementD2Repository(api),
     };
 
     return getCompositionRoot(repositories);
@@ -99,6 +128,9 @@ export function getTestCompositionRoot() {
         logRepository: new LogTestRepository(),
         projectRepository: new ProjectTestRepository(),
         orgUnitRepository: new OrgUnitTestRepository(),
+        coreCompetencyRepository: new CoreCompetencyD2Repository({} as D2Api),
+        indicatorRepository: new IndicatorD2Repository({} as D2Api),
+        dataElementRepository: new DataElementD2Repository({} as D2Api),
     };
 
     return getCompositionRoot(repositories);

@@ -6,20 +6,25 @@ import FilterListIcon from "@material-ui/icons/FilterList";
 import CloseIcon from "@material-ui/icons/Close";
 import i18n from "$/utils/i18n";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
+import { CoreCompetency } from "$/domain/entities/DataSet";
+import _ from "$/domain/entities/generic/Collection";
 
-export type FilterType = "scope" | "core" | "outputType";
+export type FilterType = "scope" | "core" | "outputType" | "theme" | "group";
 
 export type FilterIndicatorsProps = {
-    coreCompetencies: string[];
-    coreValue: string;
+    coreCompetencies: CoreCompetency[];
+    coreValues: string[];
     groups: string[];
+    group: string;
     onClose: () => void;
-    onFilterChange: (scope: string, type: FilterType) => void;
+    onFilterChange: (scope: ChipItem | ChipItem[], type: FilterType) => void;
     scopes: string[];
     scopeValue: string;
     showCloseButton?: boolean;
     themes: string[];
+    theme: string;
     types: string[];
+    selectedType: string;
 };
 
 export type FilterWrapperProps = {
@@ -31,71 +36,96 @@ export type FilterMode = "default" | "drawer";
 
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
     const { children, mode, showDrawer } = props;
-    const Wrapper = mode === "default" ? Grid : Drawer;
-    return (
-        <Wrapper item lg={3} open={showDrawer}>
-            {children}
-        </Wrapper>
-    );
+    switch (mode) {
+        case "default":
+            return (
+                <Grid item lg={3}>
+                    {children}
+                </Grid>
+            );
+        case "drawer":
+            return <Drawer open={showDrawer}>{children}</Drawer>;
+        default:
+            return null;
+    }
 });
 
 export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
     const {
         coreCompetencies,
-        coreValue,
+        coreValues: coreValue,
+        groups,
+        group,
         onClose,
         onFilterChange,
         scopes,
         scopeValue,
         showCloseButton,
+        themes,
+        theme,
         types,
+        selectedType,
     } = props;
     return (
         <FilterIndicatorContainer style={{ maxWidth: "300px" }}>
             <HeaderFilterContainer>
                 <FilterListIcon />
+
                 <Typography variant="body1">{i18n.t("Filters")}</Typography>
+
                 {showCloseButton && (
                     <IconButton className="icon" onClick={onClose}>
                         <CloseIcon />
                     </IconButton>
                 )}
             </HeaderFilterContainer>
+
             <Divider />
+
             <ChipFilter
-                items={scopes}
+                items={scopes.map(s => ({ text: s, value: s }))}
                 label={i18n.t("Scope")}
                 onChange={value => onFilterChange(value, "scope")}
                 value={scopeValue}
             />
+
             <ChipFilter
-                items={coreCompetencies}
+                items={coreCompetencies.map(c => ({ text: c.name, value: c.id }))}
                 label={i18n.t("Core competencies")}
                 onChange={value => onFilterChange(value, "core")}
                 value={coreValue}
+                mode="multiple"
             />
 
             <ChipFilter
-                items={types}
+                items={types.map(t => ({ text: t, value: t }))}
                 label={i18n.t("Type")}
                 onChange={value => onFilterChange(value, "outputType")}
-                value={"Outputs"}
+                value={selectedType}
+                mode="single"
             />
 
             <BodyFilterContainer>
                 <Dropdown
                     className="dropdown"
-                    items={[]}
-                    onChange={() => {}}
+                    items={themes.map(t => ({ text: t, value: t }))}
+                    onChange={value =>
+                        onFilterChange({ text: value ?? "", value: value ?? "" }, "theme")
+                    }
                     label={i18n.t("Theme")}
+                    value={theme}
                 />
             </BodyFilterContainer>
+
             <BodyFilterContainer>
                 <Dropdown
                     className="dropdown"
-                    items={[]}
-                    onChange={() => {}}
+                    items={groups.map(g => ({ text: g, value: g }))}
+                    onChange={value =>
+                        onFilterChange({ text: value ?? "", value: value ?? "" }, "group")
+                    }
                     label={i18n.t("Group")}
+                    value={group}
                 />
             </BodyFilterContainer>
         </FilterIndicatorContainer>
@@ -103,14 +133,49 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
 });
 
 export type ChipFilterProps = {
-    items: string[];
+    items: ChipItem[];
     label: string;
-    onChange: (value: string) => void;
-    value: string;
+    onChange: (item: ChipItem | ChipItem[]) => void;
+    value: string | string[];
+    mode?: "single" | "multiple";
 };
 
+export type ChipItem = { text: string; value: string };
+
 export const ChipFilter = React.memo((props: ChipFilterProps) => {
-    const { items, label, onChange, value } = props;
+    const { items, label, onChange, value, mode = "single" } = props;
+
+    const handleChipClick = (itemValue: string) => {
+        if (mode === "single") {
+            const currentItem = items.find(item => item.value === itemValue);
+            if (currentItem) onChange(currentItem);
+        } else if (mode === "multiple") {
+            const selectedValues = Array.isArray(value) ? value : [];
+            const currentValues = selectedValues.filter(v => v !== itemValue);
+            const chipItems = _(currentValues)
+                .compactMap(value => {
+                    return items.find(item => item.value === value);
+                })
+                .value();
+            if (selectedValues.includes(itemValue)) {
+                onChange(chipItems);
+            } else {
+                const itemToRemove = items.find(item => item.value === itemValue);
+                if (itemToRemove) {
+                    onChange(chipItems.concat([itemToRemove]));
+                }
+            }
+        }
+    };
+
+    const isSelected = (itemValue: string) => {
+        if (mode === "single") {
+            return itemValue === value;
+        } else {
+            return Array.isArray(value) && value.includes(itemValue);
+        }
+    };
+
     return (
         <BodyFilterContainer>
             <Typography variant="body1">
@@ -119,10 +184,10 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
             <ScopeContainer>
                 {items.map(item => (
                     <Chip
-                        key={item}
-                        color={item === value ? "primary" : "default"}
-                        label={item}
-                        onClick={() => onChange(item)}
+                        key={item.value}
+                        color={isSelected(item.value) ? "primary" : "default"}
+                        label={item.text}
+                        onClick={() => handleChipClick(item.value)}
                         variant="default"
                     />
                 ))}
