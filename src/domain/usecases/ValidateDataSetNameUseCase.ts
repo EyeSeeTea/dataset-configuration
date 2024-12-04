@@ -2,10 +2,10 @@ import { Id } from "$/domain/entities/Ref";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 
-export class ValidateNameUseCase {
+export class ValidateDataSetNameUseCase {
     constructor(private dataSetRepository: DataSetRepository) {}
 
-    execute(options: ValidateNameOptions): FutureData<boolean> {
+    execute(options: ValidateDataSetNameOptions): FutureData<boolean> {
         return this.dataSetRepository.getByName(options.name).map(dataSets => {
             return dataSets.some(
                 dataSet =>
@@ -15,4 +15,4 @@ export class ValidateNameUseCase {
         });
     }
 }
-export type ValidateNameOptions = { name: string; dataSetId: Id };
+export type ValidateDataSetNameOptions = { name: string; dataSetId: Id };

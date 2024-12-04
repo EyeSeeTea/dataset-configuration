@@ -25,7 +25,7 @@ import { SaveDataSetUseCase } from "$/domain/usecases/SaveDataSetUseCase";
 import { SaveOrgUnitDataSetUseCase } from "$/domain/usecases/SaveOrgUnitDataSetUseCase";
 import { SaveSharingDataSetsUseCase } from "$/domain/usecases/SaveSharingDataSetsUseCase";
 import { SearchSharingUseCase } from "$/domain/usecases/SearchSharingUseCase";
-import { ValidateNameUseCase } from "$/domain/usecases/ValidateNameUseCase";
+import { ValidateDataSetNameUseCase } from "$/domain/usecases/ValidateDataSetNameUseCase";
 import { UserD2Repository } from "./data/repositories/UserD2Repository";
 import { UserTestRepository } from "./data/repositories/UserTestRepository";
 import { UserRepository } from "./domain/repositories/UserRepository";
@@ -55,7 +55,7 @@ function getCompositionRoot(repositories: Repositories) {
                 repositories.dataSetsRepository,
                 repositories.projectRepository
             ),
-            validateName: new ValidateNameUseCase(repositories.dataSetsRepository),
+            validateName: new ValidateDataSetNameUseCase(repositories.dataSetsRepository),
             save: new SaveDataSetUseCase(repositories.dataSetsRepository),
         },
         logs: {

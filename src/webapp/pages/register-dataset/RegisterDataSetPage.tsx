@@ -2,7 +2,6 @@ import React from "react";
 import { useParams } from "react-router";
 
 import { DataSet } from "$/domain/entities/DataSet";
-import { Permission } from "$/domain/entities/Permission";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetWizard } from "$/webapp/components/dataset-wizard/DataSetWizard";
 import { useAppContext } from "$/webapp/contexts/app-context";
@@ -56,27 +55,9 @@ function useGetDataSetById(props: { id: Maybe<Id> }) {
     const { id } = props;
     const { compositionRoot } = useAppContext();
     const snackbar = useSnackbar();
-    const [status, setStatus] = React.useState<HttpStatus>("idle");
+    const [status, setStatus] = React.useState<LoadingStatus>("idle");
     const [dataSet, updateDataSet] = React.useState<DataSet>(() => {
-        return DataSet.create({
-            access: [],
-            coreCompetencies: [],
-            created: "",
-            description: "",
-            id: getUid(new Date().getTime().toString()),
-            lastUpdated: "",
-            name: "",
-            orgUnits: [],
-            permissions: {
-                data: Permission.create({ read: false, write: false }),
-                metadata: Permission.create({ read: false, write: false }),
-            },
-            project: undefined,
-            shortName: "",
-            expiryDays: 0,
-            openFuturePeriods: 0,
-            notifyUser: false,
-        });
+        return DataSet.initial(getUid(new Date().getTime().toString()));
     });
 
     React.useEffect(() => {
@@ -98,6 +79,6 @@ function useGetDataSetById(props: { id: Maybe<Id> }) {
     return { dataSet, status, updateDataSet };
 }
 
-export type HttpStatus = "idle" | "loading" | "finished" | "error";
+export type LoadingStatus = "idle" | "loading" | "finished" | "error";
 
 export const RegisterDataSetPage = component(RegisterDataSetPage_);

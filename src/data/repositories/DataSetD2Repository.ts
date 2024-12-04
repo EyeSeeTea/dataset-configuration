@@ -2,7 +2,7 @@ import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
 import { D2Api } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
-import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
+import { DataSet, DataSetList } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import {
     DataSetName,
@@ -16,6 +16,7 @@ import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/Dat
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiConfig";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -166,10 +167,10 @@ export class DataSetD2Repository implements DataSetRepository {
     ) {
         return {
             id: dataSet.id || getUid(dataSet.name),
+            shortName: dataSet.shortName,
             name: dataSet.name,
             periodType: "Monthly",
             description: dataSet.description,
-            shortName: dataSet.shortName,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
             userAccesses: dataSet.access
                 .filter(access => access.type === "users")
@@ -203,25 +204,21 @@ export class DataSetD2Repository implements DataSetRepository {
         dataSet: DataSetToSave,
         attributes: D2Config["attributes"]
     ) {
-        // if (!dataSet.project) return existingAttributes || [];
-        // const projectAttributeId = attributes.project.id;
-        // const projectAttribute = existingAttributes?.find(
-        //     attribute => attribute.attribute.id === projectAttributeId
-        // );
-
-        const pa = { attribute: { id: attributes.project.id }, value: dataSet.project?.id };
+        const projectAttribute = {
+            attribute: { id: attributes.project.id },
+            value: dataSet.project?.id,
+        };
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
 
-        const attributesToSave = _([pa, createdByAttribute])
-            .compactMap(attribute => (attribute.value ? attribute : undefined))
-            .value();
+        const attributesToSave = [projectAttribute, createdByAttribute].filter(
+            attribute => attribute.value
+        );
 
         const filteredExisting =
             existingAttributes?.filter(
                 attr => !attributesToSave.some(save => save.attribute.id === attr.attribute.id)
             ) || [];
 
-        // Combinar `filteredExisting` con `toSave`
         return [...filteredExisting, ...attributesToSave];
     }
 }

@@ -8,6 +8,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -17,7 +18,6 @@ export type DataSetAttrs = {
     lastUpdated: ISODateString;
     permissions: Permissions;
     project: Maybe<Project>;
-    shortName: string;
     coreCompetencies: CoreCompetency[];
     access: AccessData[];
     orgUnits: OrgUnit[];
@@ -26,9 +26,9 @@ export type DataSetAttrs = {
     notifyUser: boolean;
 };
 
-export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
-    orgUnits: Ref[];
-};
+// export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
+//     orgUnits: Ref[];
+// };
 
 export type OrgUnit = { id: Id; name: string; path: Id[] };
 export type Permissions = { data: Permission; metadata: Permission };
@@ -39,6 +39,15 @@ export type CoreCompetency = { id: Id; name: string; code: string };
 export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
+    get shortName(): string {
+        return this.truncateValue(this.name);
+    }
+
+    private truncateValue(input: string): string {
+        const targetLength = 50;
+        return input.length > targetLength ? input.slice(0, targetLength) : input;
+    }
+
     validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
         const errors: ValidationError<DataSet>[] = [
             {
@@ -61,7 +70,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this._update({ project, name });
     }
 
-    update(fieldName: keyof DataSet, value: string | number | boolean): DataSet {
+    update<K extends keyof DataSet>(fieldName: K, value: DataSet[K]): DataSet {
         return this._update({ [fieldName]: value });
     }
 
@@ -71,15 +80,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
             throw new Error("Invalid org unit id");
         }
         return DataSet.create({ ...this, orgUnits });
-    }
-
-    static buildOrgUnitsFromPaths(paths: string[]): OrgUnit[] {
-        const orgUnits = paths.map(path => ({
-            id: _(path.split("/")).last() || "",
-            name: path,
-            path: path.split("/").slice(1),
-        }));
-        return orgUnits;
     }
 
     static buildAccess(permissions: Permissions): string {
@@ -102,5 +102,26 @@ export class DataSet extends Struct<DataSetAttrs>() {
         } else {
             return "";
         }
+    }
+
+    static initial(id: Id): DataSet {
+        return DataSet.create({
+            access: [],
+            coreCompetencies: [],
+            created: "",
+            description: "",
+            id,
+            lastUpdated: "",
+            name: "",
+            orgUnits: [],
+            permissions: {
+                data: Permission.create({ read: false, write: false }),
+                metadata: Permission.create({ read: false, write: false }),
+            },
+            project: undefined,
+            expiryDays: 0,
+            openFuturePeriods: 0,
+            notifyUser: false,
+        });
     }
 }
