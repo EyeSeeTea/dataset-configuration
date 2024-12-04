@@ -20,6 +20,7 @@ import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
 import { Pager } from "@eyeseetea/d2-api/api";
+import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -149,6 +150,8 @@ export class DataSetD2Api {
                     name: categoryOption.displayName,
                     lastUpdated: categoryOption.lastUpdated,
                     isOpen: false,
+                    orgsUnits: [],
+                    code: categoryOption.code,
                 });
             });
         });
@@ -207,6 +210,7 @@ export class DataSetD2Api {
             orgUnits: d2DataSet.organisationUnits
                 ? d2DataSet.organisationUnits.map((ou): OrgUnit => {
                       return {
+                          code: ou.code,
                           id: ou.id,
                           name: ou.displayName,
                           path: ou.path.split("/").slice(1),
@@ -315,7 +319,7 @@ export const dataSetFields = {
 
 export const dataSetFieldsWithOrgUnits = {
     ...dataSetFields,
-    organisationUnits: { id: true, displayName: true, path: true },
+    organisationUnits: { id: true, code: true, displayName: true, path: true },
 };
 
 type D2DataSetFields = MetadataPick<{
@@ -323,5 +327,4 @@ type D2DataSetFields = MetadataPick<{
 }>["dataSets"][number];
 
 type D2DataSet = { organisationUnits?: D2OrgUnit[] } & D2DataSetFields;
-type D2OrgUnit = { id: Id; path: string; displayName: string };
 export type OctalNotationPermission = string;

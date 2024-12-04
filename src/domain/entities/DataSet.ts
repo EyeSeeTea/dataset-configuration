@@ -9,6 +9,7 @@ import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
+import { Config, UserGroup } from "$/domain/entities/Config";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -32,7 +33,7 @@ export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpd
     orgUnits: Ref[];
 };
 
-export type OrgUnit = { id: Id; name: string; path: Id[] };
+export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
 export type Permissions = { data: Permission; metadata: Permission };
 export type AccessData = { id: Id; permissions: Permissions; name: string; type: AccessType };
 export type AccessType = "users" | "groups";
@@ -51,9 +52,30 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return errors.length === 0 ? Either.success(this) : Either.error(errors);
     }
 
-    updateProject(project: Maybe<Project>): DataSet {
+    updateProject(project: Maybe<Project>, config: Config): DataSet {
         const name = project ? `${project.name} DataSet` : "";
-        return this._update({ project, name });
+        const orgUnits = project ? project.orgsUnits : this.orgUnits;
+
+        const accessGroupsFromProject = this.getAccessFromProject(project, config);
+
+        return this._update({ access: accessGroupsFromProject, project, name, orgUnits });
+    }
+
+    updateAccess(config: Config): DataSet {
+        const accessGroupsFromProject = this.getAccessFromProject(this.project, config);
+        const accessFromOrgUnits = this.getAccessFromOrgUnits(this.orgUnits, config);
+
+        return this._update({
+            access: this.project ? accessGroupsFromProject : accessFromOrgUnits,
+        });
+    }
+
+    updateAccessFromRegionsCodes(codes: string[], config: Config): DataSet {
+        const access = codes.flatMap(code => {
+            const userGroups = config.userGroups.filter(userGroup => userGroup.code === code);
+            return this.buildAccessGroups(userGroups);
+        });
+        return this._update({ access: access });
     }
 
     update(fieldName: keyof DataSet, value: string | number | boolean): DataSet {
@@ -84,7 +106,31 @@ export class DataSet extends Struct<DataSetAttrs>() {
               ]);
     }
 
-    static createEmpty(id: Id): DataSet {
+    validateSharingStep(): Either<ValidationError<DataSet>[], DataSet> {
+        if (this.project) return Either.success(this);
+
+        const regionCodesFromOrgUnits = this.getRegionCodesFromAccess();
+
+        return regionCodesFromOrgUnits.length > 0
+            ? Either.success(this)
+            : Either.error([
+                  {
+                      property: "access" as const,
+                      errors: ["regions_required"],
+                      value: this.access,
+                  },
+              ]);
+    }
+
+    getRegionCodesFromAccess(): string[] {
+        return _(this.access)
+            .filter(access => access.type === "groups")
+            .compactMap(access => access.name.split("_")[0])
+            .uniq()
+            .value();
+    }
+
+    static createEmpty(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
             indicators: [],
             access: [],
@@ -104,16 +150,8 @@ export class DataSet extends Struct<DataSetAttrs>() {
             expiryDays: 0,
             openFuturePeriods: 0,
             notifyUser: false,
+            ...initialData,
         });
-    }
-
-    static buildOrgUnitsFromPaths(paths: string[]): OrgUnit[] {
-        const orgUnits = paths.map(path => ({
-            id: _(path.split("/")).last() || "",
-            name: path,
-            path: path.split("/").slice(1),
-        }));
-        return orgUnits;
     }
 
     static buildAccess(permissions: Permissions): string {
@@ -129,8 +167,9 @@ export class DataSet extends Struct<DataSetAttrs>() {
     private getValidationErrors(): ValidationError<DataSet>[] {
         const setupErrors = this.buildSetupErrors();
         const indicatorsErrors = this.validateIndicatorsStep().value.error || [];
+        const sharingErrors = this.validateSharingStep().value.error || [];
 
-        return [...setupErrors, ...indicatorsErrors];
+        return [...setupErrors, ...indicatorsErrors, ...sharingErrors];
     }
 
     private buildSetupErrors(): ValidationError<DataSet>[] {
@@ -158,5 +197,42 @@ export class DataSet extends Struct<DataSetAttrs>() {
         } else {
             return "";
         }
+    }
+
+    private getAccessFromOrgUnits(orgUnits: OrgUnit[], config: Config): AccessData[] {
+        const orgsUnitsCodes = orgUnits.map(orgUnit => orgUnit.code.slice(0, 2));
+
+        const regions = config.regions.filter(region => orgsUnitsCodes.includes(region.code));
+        const regionsCodes = regions.map(region => region.code);
+
+        const userGroups = config.userGroups.filter(userGroup =>
+            regionsCodes.includes(userGroup.code)
+        );
+
+        return this.buildAccessGroups(userGroups);
+    }
+
+    private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
+        if (!project || !project.code) return [];
+        const regionCode = (project.code?.slice(0, 2) || "").toUpperCase();
+
+        const region = config.regions.find(region => region.code === regionCode);
+        const userGroups = config.userGroups.filter(userGroup => userGroup.code === region?.code);
+
+        return this.buildAccessGroups(userGroups);
+    }
+
+    private buildAccessGroups(userGroups: UserGroup[]): AccessData[] {
+        return userGroups.map(userGroup => this.setAccessPermissionGroup(userGroup));
+    }
+
+    private setAccessPermissionGroup(userGroup: UserGroup): AccessData {
+        const isAdmin = userGroup.name.split("_")[1]?.toLowerCase() === "administrators";
+        return {
+            id: userGroup.id,
+            name: userGroup.name,
+            permissions: Permission.setDefaultPermissionsForGroups(isAdmin),
+            type: "groups",
+        };
     }
 }

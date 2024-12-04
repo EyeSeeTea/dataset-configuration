@@ -27,6 +27,7 @@ export const metadataCodes = {
         localIndicator: "Local Indicators",
     },
     indicatorGroupSets: { theme: "Theme", status: "Status" },
+    orgUnitLevels: { country: "Country" },
 };
 
 const metadataFields = {

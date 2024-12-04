@@ -26,11 +26,13 @@ export class ProjectD2Repository implements ProjectRepository {
             return apiToFuture(
                 this.api.models.categoryOptions.get({
                     fields: {
+                        code: true,
                         id: true,
                         displayName: true,
                         startDate: true,
                         endDate: true,
                         lastUpdated: true,
+                        organisationUnits: { id: true, code: true, displayName: true, path: true },
                     },
                     filter: { "categories.code": { eq: categories.project.code } },
                     order: "displayName:asc",
@@ -40,6 +42,7 @@ export class ProjectD2Repository implements ProjectRepository {
                 return d2Response.objects.map((d2CategoryOption): Project => {
                     return Project.build({
                         dataSets: [],
+                        code: d2CategoryOption.code,
                         id: d2CategoryOption.id,
                         name: d2CategoryOption.displayName,
                         lastUpdated: d2CategoryOption.lastUpdated,
@@ -47,6 +50,12 @@ export class ProjectD2Repository implements ProjectRepository {
                             d2CategoryOption.startDate,
                             d2CategoryOption.endDate
                         ),
+                        orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
+                            id: orgUnit.id,
+                            code: orgUnit.code,
+                            name: orgUnit.displayName,
+                            path: orgUnit.path.split("/").slice(1),
+                        })),
                     });
                 });
             });
@@ -100,7 +109,13 @@ export class ProjectD2Repository implements ProjectRepository {
                     },
                     page: options.paging.page,
                     pageSize: options.paging.pageSize,
-                    fields: { id: true, displayName: true, lastUpdated: true },
+                    fields: {
+                        id: true,
+                        code: true,
+                        displayName: true,
+                        lastUpdated: true,
+                        organisationUnits: { id: true, code: true, path: true, displayName: true },
+                    },
                     order: this.buildOrderParam(options),
                 })
             ).flatMap(d2Response => {
@@ -144,13 +159,22 @@ export class ProjectD2Repository implements ProjectRepository {
             });
     }
 
-    private buildProject(d2CategoryOption: D2CategoryOptionType): Project {
+    private buildProject(
+        d2CategoryOption: D2CategoryOptionType & { organisationUnits: D2OrgUnit[] }
+    ): Project {
         return Project.build({
+            code: d2CategoryOption.code,
             id: d2CategoryOption.id,
             name: d2CategoryOption.displayName,
             lastUpdated: d2CategoryOption.lastUpdated,
             dataSets: [],
             isOpen: false,
+            orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
+                code: orgUnit.code,
+                id: orgUnit.id,
+                name: orgUnit.displayName,
+                path: orgUnit.path.split("/").slice(1),
+            })),
         });
     }
 
@@ -159,3 +183,5 @@ export class ProjectD2Repository implements ProjectRepository {
         return `${options.sorting.field}:${options.sorting.order}`;
     }
 }
+
+type D2OrgUnit = { id: Id; code: string; displayName: string; path: string };

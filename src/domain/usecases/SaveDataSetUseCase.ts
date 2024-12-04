@@ -1,5 +1,5 @@
 import _ from "$/domain/entities/generic/Collection";
-import { DataSet } from "$/domain/entities/DataSet";
+import { AccessData, DataSet } from "$/domain/entities/DataSet";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { Maybe } from "$/utils/ts-utils";
@@ -20,6 +20,7 @@ export class SaveDataSetUseCase {
             const dataSetToSave = DataSet.create({
                 ...(existingDataSet || {}),
                 ...dataSet,
+                access: this.mergeExistingUserGroups(dataSet, existingDataSet),
                 shortName: this.truncateValue(dataSet.name),
             });
 
@@ -52,6 +53,15 @@ export class SaveDataSetUseCase {
                 return this.dataSetRepository.save([dataSetWithIndicatorsRelated]);
             });
         });
+    }
+
+    private mergeExistingUserGroups(
+        dataSet: DataSet,
+        existingDataSet: Maybe<DataSet>
+    ): AccessData[] {
+        if (!existingDataSet) return dataSet.access;
+        const userGroups = existingDataSet.access.filter(access => access.type === "users");
+        return dataSet.access.concat(userGroups);
     }
 
     private getDataElementsByIds(ids: Id[]): FutureData<DataElement[]> {

@@ -31,7 +31,7 @@ const useStyles = makeStyles((theme: Theme) =>
 export type ValidationStatusType = "idle" | "loading" | "error" | "success";
 
 export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
-    const { compositionRoot } = useAppContext();
+    const { compositionRoot, config } = useAppContext();
     const { dataSet, id, projects, updateDataSet, dataSetSettings } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
@@ -41,7 +41,7 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const [validationStatus, setValidationStatus] = React.useState<ValidationStatusType>("idle");
 
     const goBackToHome = React.useCallback(() => {
-        navigateTo("createDataSets");
+        navigateTo("dataSets");
     }, [navigateTo]);
 
     const validateDataSetName = React.useCallback(
@@ -63,20 +63,27 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     );
 
     const stepsWithProps = React.useMemo(() => {
-        return steps.map(step => {
-            return {
-                ...step,
-                props: {
-                    dataSet,
-                    onValidate: validateDataSetName,
-                    validationStatus,
-                    onChange: updateDataSet,
-                    projects,
-                    dataSetSettings,
-                },
-            };
-        });
+        return steps
+            .filter(step => {
+                if (step.key !== "share") return true;
+                return dataSet.project === undefined;
+            })
+            .map(step => {
+                return {
+                    ...step,
+                    props: {
+                        config,
+                        dataSet,
+                        onValidate: validateDataSetName,
+                        validationStatus,
+                        onChange: updateDataSet,
+                        projects,
+                        dataSetSettings,
+                    },
+                };
+            });
     }, [
+        config,
         dataSet,
         dataSetSettings,
         projects,
@@ -100,6 +107,11 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                 }
             } else if (currentStep.key === "indicators") {
                 const result = dataSet.validateIndicatorsStep();
+                if (result.isError()) {
+                    return Promise.resolve(getErrors(result.value.error));
+                }
+            } else if (currentStep.key === "share") {
+                const result = dataSet.validateSharingStep();
                 if (result.isError()) {
                     return Promise.resolve(getErrors(result.value.error));
                 }

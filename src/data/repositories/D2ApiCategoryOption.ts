@@ -13,7 +13,7 @@ export class D2ApiCategoryOption {
             return apiToFuture(
                 this.api.models.categoryOptions.get({
                     filter: { id: { in: categoryOptionsIds } },
-                    fields: { id: true, displayName: true, lastUpdated: true },
+                    fields: { id: true, code: true, displayName: true, lastUpdated: true },
                     paging: false,
                 })
             ).map(response => response.objects);
@@ -21,4 +21,9 @@ export class D2ApiCategoryOption {
     }
 }
 
-export type D2CategoryOptionType = { id: string; displayName: string; lastUpdated: ISODateString };
+export type D2CategoryOptionType = {
+    id: string;
+    code: string;
+    displayName: string;
+    lastUpdated: ISODateString;
+};

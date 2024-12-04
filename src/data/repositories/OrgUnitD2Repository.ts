@@ -15,7 +15,7 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
         const $requests = chunkRequest<D2OrgUnit>(ids, idsToFetch => {
             return apiToFuture(
                 this.api.models.organisationUnits.get({
-                    fields: { id: true, displayName: true, path: true },
+                    fields: { id: true, code: true, displayName: true, path: true },
                     filter: { id: { in: idsToFetch } },
                     paging: false,
                 })
@@ -25,6 +25,7 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
         return $requests.map(response => {
             return response.map(d2OrgUnit => {
                 return {
+                    code: d2OrgUnit.code,
                     id: d2OrgUnit.id,
                     name: d2OrgUnit.displayName,
                     path: d2OrgUnit.path.split("/").slice(1),
@@ -34,4 +35,4 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
     }
 }
 
-type D2OrgUnit = { id: string; displayName: string; path: string };
+export type D2OrgUnit = { id: string; code: string; displayName: string; path: string };

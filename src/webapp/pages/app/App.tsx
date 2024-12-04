@@ -12,14 +12,16 @@ import "./App.css";
 import muiThemeLegacy from "./themes/dhis2-legacy.theme";
 import { muiTheme } from "./themes/dhis2.theme";
 import { D2Api } from "$/types/d2-api";
+import { Config } from "$/domain/entities/Config";
 
 export interface AppProps {
     compositionRoot: CompositionRoot;
     api: D2Api;
+    config: Config;
 }
 
 function App(props: AppProps) {
-    const { api, compositionRoot } = props;
+    const { api, config, compositionRoot } = props;
     const [loading, setLoading] = useState(true);
     const [appContext, setAppContext] = useState<AppContextState | null>(null);
 
@@ -28,11 +30,11 @@ function App(props: AppProps) {
             const currentUser = await compositionRoot.users.getCurrent.execute().toPromise();
             if (!currentUser) throw new Error("User not logged in");
 
-            setAppContext({ api, currentUser, compositionRoot });
+            setAppContext({ config, api, currentUser, compositionRoot });
             setLoading(false);
         }
         setup();
-    }, [compositionRoot, api]);
+    }, [config, compositionRoot, api]);
 
     if (loading) return null;
 

@@ -14,10 +14,10 @@ export class DataSetTestRepository implements DataSetRepository {
         throw new Error("Method not implemented.");
     }
     getByIds(): FutureData<DataSet[]> {
-        throw new Error("Method not implemented.");
+        return Future.success([]);
     }
     save(): FutureData<void> {
-        throw new Error("Method not implemented.");
+        return Future.void();
     }
     delete(): FutureData<void> {
         throw new Error("Method not implemented.");
