@@ -2,7 +2,7 @@ import { D2Api } from "$/types/d2-api";
 import { apiToFuture } from "$/data/api-futures";
 import { OrgUnit } from "$/domain/entities/DataSet";
 import { Id } from "$/domain/entities/Ref";
-import { Future, FutureData } from "$/domain/entities/generic/Future";
+import { FutureData } from "$/domain/entities/generic/Future";
 import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { chunkRequest } from "$/data/utils";
 
@@ -10,9 +10,7 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
     constructor(private api: D2Api) {}
 
     getByIds(ids: Id[]): FutureData<OrgUnit[]> {
-        if (ids.length === 0) return Future.success([]);
-
-        const $requests = chunkRequest<D2OrgUnit>(ids, idsToFetch => {
+        const d2OrgsUnits$ = chunkRequest<D2OrgUnit>(ids, idsToFetch => {
             return apiToFuture(
                 this.api.models.organisationUnits.get({
                     fields: { id: true, code: true, displayName: true, path: true },
@@ -22,8 +20,8 @@ export class OrgUnitD2Repository implements OrgUnitRepository {
             ).map(response => response.objects);
         });
 
-        return $requests.map(response => {
-            return response.map(d2OrgUnit => {
+        return d2OrgsUnits$.map(d2OrgUnits => {
+            return d2OrgUnits.map(d2OrgUnit => {
                 return {
                     code: d2OrgUnit.code,
                     id: d2OrgUnit.id,

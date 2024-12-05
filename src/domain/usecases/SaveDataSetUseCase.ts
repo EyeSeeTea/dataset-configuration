@@ -1,71 +1,75 @@
 import _ from "$/domain/entities/generic/Collection";
-import { AccessData, DataSet } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
-import { Maybe } from "$/utils/ts-utils";
 import { getErrors } from "$/domain/entities/generic/Error";
 import { Id } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
-import { DataElement } from "$/domain/entities/DataElement";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
+import { Indicator } from "$/domain/entities/Indicator";
+import { DataSetUtils } from "$/domain/usecases/common/DataSetUtils";
+import i18n from "$/utils/i18n";
 
 export class SaveDataSetUseCase {
+    private dataSetUtils: DataSetUtils;
+
     constructor(
         private dataSetRepository: DataSetRepository,
         private dataElementRepository: DataElementRepository
-    ) {}
+    ) {
+        this.dataSetUtils = new DataSetUtils(this.dataSetRepository);
+    }
 
     execute(dataSet: DataSet): FutureData<void> {
-        return this.getDataSetById(dataSet.id).flatMap(existingDataSet => {
-            const dataSetToSave = DataSet.create({
-                ...(existingDataSet || {}),
-                ...dataSet,
-                access: this.mergeExistingUserGroups(dataSet, existingDataSet),
-                shortName: this.truncateValue(dataSet.name),
-            });
+        const result = dataSet.validate();
 
-            const result = dataSetToSave.validate();
+        if (result.isError()) {
+            const errors = getErrors(result.value.error);
+            return Future.error(new Error(errors.join("\n")));
+        }
 
-            if (result.isError()) {
-                const errors = getErrors(result.value.error);
-                return Future.error(new Error(errors.join("\n")));
-            }
-
-            const relatedDataElementsFromIndicators =
-                this.getRelatedDataElementsFromIndicators(dataSetToSave);
-
-            const dataElementIdentifiables = relatedDataElementsFromIndicators
-                .values()
-                .flatMap(ids => ids);
-
-            return this.getDataElementsByIds(dataElementIdentifiables).flatMap(dataElements => {
-                const indicatorsWithDataElements = dataSetToSave.indicators.map(indicator => {
-                    return indicator.setRelatedDataElements(
-                        dataElements,
-                        relatedDataElementsFromIndicators
-                    );
-                });
-
-                const dataSetWithIndicatorsRelated = dataSetToSave.setIndicators(
-                    indicatorsWithDataElements
+        return this.validateDataSetName(dataSet).flatMap(dataSetAlreadyExists => {
+            if (dataSetAlreadyExists)
+                return Future.error(
+                    new Error(
+                        i18n.t("Data set name already exists: {{dataSetName}}", {
+                            nsSeparator: false,
+                            dataSetName: dataSet.name,
+                        })
+                    )
                 );
 
-                return this.dataSetRepository.save([dataSetWithIndicatorsRelated]);
-            });
+            return this.getDataElementsRelatedFromIndicators(dataSet).flatMap(
+                indicatorsWithDataElements => {
+                    const dataSetWithIndicatorsRelated = dataSet.setIndicators(
+                        indicatorsWithDataElements
+                    );
+                    return this.dataSetRepository.save([dataSetWithIndicatorsRelated]);
+                }
+            );
         });
     }
 
-    private mergeExistingUserGroups(
-        dataSet: DataSet,
-        existingDataSet: Maybe<DataSet>
-    ): AccessData[] {
-        if (!existingDataSet) return dataSet.access;
-        const userGroups = existingDataSet.access.filter(access => access.type === "users");
-        return dataSet.access.concat(userGroups);
+    private validateDataSetName(dataSet: DataSet): FutureData<boolean> {
+        return this.dataSetUtils.dataSetNameExists({ name: dataSet.name, dataSetId: dataSet.id });
     }
 
-    private getDataElementsByIds(ids: Id[]): FutureData<DataElement[]> {
-        return this.dataElementRepository.getBy(ids);
+    private getDataElementsRelatedFromIndicators(dataSet: DataSet): FutureData<Indicator[]> {
+        const relatedDataElementsFromIndicators =
+            this.getRelatedDataElementsFromIndicators(dataSet);
+
+        const dataElementIdentifiables = relatedDataElementsFromIndicators
+            .values()
+            .flatMap(ids => ids);
+
+        return this.dataElementRepository.getBy(dataElementIdentifiables).map(dataElements => {
+            return dataSet.indicators.map(indicator => {
+                return indicator.setRelatedDataElements(
+                    dataElements,
+                    relatedDataElementsFromIndicators
+                );
+            });
+        });
     }
 
     private getRelatedDataElementsFromIndicators(
@@ -86,16 +90,5 @@ export class SaveDataSetUseCase {
         return _(Array.from(string.matchAll(globalRe), match => match[1]))
             .compactMap(item => item)
             .value();
-    }
-
-    private getDataSetById(id: string): FutureData<Maybe<DataSet>> {
-        return this.dataSetRepository.getByIds([id]).map(dataSets => {
-            return _(dataSets).first();
-        });
-    }
-
-    private truncateValue(input: string): string {
-        const targetLength = 50;
-        return input.length > targetLength ? input.slice(0, targetLength) : input;
     }
 }

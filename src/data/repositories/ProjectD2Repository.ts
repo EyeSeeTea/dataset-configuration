@@ -8,9 +8,13 @@ import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
 import { ISODateString, Id } from "$/domain/entities/Ref";
 import { DataSet } from "$/domain/entities/DataSet";
-import { D2CategoryOptionType } from "$/data/repositories/D2ApiCategoryOption";
+import {
+    D2CategoryOptionType,
+    D2CategoryOptionWithDates,
+} from "$/data/repositories/D2ApiCategoryOption";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
+import { Maybe } from "$/utils/ts-utils";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -23,41 +27,8 @@ export class ProjectD2Repository implements ProjectRepository {
 
     getList(): FutureData<Project[]> {
         return this.getCategories().flatMap(categories => {
-            return apiToFuture(
-                this.api.models.categoryOptions.get({
-                    fields: {
-                        code: true,
-                        id: true,
-                        displayName: true,
-                        startDate: true,
-                        endDate: true,
-                        lastUpdated: true,
-                        organisationUnits: { id: true, code: true, displayName: true, path: true },
-                    },
-                    filter: { "categories.code": { eq: categories.project.code } },
-                    order: "displayName:asc",
-                    paging: false,
-                })
-            ).map(d2Response => {
-                return d2Response.objects.map((d2CategoryOption): Project => {
-                    return Project.build({
-                        dataSets: [],
-                        code: d2CategoryOption.code,
-                        id: d2CategoryOption.id,
-                        name: d2CategoryOption.displayName,
-                        lastUpdated: d2CategoryOption.lastUpdated,
-                        isOpen: this.isProjectOpen(
-                            d2CategoryOption.startDate,
-                            d2CategoryOption.endDate
-                        ),
-                        orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
-                            id: orgUnit.id,
-                            code: orgUnit.code,
-                            name: orgUnit.displayName,
-                            path: orgUnit.path.split("/").slice(1),
-                        })),
-                    });
-                });
+            return this.getCategoryOptionsByCode(categories.project.code).map(d2Response => {
+                return this.getProjectsWithDates(d2Response.objects);
             });
         });
     }
@@ -66,7 +37,45 @@ export class ProjectD2Repository implements ProjectRepository {
         return this.getAllProjects(1, []);
     }
 
-    private isProjectOpen(date1: ISODateString, date2: ISODateString): boolean {
+    private getCategoryOptionsByCode(code: string) {
+        return apiToFuture(
+            this.api.models.categoryOptions.get({
+                fields: {
+                    code: true,
+                    id: true,
+                    displayName: true,
+                    startDate: true,
+                    endDate: true,
+                    lastUpdated: true,
+                    organisationUnits: { id: true, code: true, displayName: true, path: true },
+                },
+                filter: { "categories.code": { eq: code } },
+                order: "displayName:asc",
+                paging: false,
+            })
+        );
+    }
+
+    private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {
+        return categoryOptions.map(d2CategoryOption => {
+            return Project.build({
+                dataSets: [],
+                code: d2CategoryOption.code,
+                id: d2CategoryOption.id,
+                name: d2CategoryOption.displayName,
+                lastUpdated: d2CategoryOption.lastUpdated,
+                isOpen: this.isProjectOpen(d2CategoryOption.startDate, d2CategoryOption.endDate),
+                orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
+                    id: orgUnit.id,
+                    code: orgUnit.code,
+                    name: orgUnit.displayName,
+                    path: orgUnit.path.split("/").slice(1),
+                })),
+            });
+        });
+    }
+
+    private isProjectOpen(date1: Maybe<ISODateString>, date2: Maybe<ISODateString>): boolean {
         if (!date1 || !date2) return false;
 
         const today = new Date();

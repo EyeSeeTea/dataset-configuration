@@ -226,7 +226,6 @@ export class DataSetD2Api {
                 data: this.buildPermission(d2DataSet.sharing.public, "data"),
                 metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
             },
-            shortName: d2DataSet.displayShortName,
             access: this.buildAccessByType(d2DataSet.userAccesses, "users").concat(
                 this.buildAccessByType(d2DataSet.userGroupAccesses, "groups")
             ),
@@ -266,7 +265,7 @@ export class DataSetD2Api {
         return ccCodeParts.join("_");
     }
 
-    private buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
+    buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
         if (permissionType === "metadata") {
             const { canRead, canWrite } = this.buildPermissionByType(permissions, permissionType);
             return Permission.create({ read: canRead, write: canWrite });

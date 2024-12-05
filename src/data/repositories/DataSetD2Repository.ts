@@ -2,7 +2,7 @@ import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
-import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
+import { AccessData, DataSet, DataSetList } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import {
     DataSetName,
@@ -12,12 +12,17 @@ import {
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { getUid } from "$/utils/uid";
 import _ from "$/domain/entities/generic/Collection";
-import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/DataSetD2Api";
+import {
+    DataSetD2Api,
+    OctalNotationPermission,
+    dataSetFieldsWithOrgUnits,
+} from "$/data/repositories/DataSetD2Api";
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiConfig";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Id, Ref } from "$/domain/entities/Ref";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -280,10 +285,10 @@ export class DataSetD2Repository implements DataSetRepository {
     ) {
         return {
             id: dataSet.id || getUid(dataSet.name),
+            shortName: dataSet.shortName,
             name: dataSet.name,
             periodType: "Monthly",
             description: dataSet.description,
-            shortName: dataSet.shortName,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
             dataSetElements: this.buildDataSetElements(dataSet),
             indicators: dataSet.indicators
@@ -299,8 +304,8 @@ export class DataSetD2Repository implements DataSetRepository {
                     };
                 }),
             userGroupAccesses: _(dataSet.access)
-                .compactMap(access => {
-                    if (access.type !== "groups") return undefined;
+                .filter(access => access.type === "groups")
+                .map(access => {
                     return {
                         access: this.d2DataSetApi.generateFullPermission(access.permissions),
                         id: access.id,
@@ -314,6 +319,20 @@ export class DataSetD2Repository implements DataSetRepository {
             openFuturePeriods: dataSet.openFuturePeriods,
             expiryDays: dataSet.expiryDays,
         };
+    }
+
+    private convertSharingGroupsToAccessData(d2UserGroups: Maybe<SharingUserGroup>): AccessData[] {
+        if (!d2UserGroups || Object.keys(d2UserGroups).length === 0) return [];
+
+        return Object.values(d2UserGroups).map(({ id, access }) => ({
+            id,
+            permissions: {
+                data: this.d2DataSetApi.buildPermission(access, "data"),
+                metadata: this.d2DataSetApi.buildPermission(access, "metadata"),
+            },
+            name: "",
+            type: "groups",
+        }));
     }
 
     private buildDataSetElements(dataSet: DataSetToSave) {
@@ -352,12 +371,11 @@ export class DataSetD2Repository implements DataSetRepository {
             attribute: { id: attributes.project.id },
             value: dataSet.project?.id,
         };
-
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
 
-        const attributesToSave = _([projectAttribute, createdByAttribute])
-            .compactMap(attribute => (attribute.value ? attribute : undefined))
-            .value();
+        const attributesToSave = [projectAttribute, createdByAttribute].filter(
+            attribute => attribute.value
+        );
 
         const filteredExisting =
             existingAttributes?.filter(
@@ -390,3 +408,5 @@ type D2DataSetSection = {
 };
 
 const indicatorTypeLabel = { outcomes: "Outcomes", outputs: "Outputs" };
+
+type SharingUserGroup = Record<Id, { id: Id; access: OctalNotationPermission }>;

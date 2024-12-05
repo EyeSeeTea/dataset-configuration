@@ -10,6 +10,7 @@ import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Config, UserGroup } from "$/domain/entities/Config";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -19,7 +20,6 @@ export type DataSetAttrs = {
     lastUpdated: ISODateString;
     permissions: Permissions;
     project: Maybe<Project>;
-    shortName: string;
     coreCompetencies: CoreCompetency[];
     access: AccessData[];
     orgUnits: OrgUnit[];
@@ -27,10 +27,6 @@ export type DataSetAttrs = {
     openFuturePeriods: number;
     notifyUser: boolean;
     indicators: Indicator[];
-};
-
-export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
-    orgUnits: Ref[];
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -45,6 +41,15 @@ export class DataSet extends Struct<DataSetAttrs>() {
     validate(): Either<ValidationError<DataSet>[], DataSet> {
         const allErrors = this.getValidationErrors();
         return allErrors.length === 0 ? Either.success(this) : Either.error(allErrors);
+    }
+
+    get shortName(): string {
+        return this.truncateValue(this.name);
+    }
+
+    private truncateValue(input: string): string {
+        const targetLength = 50;
+        return input.length > targetLength ? input.slice(0, targetLength) : input;
     }
 
     validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
@@ -78,7 +83,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this._update({ access: access });
     }
 
-    update(fieldName: keyof DataSet, value: string | number | boolean): DataSet {
+    update<K extends keyof DataSet>(fieldName: K, value: DataSet[K]): DataSet {
         return this._update({ [fieldName]: value });
     }
 
@@ -128,30 +133,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
             .compactMap(access => access.name.split("_")[0])
             .uniq()
             .value();
-    }
-
-    static createEmpty(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
-        return DataSet.create({
-            indicators: [],
-            access: [],
-            coreCompetencies: [],
-            created: "",
-            description: "",
-            id,
-            lastUpdated: "",
-            name: "",
-            orgUnits: [],
-            permissions: {
-                data: Permission.create({ read: false, write: false }),
-                metadata: Permission.create({ read: false, write: false }),
-            },
-            project: undefined,
-            shortName: "",
-            expiryDays: 0,
-            openFuturePeriods: 0,
-            notifyUser: false,
-            ...initialData,
-        });
     }
 
     static buildAccess(permissions: Permissions): string {
@@ -234,5 +215,28 @@ export class DataSet extends Struct<DataSetAttrs>() {
             permissions: Permission.setDefaultPermissionsForGroups(isAdmin),
             type: "groups",
         };
+    }
+
+    static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
+        return DataSet.create({
+            indicators: [],
+            access: [],
+            coreCompetencies: [],
+            created: "",
+            description: "",
+            id,
+            lastUpdated: "",
+            name: "",
+            orgUnits: [],
+            permissions: {
+                data: Permission.create({ read: false, write: false }),
+                metadata: Permission.create({ read: false, write: false }),
+            },
+            project: undefined,
+            expiryDays: 0,
+            openFuturePeriods: 0,
+            notifyUser: false,
+            ...initialData,
+        });
     }
 }

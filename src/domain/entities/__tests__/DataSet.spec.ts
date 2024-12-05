@@ -70,7 +70,7 @@ describe("DataSet", () => {
 });
 
 function createDataSet(data?: Partial<DataSetAttrs>): DataSet {
-    return DataSet.createEmpty(getUid(new Date().getTime().toString()), data);
+    return DataSet.initial(getUid(new Date().getTime().toString()), data);
 }
 
 function expectUserGroups(dataSet: Maybe<DataSet>) {

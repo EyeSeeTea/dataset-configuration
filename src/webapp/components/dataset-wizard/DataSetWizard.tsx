@@ -9,9 +9,10 @@ import { getDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
 import { useNavigateTo } from "$/webapp/routes";
 import { DataSet } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { getErrors } from "$/domain/entities/generic/Error";
+import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
 import { Project } from "$/domain/entities/Project";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
+import { Either } from "$/domain/entities/generic/Either";
 
 export type DataSetWizardProps = {
     id?: string;
@@ -39,6 +40,8 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const classes = useStyles();
     const navigateTo = useNavigateTo();
     const [validationStatus, setValidationStatus] = React.useState<ValidationStatusType>("idle");
+
+    const { validateSteps } = useValidateDataSetWizard({ validationStatus, dataSet });
 
     const goBackToHome = React.useCallback(() => {
         navigateTo("dataSets");
@@ -93,34 +96,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
         updateDataSet,
     ]);
 
-    const validationInProgressOrError =
-        !validationStatus || validationStatus === "error" || validationStatus === "loading";
-
-    const validateSteps = React.useCallback(
-        (currentStep: WizardStep) => {
-            if (validationInProgressOrError)
-                return Promise.resolve(["Validation name in progress"]);
-            if (currentStep.key === "setup") {
-                const result = dataSet.validateSetup();
-                if (result.isError()) {
-                    return Promise.resolve(getErrors(result.value.error));
-                }
-            } else if (currentStep.key === "indicators") {
-                const result = dataSet.validateIndicatorsStep();
-                if (result.isError()) {
-                    return Promise.resolve(getErrors(result.value.error));
-                }
-            } else if (currentStep.key === "share") {
-                const result = dataSet.validateSharingStep();
-                if (result.isError()) {
-                    return Promise.resolve(getErrors(result.value.error));
-                }
-            }
-            return Promise.resolve([]);
-        },
-        [dataSet, validationInProgressOrError]
-    );
-
     return (
         <Grid container className={classes.root}>
             <Grid item xs={12} className={classes.titleContainer}>
@@ -143,5 +118,56 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
         </Grid>
     );
 });
+
+export function useValidateDataSetWizard(props: {
+    validationStatus: ValidationStatusType;
+    dataSet: DataSet;
+}) {
+    const { validationStatus, dataSet } = props;
+
+    const validationInProgressOrError =
+        !validationStatus || validationStatus === "error" || validationStatus === "loading";
+
+    const validateSteps = React.useCallback(
+        (currentStep: WizardStep) => {
+            if (validationInProgressOrError) {
+                const errorMessage = getErrorByValidationStatus(validationStatus);
+                return Promise.resolve([errorMessage]);
+            }
+
+            const validationMap: ValidationStepType = {
+                setup: () => dataSet.validateSetup(),
+                indicators: () => dataSet.validateIndicatorsStep(),
+                share: () => dataSet.validateSharingStep(),
+            };
+
+            const validate = validationMap[currentStep.key];
+            if (validate) {
+                const result = validate();
+                return result.isError()
+                    ? Promise.resolve(getErrors(result.value.error))
+                    : Promise.resolve([]);
+            } else {
+                return Promise.resolve([]);
+            }
+        },
+        [dataSet, validationInProgressOrError, validationStatus]
+    );
+
+    return { validateSteps };
+}
+
+function getErrorByValidationStatus(status: ValidationStatusType): string {
+    switch (status) {
+        case "error":
+            return i18n.t("Data set name already exists");
+        case "loading":
+            return i18n.t("Validation name in progress");
+        default:
+            return "";
+    }
+}
+
+type ValidationStepType = Record<string, () => Either<ValidationError<DataSet>[], DataSet>>;
 
 DataSetWizard.displayName = "DataSetWizard";
