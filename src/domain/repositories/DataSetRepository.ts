@@ -1,7 +1,8 @@
 import { FutureData } from "$/domain/entities/generic/Future";
-import { DataSet, DataSetList, DataSetToSave } from "$/domain/entities/DataSet";
+import { DataSet, DataSetList } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Id } from "$/domain/entities/Ref";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export interface DataSetRepository {
     getByIds(ids: Id[]): FutureData<DataSet[]>;

@@ -40,6 +40,8 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const navigateTo = useNavigateTo();
     const [validationStatus, setValidationStatus] = React.useState<ValidationStatusType>("idle");
 
+    const { validateSteps } = useValidateDataSetWizard({ validationStatus, dataSet });
+
     const goBackToHome = React.useCallback(() => {
         navigateTo("createDataSets");
     }, [navigateTo]);
@@ -86,29 +88,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
         updateDataSet,
     ]);
 
-    const validationInProgressOrError =
-        !validationStatus || validationStatus === "error" || validationStatus === "loading";
-
-    const validateSteps = React.useCallback(
-        (currentStep: WizardStep) => {
-            if (validationInProgressOrError)
-                return Promise.resolve(["Validation name in progress"]);
-            if (currentStep.key === "setup") {
-                const result = dataSet.validateSetup();
-                if (result.isError()) {
-                    return Promise.resolve(getErrors(result.value.error));
-                }
-            } else if (currentStep.key === "indicators") {
-                const result = dataSet.validateIndicatorsStep();
-                if (result.isError()) {
-                    return Promise.resolve(getErrors(result.value.error));
-                }
-            }
-            return Promise.resolve([]);
-        },
-        [dataSet, validationInProgressOrError]
-    );
-
     return (
         <Grid container className={classes.root}>
             <Grid item xs={12} className={classes.titleContainer}>
@@ -131,5 +110,45 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
         </Grid>
     );
 });
+
+export function useValidateDataSetWizard(props: {
+    validationStatus: ValidationStatusType;
+    dataSet: DataSet;
+}) {
+    const { validationStatus, dataSet } = props;
+
+    const validationInProgressOrError =
+        !validationStatus || validationStatus === "error" || validationStatus === "loading";
+
+    const validateSteps = React.useCallback(
+        (currentStep: WizardStep) => {
+            if (validationInProgressOrError) {
+                const errorMessage = getErrorByValidationStatus(validationStatus);
+                return Promise.resolve([errorMessage]);
+            } else if (currentStep.key === "setup") {
+                const result = dataSet.validateSetup();
+                return result.isError()
+                    ? Promise.resolve(getErrors(result.value.error))
+                    : Promise.resolve([]);
+            } else {
+                return Promise.resolve([]);
+            }
+        },
+        [dataSet, validationInProgressOrError]
+    );
+
+    return { validateSteps };
+}
+
+function getErrorByValidationStatus(status: ValidationStatusType): string {
+    switch (status) {
+        case "error":
+            return i18n.t("Data set name already exists");
+        case "loading":
+            return i18n.t("Validation name in progress");
+        default:
+            return "";
+    }
+}
 
 DataSetWizard.displayName = "DataSetWizard";

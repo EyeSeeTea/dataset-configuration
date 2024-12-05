@@ -9,6 +9,7 @@ import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -18,7 +19,6 @@ export type DataSetAttrs = {
     lastUpdated: ISODateString;
     permissions: Permissions;
     project: Maybe<Project>;
-    shortName: string;
     coreCompetencies: CoreCompetency[];
     access: AccessData[];
     orgUnits: OrgUnit[];
@@ -28,9 +28,9 @@ export type DataSetAttrs = {
     indicators: Indicator[];
 };
 
-export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
-    orgUnits: Ref[];
-};
+// export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
+//     orgUnits: Ref[];
+// };
 
 export type OrgUnit = { id: Id; name: string; path: Id[] };
 export type Permissions = { data: Permission; metadata: Permission };
@@ -46,6 +46,15 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return allErrors.length === 0 ? Either.success(this) : Either.error(allErrors);
     }
 
+    get shortName(): string {
+        return this.truncateValue(this.name);
+    }
+
+    private truncateValue(input: string): string {
+        const targetLength = 50;
+        return input.length > targetLength ? input.slice(0, targetLength) : input;
+    }
+
     validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
         const errors = this.buildSetupErrors();
         return errors.length === 0 ? Either.success(this) : Either.error(errors);
@@ -56,7 +65,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this._update({ project, name });
     }
 
-    update(fieldName: keyof DataSet, value: string | number | boolean): DataSet {
+    update<K extends keyof DataSet>(fieldName: K, value: DataSet[K]): DataSet {
         return this._update({ [fieldName]: value });
     }
 
@@ -82,29 +91,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
                       value: this.indicators,
                   },
               ]);
-    }
-
-    static createEmpty(id: Id): DataSet {
-        return DataSet.create({
-            indicators: [],
-            access: [],
-            coreCompetencies: [],
-            created: "",
-            description: "",
-            id,
-            lastUpdated: "",
-            name: "",
-            orgUnits: [],
-            permissions: {
-                data: Permission.create({ read: false, write: false }),
-                metadata: Permission.create({ read: false, write: false }),
-            },
-            project: undefined,
-            shortName: "",
-            expiryDays: 0,
-            openFuturePeriods: 0,
-            notifyUser: false,
-        });
     }
 
     static buildOrgUnitsFromPaths(paths: string[]): OrgUnit[] {
@@ -158,5 +144,27 @@ export class DataSet extends Struct<DataSetAttrs>() {
         } else {
             return "";
         }
+    }
+
+    static initial(id: Id): DataSet {
+        return DataSet.create({
+            indicators: [],
+            access: [],
+            coreCompetencies: [],
+            created: "",
+            description: "",
+            id,
+            lastUpdated: "",
+            name: "",
+            orgUnits: [],
+            permissions: {
+                data: Permission.create({ read: false, write: false }),
+                metadata: Permission.create({ read: false, write: false }),
+            },
+            project: undefined,
+            expiryDays: 0,
+            openFuturePeriods: 0,
+            notifyUser: false,
+        });
     }
 }

@@ -4,6 +4,7 @@ import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
 import { chunkRequest } from "$/data/utils";
 import { FutureData } from "$/domain/entities/generic/Future";
+import { Maybe } from "$/utils/ts-utils";
 
 export class D2ApiCategoryOption {
     constructor(private api: D2Api) {}
@@ -22,3 +23,9 @@ export class D2ApiCategoryOption {
 }
 
 export type D2CategoryOptionType = { id: string; displayName: string; lastUpdated: ISODateString };
+export type D2CategoryOptionDates = {
+    startDate: Maybe<ISODateString>;
+    endDate: Maybe<ISODateString>;
+};
+
+export type D2CategoryOptionWithDates = D2CategoryOptionType & D2CategoryOptionDates;

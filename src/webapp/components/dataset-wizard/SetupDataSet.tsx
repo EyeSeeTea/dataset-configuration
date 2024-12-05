@@ -18,6 +18,7 @@ import { Project } from "$/domain/entities/Project";
 import { ProjectsSelectorModal } from "$/webapp/components/dataset-wizard/ProjectsSelectorModal";
 import { Maybe } from "$/utils/ts-utils";
 import { component } from "$/utils/react";
+import _ from "$/domain/entities/generic/Collection";
 
 export type SetupDataSetProps = {
     dataSet: DataSet;
@@ -28,7 +29,7 @@ export type SetupDataSetProps = {
 };
 
 const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
-    const { api } = useAppContext();
+    const { api, compositionRoot } = useAppContext();
     const { dataSet, onChange, onValidate, projects, validationStatus } = props;
     const [projectModalOpen, setProjectModalOpen] = React.useState(false);
 
@@ -64,11 +65,13 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
 
     const updateOrgUnits = React.useCallback(
         (paths: string[]) => {
-            const orgUnits = DataSet.buildOrgUnitsFromPaths(paths);
-            const updateData = DataSet.create({ ...dataSet, orgUnits });
-            onChange(updateData);
+            const idsFromPaths = paths.map(path => _(path.split("/")).last() || "");
+            compositionRoot.orgUnits.getByIds.execute(idsFromPaths).run(orgUnitsDetails => {
+                const updateData = DataSet.create({ ...dataSet, orgUnits: orgUnitsDetails });
+                onChange(updateData);
+            }, console.error);
         },
-        [onChange, dataSet]
+        [compositionRoot.orgUnits.getByIds, onChange, dataSet]
     );
 
     const updateProject = React.useCallback(

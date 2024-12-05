@@ -25,7 +25,7 @@ export function getErrorMessageFromErrors<T>(errors: ValidationError<T>[]): stri
     return errors
         .map(error => {
             return error.errors.map(err =>
-                validationErrorMessages[err](error.property as string, error.value)
+                validationErrorMessages[err](error.property, error.value)
             );
         })
         .flat()
@@ -33,17 +33,13 @@ export function getErrorMessageFromErrors<T>(errors: ValidationError<T>[]): stri
 }
 
 export function getErrors<T>(errors: ValidationError<T>[]): string[] {
-    return errors
-        .map(error => {
-            return error.errors.map(err =>
-                validationErrorMessages[err](error.property as string, error.value)
-            );
-        })
-        .flat();
+    return errors.flatMap(error => {
+        return error.errors.map(err => validationErrorMessages[err](error.property, error.value));
+    });
 }
 
 export type ValidationError<T> = {
-    property: keyof T;
+    property: keyof T & string;
     value: unknown;
     errors: ValidationErrorKey[];
 };

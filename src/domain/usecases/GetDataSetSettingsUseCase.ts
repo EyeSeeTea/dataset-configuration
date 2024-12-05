@@ -33,7 +33,7 @@ export class GetDataSetSettingsUseCase {
 
     private getOrCreateDataSet(dataSetId: Id): FutureData<DataSet> {
         if (!dataSetId)
-            return Future.success(DataSet.createEmpty(getUid(new Date().getTime().toString())));
+            return Future.success(DataSet.initial(getUid(new Date().getTime().toString())));
         return this.dataSetRepository.getByIds([dataSetId]).flatMap(dataSets => {
             const dataSet = dataSets[0];
             return dataSet

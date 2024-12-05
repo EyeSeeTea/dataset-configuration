@@ -222,7 +222,6 @@ export class DataSetD2Api {
                 data: this.buildPermission(d2DataSet.sharing.public, "data"),
                 metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
             },
-            shortName: d2DataSet.displayShortName,
             access: this.buildAccessByType(d2DataSet.userAccesses, "users").concat(
                 this.buildAccessByType(d2DataSet.userGroupAccesses, "groups")
             ),

@@ -45,9 +45,9 @@ export function useGetDataSetSettings(props: { id: Id }) {
     const { id } = props;
     const { compositionRoot } = useAppContext();
     const snackbar = useSnackbar();
-    const [status, setStatus] = React.useState<HttpStatus>("idle");
+    const [status, setStatus] = React.useState<LoadingStatus>("idle");
     const [dataSet, updateDataSet] = React.useState<DataSet>(
-        DataSet.createEmpty(getUid(new Date().getTime().toString()))
+        DataSet.initial(getUid(new Date().getTime().toString()))
     );
     const [dataSetSettings, setDataSetSettings] = React.useState<DataSetSettings>();
 
@@ -84,6 +84,6 @@ function useGetProjects() {
     return { projects };
 }
 
-export type HttpStatus = "idle" | "loading" | "finished" | "error";
+export type LoadingStatus = "idle" | "loading" | "finished" | "error";
 
 export const RegisterDataSetPage = component(RegisterDataSetPage_);
