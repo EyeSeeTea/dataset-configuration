@@ -24,6 +24,6 @@ tr:has(.MuiAlert-message) {
     background-color: rgb(255, 238, 238);
 }
 
-.MuiToolbar-root > div[data-test="search"] {
+.dataset-table div[data-test="search"] {
     padding-inline-start: 0.4em;
 }
