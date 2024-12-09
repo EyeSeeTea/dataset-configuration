@@ -7,22 +7,22 @@ import { SummaryDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSe
 export function getDataSetSteps() {
     const steps = [
         {
-            component: () => <SetupDataSet />,
+            component: SetupDataSet,
             label: i18n.t("Setup"),
             key: "setup",
         },
         {
-            component: () => <IndicatorsDataSet />,
+            component: IndicatorsDataSet,
             label: i18n.t("Indicators"),
             key: "indicators",
         },
         {
-            component: () => <ShareOptionsDataSet />,
+            component: ShareOptionsDataSet,
             label: i18n.t("Share"),
             key: "share",
         },
         {
-            component: () => <SummaryDataSet />,
+            component: SummaryDataSet,
             label: i18n.t("Summary and Save"),
             key: "summary",
         },

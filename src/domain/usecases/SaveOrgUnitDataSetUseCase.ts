@@ -1,8 +1,9 @@
 import { FutureData } from "$/domain/entities/generic/Future";
-import { DataSet, DataSetToSave } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import _ from "$/domain/entities/generic/Collection";
+import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export class SaveOrgUnitDataSetUseCase {
     constructor(private dataSetRepository: DataSetRepository) {}

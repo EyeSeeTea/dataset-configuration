@@ -10,7 +10,7 @@ import {
     FilterWrapper,
 } from "$/webapp/components/dataset-wizard/FilterIndicators";
 
-export type IndicatorsDataSetProps = { dataSet?: DataSet };
+export type IndicatorsDataSetProps = { dataSet: DataSet };
 
 export type IndicatorsColumns = {
     id: string;
@@ -32,7 +32,7 @@ const coreCompetencies = [
     "Wash",
 ];
 
-export const IndicatorsDataSet = React.memo(() => {
+export const IndicatorsDataSet = React.memo((_props: IndicatorsDataSetProps) => {
     const [showFilterModal, setShowFilterModal] = React.useState(false);
     const [scope, setScope] = React.useState("Core");
     const [core, setCore] = React.useState("Icla");
