@@ -41,9 +41,8 @@ export type CoreCompetency = { id: Id; name: string; code: string };
 export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
-    validate(): Either<ValidationError<DataSet>[], DataSet> {
-        const allErrors = this.getValidationErrors();
-        return allErrors.length === 0 ? Either.success(this) : Either.error(allErrors);
+    validate(): ValidationError<DataSet>[] {
+        return this.getValidationErrors();
     }
 
     get shortName(): string {
@@ -81,25 +80,16 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this._update({ indicators });
     }
 
-    validateIndicatorsStep(): Either<ValidationError<DataSet>[], DataSet> {
-        return this.indicators.length > 0
-            ? Either.success(this)
-            : Either.error([
+    validateIndicatorsStep(): ValidationError<DataSet>[] {
+        return this.indicators.length === 0
+            ? [
                   {
                       property: "indicators" as const,
                       errors: ["indicators_required"],
                       value: this.indicators,
                   },
-              ]);
-    }
-
-    static buildOrgUnitsFromPaths(paths: string[]): OrgUnit[] {
-        const orgUnits = paths.map(path => ({
-            id: _(path.split("/")).last() || "",
-            name: path,
-            path: path.split("/").slice(1),
-        }));
-        return orgUnits;
+              ]
+            : [];
     }
 
     static buildAccess(permissions: Permissions): string {
@@ -114,7 +104,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     private getValidationErrors(): ValidationError<DataSet>[] {
         const setupErrors = this.buildSetupErrors();
-        const indicatorsErrors = this.validateIndicatorsStep().value.error || [];
+        const indicatorsErrors = this.validateIndicatorsStep();
 
         return [...setupErrors, ...indicatorsErrors];
     }

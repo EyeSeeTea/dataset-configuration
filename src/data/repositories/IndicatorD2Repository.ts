@@ -1,5 +1,5 @@
 import { apiToFuture } from "$/data/api-futures";
-import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { Indicator } from "$/domain/entities/Indicator";
 import { IndicatorRepository } from "$/domain/repositories/IndicatorRepository";

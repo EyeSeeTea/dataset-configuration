@@ -17,7 +17,7 @@ export type FilterIndicatorsProps = {
     groups: string[];
     group: string;
     onClose: () => void;
-    onFilterChange: (scope: ChipItem | ChipItem[], type: FilterType) => void;
+    onFilterChange: (scope: ChipItem[], type: FilterType) => void;
     scopes: string[];
     scopeValue: string;
     showCloseButton?: boolean;
@@ -83,14 +83,17 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             <Divider />
 
             <ChipFilter
-                items={scopes.map(s => ({ text: s, value: s }))}
+                items={scopes.map(scope => ({ text: scope, value: scope }))}
                 label={i18n.t("Scope")}
                 onChange={value => onFilterChange(value, "scope")}
                 value={scopeValue}
             />
 
             <ChipFilter
-                items={coreCompetencies.map(c => ({ text: c.name, value: c.id }))}
+                items={coreCompetencies.map(coreCompetency => ({
+                    text: coreCompetency.name,
+                    value: coreCompetency.id,
+                }))}
                 label={i18n.t("Core competencies")}
                 onChange={value => onFilterChange(value, "core")}
                 value={coreValue}
@@ -110,7 +113,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                     className="dropdown"
                     items={themes.map(t => ({ text: t, value: t }))}
                     onChange={value =>
-                        onFilterChange({ text: value ?? "", value: value ?? "" }, "theme")
+                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "theme")
                     }
                     label={i18n.t("Theme")}
                     value={theme}
@@ -122,7 +125,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                     className="dropdown"
                     items={groups.map(g => ({ text: g, value: g }))}
                     onChange={value =>
-                        onFilterChange({ text: value ?? "", value: value ?? "" }, "group")
+                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "group")
                     }
                     label={i18n.t("Group")}
                     value={group}
@@ -135,7 +138,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
 export type ChipFilterProps = {
     items: ChipItem[];
     label: string;
-    onChange: (item: ChipItem | ChipItem[]) => void;
+    onChange: (item: ChipItem[]) => void;
     value: string | string[];
     mode?: "single" | "multiple";
 };
@@ -146,35 +149,30 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
     const { items, label, onChange, value, mode = "single" } = props;
 
     const handleChipClick = (itemValue: string) => {
+        const selectedValues = Array.isArray(value) ? value : [];
+        const currentItem = items.find(item => item.value === itemValue);
+
+        if (!currentItem) return;
+
         if (mode === "single") {
-            const currentItem = items.find(item => item.value === itemValue);
-            if (currentItem) onChange(currentItem);
-        } else if (mode === "multiple") {
-            const selectedValues = Array.isArray(value) ? value : [];
-            const currentValues = selectedValues.filter(v => v !== itemValue);
-            const chipItems = _(currentValues)
-                .compactMap(value => {
-                    return items.find(item => item.value === value);
-                })
-                .value();
-            if (selectedValues.includes(itemValue)) {
-                onChange(chipItems);
-            } else {
-                const itemToRemove = items.find(item => item.value === itemValue);
-                if (itemToRemove) {
-                    onChange(chipItems.concat([itemToRemove]));
-                }
-            }
+            onChange([currentItem]);
+        } else {
+            const isSelected = selectedValues.includes(itemValue);
+            const updatedItems = isSelected
+                ? selectedValues
+                      .filter(
+                          value => value !== itemValue && items.find(item => item.value === value)
+                      )
+                      .map(value => ({ text: value, value }))
+                : [...selectedValues, itemValue]
+                      .filter(value => items.find(item => item.value === value))
+                      .map(value => ({ text: value, value }));
+
+            onChange(updatedItems);
         }
     };
 
-    const isSelected = (itemValue: string) => {
-        if (mode === "single") {
-            return itemValue === value;
-        } else {
-            return Array.isArray(value) && value.includes(itemValue);
-        }
-    };
+    const isSelected = (itemValue: string) => value.includes(itemValue);
 
     return (
         <BodyFilterContainer>

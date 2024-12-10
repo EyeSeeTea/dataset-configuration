@@ -7,7 +7,7 @@ import { DataSetWizard } from "$/webapp/components/dataset-wizard/DataSetWizard"
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
 import { Project } from "$/domain/entities/Project";
-import { getUid } from "$/utils/uid";
+import { generateUid } from "$/utils/uid";
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
@@ -46,9 +46,7 @@ export function useGetDataSetSettings(props: { id: Id }) {
     const { compositionRoot } = useAppContext();
     const snackbar = useSnackbar();
     const [status, setStatus] = React.useState<LoadingStatus>("idle");
-    const [dataSet, updateDataSet] = React.useState<DataSet>(
-        DataSet.initial(getUid(new Date().getTime().toString()))
-    );
+    const [dataSet, updateDataSet] = React.useState<DataSet>(DataSet.initial(generateUid()));
     const [dataSetSettings, setDataSetSettings] = React.useState<DataSetSettings>();
 
     React.useEffect(() => {

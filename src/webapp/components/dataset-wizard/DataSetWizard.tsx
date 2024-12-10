@@ -134,7 +134,7 @@ export function useValidateDataSetWizard(props: {
                 return Promise.resolve([]);
             }
         },
-        [dataSet, validationInProgressOrError]
+        [dataSet, validationInProgressOrError, validationStatus]
     );
 
     return { validateSteps };

@@ -1,4 +1,4 @@
-import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
+import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
@@ -14,9 +14,9 @@ import { getUid } from "$/utils/uid";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/DataSetD2Api";
 import { Maybe } from "$/utils/ts-utils";
-import { chunkRequest } from "$/data/utils";
-import { D2Config } from "$/data/repositories/D2ApiConfig";
-import { Indicator } from "$/domain/entities/Indicator";
+import { chunkRequest, runMetadata } from "$/data/utils";
+import { D2Config } from "$/data/repositories/D2ApiMetadata";
+import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
@@ -106,43 +106,52 @@ export class DataSetD2Repository implements DataSetRepository {
             const $requests = chunkRequest<string[]>(ids, dataSetIds => {
                 return apiToFuture(
                     this.api.models.dataSets.get({
-                        fields: { $owner: true },
+                        fields: ownerFields,
                         filter: { id: { in: dataSetIds } },
                         paging: false,
                     })
                 ).flatMap(d2Response => {
-                    const dataSetsToSave = dataSetIds.map(dataSetId => {
-                        const existingDataSet = d2Response.objects.find(ds => ds.id === dataSetId);
-                        const dataSet = dataSets.find(dataSet => dataSet.id === dataSetId);
-                        if (!dataSet) {
-                            throw Error(`Cannot find dataSet: ${dataSetId}`);
-                        }
+                    const dataSetsToSave = this.getD2DataSetsToSave(
+                        dataSetIds,
+                        d2Response.objects,
+                        dataSets,
+                        config
+                    );
 
-                        const existingAttributes = existingDataSet?.attributeValues;
-
-                        const result = {
-                            ...(existingDataSet || {}),
-                            ...this.buildD2DataSet(dataSet, existingAttributes, config.attributes),
-                        };
-
-                        const { sharing: _, ...rest } = result;
-                        return rest;
-                    });
-
-                    return apiToFuture(
+                    return runMetadata(
                         this.api.metadata.post({ dataSets: dataSetsToSave })
-                    ).flatMap(response => {
-                        const allErrors = this.extractErrorsFromResponse(response);
-
-                        if (allErrors.length > 0)
-                            return Future.error(new Error(allErrors.join("\n")));
-
+                    ).flatMap(() => {
                         return this.saveAllSections(dataSetsToSave, dataSets).map(() => []);
                     });
                 });
             });
 
             return $requests.toVoid();
+        });
+    }
+
+    private getD2DataSetsToSave(
+        dataSetIds: string[],
+        d2DataSets: D2DataSetOwner[],
+        dataSets: DataSetToSave[],
+        config: D2Config
+    ) {
+        return dataSetIds.map(dataSetId => {
+            const existingDataSet = d2DataSets.find(ds => ds.id === dataSetId);
+            const dataSet = dataSets.find(dataSet => dataSet.id === dataSetId);
+            if (!dataSet) {
+                throw Error(`Cannot find dataSet: ${dataSetId}`);
+            }
+
+            const existingAttributes = existingDataSet?.attributeValues;
+
+            const result = {
+                ...(existingDataSet || {}),
+                ...this.buildD2DataSet(dataSet, existingAttributes, config.attributes),
+            };
+
+            const { sharing: _, ...rest } = result;
+            return rest;
         });
     }
 
@@ -389,4 +398,12 @@ type D2DataSetSection = {
     indicators: Ref[];
 };
 
-const indicatorTypeLabel = { outcomes: "Outcomes", outputs: "Outputs" };
+const indicatorTypeLabel: Record<IndicatorAttrs["type"], string> = {
+    outcomes: "Outcomes",
+    outputs: "Outputs",
+};
+
+const ownerFields = { $owner: true };
+type D2DataSetOwner = MetadataPick<{
+    dataSets: { fields: typeof ownerFields };
+}>["dataSets"][number];

@@ -12,7 +12,7 @@ export type IndicatorAttrs = {
     theme: string;
     status: string;
     type: "outputs" | "outcomes";
-    scope: "core" | "local" | "donor";
+    scope: ScopeType;
     group: string;
     disaggregation: Maybe<NamedRef>;
     coreCompetency: CoreCompetency;
@@ -20,6 +20,8 @@ export type IndicatorAttrs = {
     numerator: string;
     relatedDataElements: DataElement[];
 };
+
+export type ScopeType = "core" | "local" | "donor";
 
 export class Indicator extends Struct<IndicatorAttrs>() {
     setRelatedDataElements(

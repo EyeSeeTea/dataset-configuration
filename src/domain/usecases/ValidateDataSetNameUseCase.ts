@@ -9,6 +9,6 @@ export class ValidateDataSetNameUseCase {
     }
 
     execute(options: ValidateDataSetNameOptions): FutureData<boolean> {
-        return this.dataSetUtils.dataSetNameExists(options);
+        return this.dataSetUtils.isDataSetNameDuplicate(options);
     }
 }

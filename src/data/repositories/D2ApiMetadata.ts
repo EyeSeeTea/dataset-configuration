@@ -65,60 +65,63 @@ export class D2ApiConfig {
 
     private getMetadata(): FutureData<D2Config> {
         return apiToFuture(this.api.metadata.get(metadataFields)).map(d2Response => {
+            const getOrThrowMetadata = (metadataKey: keyof typeof metadataFields, code: string) =>
+                getOrThrow(d2Response[metadataKey], code);
+
             return {
                 attributes: this.buildAttributes(d2Response.attributes),
                 categories: {
-                    project: getOrThrow(d2Response.categories, metadataCodes.categories.project),
+                    project: getOrThrowMetadata("categories", metadataCodes.categories.project),
                 },
                 dataElementGroupSets: {
-                    coreCompetency: getOrThrow(
-                        d2Response.dataElementGroupSets,
+                    coreCompetency: getOrThrowMetadata(
+                        "dataElementGroupSets",
                         metadataCodes.dataElementGroupSets.coreCompetency
                     ),
-                    theme: getOrThrow(
-                        d2Response.dataElementGroupSets,
+                    theme: getOrThrowMetadata(
+                        "dataElementGroupSets",
                         metadataCodes.dataElementGroupSets.theme
                     ),
-                    status: getOrThrow(
-                        d2Response.dataElementGroupSets,
+                    status: getOrThrowMetadata(
+                        "dataElementGroupSets",
                         metadataCodes.dataElementGroupSets.status
                     ),
                 },
                 dataElementGroups: {
-                    localIndicator: getOrThrow(
-                        d2Response.dataElementGroups,
+                    localIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
                         metadataCodes.dataElementGroups.localIndicator
                     ),
-                    donorIndicator: getOrThrow(
-                        d2Response.dataElementGroups,
+                    donorIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
                         metadataCodes.dataElementGroups.donorIndicator
                     ),
-                    coreIndicator: getOrThrow(
-                        d2Response.dataElementGroups,
+                    coreIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
                         metadataCodes.dataElementGroups.coreIndicator
                     ),
                 },
                 indicatorGroups: {
-                    coreIndicator: getOrThrow(
-                        d2Response.indicatorGroups,
+                    coreIndicator: getOrThrowMetadata(
+                        "indicatorGroups",
                         metadataCodes.indicatorGroup.coreIndicator
                     ),
-                    donorIndicator: getOrThrow(
-                        d2Response.indicatorGroups,
+                    donorIndicator: getOrThrowMetadata(
+                        "indicatorGroups",
                         metadataCodes.indicatorGroup.donorIndicator
                     ),
-                    localIndicator: getOrThrow(
-                        d2Response.indicatorGroups,
+                    localIndicator: getOrThrowMetadata(
+                        "indicatorGroups",
                         metadataCodes.indicatorGroup.localIndicator
                     ),
                 },
                 indicatorGroupSets: {
-                    theme: getOrThrow(
-                        d2Response.indicatorGroupSets,
+                    theme: getOrThrowMetadata(
+                        "indicatorGroupSets",
                         metadataCodes.indicatorGroupSets.theme
                     ),
-                    status: getOrThrow(
-                        d2Response.indicatorGroupSets,
+                    status: getOrThrowMetadata(
+                        "indicatorGroupSets",
                         metadataCodes.indicatorGroupSets.status
                     ),
                 },
