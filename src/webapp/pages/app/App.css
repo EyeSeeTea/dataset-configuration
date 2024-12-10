@@ -23,3 +23,7 @@ li {
 tr:has(.MuiAlert-message) {
     background-color: rgb(255, 238, 238);
 }
+
+.dataset-table div[data-test="search"] {
+    padding-inline-start: 0.4em;
+}
