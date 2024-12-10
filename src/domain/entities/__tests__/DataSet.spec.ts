@@ -23,8 +23,8 @@ describe("DataSet", () => {
         );
 
         const errors = dataSetToSave.validateSharingStep();
-        const errorMessage = getErrorMessageFromErrors(errors.value.error || []);
-        expect(errors.isError()).toBe(true);
+        const errorMessage = getErrorMessageFromErrors(errors);
+        expect(errors.length).toBeGreaterThan(0);
         expect(errorMessage).toMatch("Select at least one country");
     });
 
@@ -50,9 +50,9 @@ describe("DataSet", () => {
         }).updateAccess(configTest);
 
         const result = dataSetToSave.validateSharingStep();
-        expect(result.isSuccess()).toBe(true);
+        expect(result).toHaveLength(0);
 
-        expectUserGroups(result.value.data);
+        expectUserGroups(dataSetToSave);
     });
 
     it("should have access groups from project code", async () => {
@@ -63,9 +63,9 @@ describe("DataSet", () => {
         }).updateProject(projectTest, configTest);
 
         const result = dataSetToSave.validateSharingStep();
-        expect(result.isSuccess()).toBe(true);
+        expect(result).toHaveLength(0);
 
-        expectUserGroups(result.value.data);
+        expectUserGroups(dataSetToSave);
     });
 });
 

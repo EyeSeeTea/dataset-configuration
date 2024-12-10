@@ -18,7 +18,7 @@ import { Permission } from "$/domain/entities/Permission";
 import _ from "$/domain/entities/generic/Collection";
 import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
-import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Pager } from "@eyeseetea/d2-api/api";
 import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 

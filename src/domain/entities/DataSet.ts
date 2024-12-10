@@ -5,7 +5,6 @@ import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
-import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
@@ -38,9 +37,8 @@ export type CoreCompetency = { id: Id; name: string; code: string };
 export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
-    validate(): Either<ValidationError<DataSet>[], DataSet> {
-        const allErrors = this.getValidationErrors();
-        return allErrors.length === 0 ? Either.success(this) : Either.error(allErrors);
+    validate(): ValidationError<DataSet>[] {
+        return this.getValidationErrors();
     }
 
     get shortName(): string {
@@ -52,9 +50,9 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return input.length > targetLength ? input.slice(0, targetLength) : input;
     }
 
-    validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
+    validateSetup(): ValidationError<DataSet>[] {
         const errors = this.buildSetupErrors();
-        return errors.length === 0 ? Either.success(this) : Either.error(errors);
+        return errors.length === 0 ? [] : errors;
     }
 
     updateProject(project: Maybe<Project>, config: Config): DataSet {
@@ -99,32 +97,32 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this._update({ indicators });
     }
 
-    validateIndicatorsStep(): Either<ValidationError<DataSet>[], DataSet> {
-        return this.indicators.length > 0
-            ? Either.success(this)
-            : Either.error([
+    validateIndicatorsStep(): ValidationError<DataSet>[] {
+        return this.indicators.length === 0
+            ? [
                   {
                       property: "indicators" as const,
                       errors: ["indicators_required"],
                       value: this.indicators,
                   },
-              ]);
+              ]
+            : [];
     }
 
-    validateSharingStep(): Either<ValidationError<DataSet>[], DataSet> {
-        if (this.project) return Either.success(this);
+    validateSharingStep(): ValidationError<DataSet>[] {
+        if (this.project) return [];
 
         const regionCodesFromOrgUnits = this.getRegionCodesFromAccess();
 
         return regionCodesFromOrgUnits.length > 0
-            ? Either.success(this)
-            : Either.error([
+            ? []
+            : [
                   {
                       property: "access" as const,
                       errors: ["regions_required"],
                       value: this.access,
                   },
-              ]);
+              ];
     }
 
     getRegionCodesFromAccess(): string[] {
@@ -147,8 +145,8 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     private getValidationErrors(): ValidationError<DataSet>[] {
         const setupErrors = this.buildSetupErrors();
-        const indicatorsErrors = this.validateIndicatorsStep().value.error || [];
-        const sharingErrors = this.validateSharingStep().value.error || [];
+        const indicatorsErrors = this.validateIndicatorsStep();
+        const sharingErrors = this.validateSharingStep();
 
         return [...setupErrors, ...indicatorsErrors, ...sharingErrors];
     }

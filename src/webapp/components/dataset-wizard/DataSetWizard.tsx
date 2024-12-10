@@ -12,7 +12,6 @@ import { useAppContext } from "$/webapp/contexts/app-context";
 import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
 import { Project } from "$/domain/entities/Project";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { Either } from "$/domain/entities/generic/Either";
 
 export type DataSetWizardProps = {
     id?: string;
@@ -144,9 +143,7 @@ export function useValidateDataSetWizard(props: {
             const validate = validationMap[currentStep.key];
             if (validate) {
                 const result = validate();
-                return result.isError()
-                    ? Promise.resolve(getErrors(result.value.error))
-                    : Promise.resolve([]);
+                return result.length > 0 ? Promise.resolve(getErrors(result)) : Promise.resolve([]);
             } else {
                 return Promise.resolve([]);
             }
@@ -168,6 +165,6 @@ function getErrorByValidationStatus(status: ValidationStatusType): string {
     }
 }
 
-type ValidationStepType = Record<string, () => Either<ValidationError<DataSet>[], DataSet>>;
+type ValidationStepType = Record<string, () => ValidationError<DataSet>[]>;
 
 DataSetWizard.displayName = "DataSetWizard";

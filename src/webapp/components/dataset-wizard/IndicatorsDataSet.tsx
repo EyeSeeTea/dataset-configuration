@@ -98,39 +98,26 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         setShowFilterModal(true);
     }, []);
 
-    const updateFilter = React.useCallback(
-        (value: ChipItem | ChipItem[], filterType: FilterType) => {
-            const isArray = Array.isArray(value);
-            switch (filterType) {
-                case "scope":
-                    if (!isArray) {
-                        setScope(value.value);
-                    }
-                    break;
-                case "core":
-                    if (isArray) {
-                        setCore(value.map(v => v.value));
-                    }
-                    break;
-                case "outputType":
-                    if (!isArray) {
-                        setType(value.value);
-                    }
-                    break;
-                case "theme":
-                    if (!isArray) {
-                        setTheme(value.value);
-                    }
-                    break;
-                case "group":
-                    if (!isArray) {
-                        setGroup(value.value);
-                    }
-                    break;
-            }
-        },
-        []
-    );
+    const updateFilter = React.useCallback((value: ChipItem[], filterType: FilterType) => {
+        const singleItemValue = value[0]?.value || "";
+        switch (filterType) {
+            case "scope":
+                setScope(singleItemValue);
+                break;
+            case "core":
+                setCore(value.map(v => v.value));
+                break;
+            case "outputType":
+                setType(singleItemValue);
+                break;
+            case "theme":
+                setTheme(singleItemValue);
+                break;
+            case "group":
+                setGroup(singleItemValue);
+                break;
+        }
+    }, []);
 
     const activeFilters = React.useMemo(() => {
         const competencies = _(selectedCompetencies)

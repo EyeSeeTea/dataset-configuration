@@ -1,5 +1,5 @@
 import { apiToFuture } from "$/data/api-futures";
-import { metadataCodes } from "$/data/repositories/D2ApiConfig";
+import { metadataCodes } from "$/data/repositories/D2ApiMetadata";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { Region } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";

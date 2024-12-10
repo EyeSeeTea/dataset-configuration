@@ -23,8 +23,8 @@ export class SaveDataSetUseCase {
     execute(dataSet: DataSet): FutureData<void> {
         const result = dataSet.validate();
 
-        if (result.isError()) {
-            const errors = getErrors(result.value.error);
+        if (result.length > 0) {
+            const errors = getErrors(result);
             return Future.error(new Error(errors.join("\n")));
         }
 
@@ -51,7 +51,10 @@ export class SaveDataSetUseCase {
     }
 
     private validateDataSetName(dataSet: DataSet): FutureData<boolean> {
-        return this.dataSetUtils.dataSetNameExists({ name: dataSet.name, dataSetId: dataSet.id });
+        return this.dataSetUtils.isDataSetNameDuplicate({
+            name: dataSet.name,
+            dataSetId: dataSet.id,
+        });
     }
 
     private getDataElementsRelatedFromIndicators(dataSet: DataSet): FutureData<Indicator[]> {

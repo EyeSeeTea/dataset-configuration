@@ -20,7 +20,6 @@ import { LogRepository } from "$/domain/repositories/LogRepository";
 import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
-import { GetCoreCompetencyUseCase } from "$/domain/usecases/GetCoreCompetencyUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -94,9 +93,6 @@ function getCompositionRoot(repositories: Repositories) {
         users: { getCurrent: new GetCurrentUserUseCase(repositories.usersRepository) },
         orgUnits: {
             getByIds: new GetOrgUnitsByIdsUseCase(repositories.orgUnitRepository),
-        },
-        coreCompetencies: {
-            getAll: new GetCoreCompetencyUseCase(repositories.coreCompetencyRepository),
         },
         indicators: {
             get: new GetIndicatorsUseCase(repositories.indicatorRepository),

@@ -12,34 +12,49 @@ export class DataElementD2Repository implements DataElementRepository {
         if (identifiables.length === 0) return Future.success([]);
 
         return chunkRequest(identifiables, values => {
-            return apiToFuture(
-                this.api.models.dataElements.get({
-                    fields: {
-                        id: true,
-                        displayName: true,
-                        code: true,
-                        categoryCombo: { id: true, displayName: true },
-                    },
-                    filter: { identifiable: { in: values } },
-                    paging: false,
-                })
-            ).map(response => {
-                return response.objects;
-            });
+            return this.getByIdentifiables(values);
         }).map(response => {
             return response.map((d2DataElement): DataElement => {
-                return {
-                    code: d2DataElement.code,
-                    id: d2DataElement.id,
-                    name: d2DataElement.displayName,
-                    disaggregation: d2DataElement.categoryCombo
-                        ? {
-                              id: d2DataElement.categoryCombo.id,
-                              name: d2DataElement.categoryCombo.displayName,
-                          }
-                        : undefined,
-                };
+                return this.buildDataElement(d2DataElement);
             });
         });
     }
+
+    private buildDataElement(d2DataElement: D2ApiDataElement): DataElement {
+        return {
+            code: d2DataElement.code,
+            id: d2DataElement.id,
+            name: d2DataElement.displayName,
+            disaggregation: d2DataElement.categoryCombo
+                ? {
+                      id: d2DataElement.categoryCombo.id,
+                      name: d2DataElement.categoryCombo.displayName,
+                  }
+                : undefined,
+        };
+    }
+
+    private getByIdentifiables(identifiables: string[]) {
+        return apiToFuture(
+            this.api.models.dataElements.get({
+                fields: {
+                    id: true,
+                    displayName: true,
+                    code: true,
+                    categoryCombo: { id: true, displayName: true },
+                },
+                filter: { identifiable: { in: identifiables } },
+                paging: false,
+            })
+        ).map(response => {
+            return response.objects;
+        });
+    }
 }
+
+type D2ApiDataElement = {
+    code: string;
+    id: string;
+    displayName: string;
+    categoryCombo: { id: string; displayName: string };
+};

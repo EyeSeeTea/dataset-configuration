@@ -5,7 +5,7 @@ import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 export class DataSetUtils {
     constructor(private dataSetRepository: DataSetRepository) {}
 
-    dataSetNameExists(options: ValidateDataSetNameOptions): FutureData<boolean> {
+    isDataSetNameDuplicate(options: ValidateDataSetNameOptions): FutureData<boolean> {
         return this.dataSetRepository.getByName(options.name).map(dataSets => {
             return dataSets.some(
                 dataSet =>
