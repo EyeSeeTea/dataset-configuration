@@ -13,6 +13,10 @@ import i18n from "$/utils/i18n";
 import { TooltipTruncate } from "$/webapp/components/tooltip-truncate/TooltipTruncate";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { parseSortField } from "$/utils/parse-sort-field";
+import { useNavigateTo } from "$/webapp/routes";
+import { useDataSetsRoutes } from "$/webapp/hooks/useDataSets";
+import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
+import { getCommonActions } from "$/webapp/components/dataset-table/DataSetTableConfig";
 
 type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
 
@@ -24,6 +28,11 @@ export const ProjectTable = React.memo(() => {
     const { compositionRoot } = useAppContext();
     const loading = useLoading();
     const snackbar = useSnackbar();
+    const navigateTo = useNavigateTo();
+    const { goToCreateDataSet } = useDataSetsRoutes();
+    const [refreshTable, setRefreshTable] = React.useState(0);
+    const [tableAction, setTableAction] = React.useState<TableAction>();
+    const [isLoading, setLoading] = React.useState(false);
 
     const tableConfig = useObjectsTable<ProjectColumns>(
         React.useMemo(() => {
@@ -35,7 +44,13 @@ export const ProjectTable = React.memo(() => {
                         text: i18n.t("Details"),
                         icon: <DetailsIcon />,
                         primary: true,
+                        isActive: projects => projects.every(project => !objIsDataSet(project)),
                     },
+                    ...getCommonActions<ProjectColumns>({
+                        onAction: setTableAction,
+                        navigateTo,
+                        isActive: projects => projects.every(project => objIsDataSet(project)),
+                    }),
                 ],
                 details: [
                     {
@@ -91,10 +106,11 @@ export const ProjectTable = React.memo(() => {
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
             };
-        }, []),
+        }, [goToCreateDataSet, navigateTo]),
         React.useCallback(
             (search, pagination, sorting) => {
-                loading.show(true, i18n.t("Loading projects..."));
+                console.debug(refreshTable);
+                setLoading(true);
 
                 return new Promise((resolve, reject) => {
                     return compositionRoot.projects.get
@@ -105,7 +121,7 @@ export const ProjectTable = React.memo(() => {
                         })
                         .run(
                             response => {
-                                loading.hide();
+                                setLoading(false);
                                 return resolve({
                                     objects: response.data.map(project => {
                                         return {
@@ -123,16 +139,28 @@ export const ProjectTable = React.memo(() => {
                                 });
                             },
                             error => {
-                                loading.hide();
+                                setLoading(false);
                                 snackbar.error(error.message);
                                 return reject(new Error(error.message));
                             }
                         );
                 });
             },
-            [compositionRoot.projects.get, loading, snackbar]
+            [compositionRoot.projects.get, loading, snackbar, refreshTable]
         )
     );
 
-    return <ObjectsTable {...tableConfig} />;
+    const reloadProjects = React.useCallback((isCancelAction: boolean) => {
+        setTableAction(undefined);
+        if (!isCancelAction) {
+            setRefreshTable(prevValue => prevValue + 1);
+        }
+    }, []);
+
+    return (
+        <>
+            <ObjectsTable {...tableConfig} loading={isLoading} />;
+            <DataSetActions tableAction={tableAction} onChangeAction={reloadProjects} />
+        </>
+    );
 });

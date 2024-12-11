@@ -5,6 +5,7 @@ import { DataSet } from "$/domain/entities/DataSet";
 import { Id } from "$/domain/entities/Ref";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
+import { useNavigateTo } from "$/webapp/routes";
 
 export function useGetDataSetsByIds(ids: Id[]) {
     const { compositionRoot } = useAppContext();
@@ -87,6 +88,16 @@ export function useDeleteDataSets(props: DeleteDataSetsProps) {
     }, [compositionRoot.dataSets.remove, ids, onError, onSuccess, loading]);
 
     return { deleteDataSets };
+}
+
+export function useDataSetsRoutes() {
+    const navigateTo = useNavigateTo();
+
+    const goToCreateDataSet = React.useCallback(() => {
+        navigateTo("createDataSets");
+    }, [navigateTo]);
+
+    return { goToCreateDataSet };
 }
 
 type DeleteDataSetsProps = { ids: Id[]; onError: (message: string) => void; onSuccess: () => void };
