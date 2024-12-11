@@ -1,10 +1,5 @@
 import React from "react";
-import {
-    ObjectsTable,
-    useLoading,
-    useObjectsTable,
-    useSnackbar,
-} from "@eyeseetea/d2-ui-components";
+import { ObjectsTable, useObjectsTable, useSnackbar } from "@eyeseetea/d2-ui-components";
 import DetailsIcon from "@material-ui/icons/Details";
 
 import { DataSet } from "$/domain/entities/DataSet";
@@ -14,7 +9,6 @@ import { TooltipTruncate } from "$/webapp/components/tooltip-truncate/TooltipTru
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { parseSortField } from "$/utils/parse-sort-field";
 import { useNavigateTo } from "$/webapp/routes";
-import { useDataSetsRoutes } from "$/webapp/hooks/useDataSets";
 import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 import { getCommonActions } from "$/webapp/components/dataset-table/DataSetTableConfig";
 
@@ -26,10 +20,8 @@ function objIsDataSet(project: ProjectColumns): boolean {
 
 export const ProjectTable = React.memo(() => {
     const { compositionRoot } = useAppContext();
-    const loading = useLoading();
     const snackbar = useSnackbar();
     const navigateTo = useNavigateTo();
-    const { goToCreateDataSet } = useDataSetsRoutes();
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
     const [isLoading, setLoading] = React.useState(false);
@@ -106,7 +98,7 @@ export const ProjectTable = React.memo(() => {
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
             };
-        }, [goToCreateDataSet, navigateTo]),
+        }, [navigateTo]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);
@@ -146,7 +138,7 @@ export const ProjectTable = React.memo(() => {
                         );
                 });
             },
-            [compositionRoot.projects.get, loading, snackbar, refreshTable]
+            [compositionRoot.projects.get, snackbar, refreshTable]
         )
     );
 
