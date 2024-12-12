@@ -10,9 +10,8 @@ import { EditOrgUnits } from "$/webapp/components/edit-orgunits/EditOrgUnits";
 import { DataSetLogs } from "$/webapp/components/dataset-logs/DataSetLogs";
 import { HomeTabs } from "$/webapp/components/home-tabs/HomeTabs";
 import { Maybe } from "$/utils/ts-utils";
-import { useDeleteDataSets } from "$/webapp/hooks/useDataSets";
+import { useDataSetsRoutes, useDeleteDataSets } from "$/webapp/hooks/useDataSets";
 import { useTableConfig } from "$/webapp/components/dataset-table/DataSetTableConfig";
-import { useNavigateTo } from "$/webapp/routes";
 import { DataSetDetails } from "$/webapp/components/dataset-table/DataSetDetails";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
@@ -33,11 +32,11 @@ export const DataSetTable: React.FC = React.memo(() => {
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
 
-    const navigateTo = useNavigateTo();
     const snackbar = useSnackbar();
     const action = getSelectedAction(tableAction);
     const selectedIds = getSelectedIds(tableAction);
     const tableConfig = useTableConfig({ onAction: setTableAction, refreshTable });
+    const { goToCreateDataSet } = useDataSetsRoutes();
 
     const clearTableAction = React.useCallback((refreshTable?: boolean) => {
         setTableAction(undefined);
@@ -62,10 +61,6 @@ export const DataSetTable: React.FC = React.memo(() => {
     const closeModal = React.useCallback(() => {
         setTableAction(undefined);
     }, []);
-
-    const goToCreateDataSet = React.useCallback(() => {
-        navigateTo("createDataSets");
-    }, [navigateTo]);
 
     const renderActions = () => {
         switch (action) {

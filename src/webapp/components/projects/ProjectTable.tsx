@@ -13,6 +13,7 @@ import i18n from "$/utils/i18n";
 import { TooltipTruncate } from "$/webapp/components/tooltip-truncate/TooltipTruncate";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { parseSortField } from "$/utils/parse-sort-field";
+import { useDataSetsRoutes } from "$/webapp/hooks/useDataSets";
 
 type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
 
@@ -24,6 +25,7 @@ export const ProjectTable = React.memo(() => {
     const { compositionRoot } = useAppContext();
     const loading = useLoading();
     const snackbar = useSnackbar();
+    const { goToCreateDataSet } = useDataSetsRoutes();
 
     const tableConfig = useObjectsTable<ProjectColumns>(
         React.useMemo(() => {
@@ -90,8 +92,9 @@ export const ProjectTable = React.memo(() => {
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
+                onActionButtonClick: goToCreateDataSet,
             };
-        }, []),
+        }, [goToCreateDataSet]),
         React.useCallback(
             (search, pagination, sorting) => {
                 loading.show(true, i18n.t("Loading projects..."));
