@@ -11,6 +11,7 @@ import { parseSortField } from "$/utils/parse-sort-field";
 import { useNavigateTo } from "$/webapp/routes";
 import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 import { getCommonActions } from "$/webapp/components/dataset-table/DataSetTableConfig";
+import { useDataSetsRoutes } from "$/webapp/hooks/useDataSets";
 
 type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
 
@@ -25,6 +26,7 @@ export const ProjectTable = React.memo(() => {
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
     const [isLoading, setLoading] = React.useState(false);
+    const { goToCreateDataSet } = useDataSetsRoutes();
 
     const tableConfig = useObjectsTable<ProjectColumns>(
         React.useMemo(() => {
@@ -97,8 +99,9 @@ export const ProjectTable = React.memo(() => {
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
+                onActionButtonClick: goToCreateDataSet,
             };
-        }, [navigateTo]),
+        }, [goToCreateDataSet, navigateTo]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);
@@ -151,7 +154,7 @@ export const ProjectTable = React.memo(() => {
 
     return (
         <>
-            <ObjectsTable {...tableConfig} loading={isLoading} />;
+            <ObjectsTable {...tableConfig} loading={isLoading} />
             <DataSetActions tableAction={tableAction} onChangeAction={reloadProjects} />
         </>
     );

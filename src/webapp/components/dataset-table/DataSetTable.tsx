@@ -15,8 +15,8 @@ export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 const DataSetTable_: React.FC = React.memo(() => {
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
-    const { goToCreateDataSet } = useDataSetsRoutes();
     const tableConfig = useTableConfig({ onAction: setTableAction, refreshTable });
+    const { goToCreateDataSet } = useDataSetsRoutes();
 
     const refreshDataSets = React.useCallback((isCancelAction: boolean) => {
         setTableAction(undefined);
