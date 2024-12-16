@@ -157,7 +157,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 >
                     <FilterIndicators
                         scopes={scopes}
-                        scopeValue={scope}
+                        scopeValue={[scope]}
                         onFilterChange={updateFilter}
                         coreCompetencies={coreCompetencies}
                         showCloseButton={!isLargeDesktop}

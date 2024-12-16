@@ -19,7 +19,7 @@ export type FilterIndicatorsProps = {
     onClose: () => void;
     onFilterChange: (scope: ChipItem[], type: FilterType) => void;
     scopes: string[];
-    scopeValue: string;
+    scopeValue: string[];
     showCloseButton?: boolean;
     themes: string[];
     theme: string;
@@ -104,7 +104,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                 items={types.map(t => ({ text: t, value: t }))}
                 label={i18n.t("Type")}
                 onChange={value => onFilterChange(value, "outputType")}
-                value={selectedType}
+                value={[selectedType]}
                 mode="single"
             />
 
@@ -139,7 +139,7 @@ export type ChipFilterProps = {
     items: ChipItem[];
     label: string;
     onChange: (item: ChipItem[]) => void;
-    value: string | string[];
+    value: string[];
     mode?: "single" | "multiple";
 };
 
