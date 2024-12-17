@@ -135,7 +135,7 @@ export class Future<E, D> {
         return new Future(() => rcpromise.CancellablePromise.delay(ms)).map(() => ms);
     }
 
-    static void(): Future<unknown, undefined> {
+    static void<E>(): Future<E, undefined> {
         return Future.success(undefined);
     }
 

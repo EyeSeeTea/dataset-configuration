@@ -8,6 +8,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
+import { Indicator } from "$/domain/entities/Indicator";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 
 export type DataSetAttrs = {
@@ -24,6 +25,7 @@ export type DataSetAttrs = {
     expiryDays: number;
     openFuturePeriods: number;
     notifyUser: boolean;
+    indicators: Indicator[];
 };
 
 // export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
@@ -39,6 +41,10 @@ export type CoreCompetency = { id: Id; name: string; code: string };
 export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
+    validate(): ValidationError<DataSet>[] {
+        return this.getValidationErrors();
+    }
+
     get shortName(): string {
         return this.truncateValue(this.name);
     }
@@ -49,19 +55,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
-        const errors: ValidationError<DataSet>[] = [
-            {
-                property: "name" as const,
-                errors: validateRequired(this.name),
-                value: this.name,
-            },
-            {
-                property: "orgUnits" as const,
-                errors: validateOrgUnits(this.orgUnits),
-                value: this.orgUnits,
-            },
-        ].filter(validation => validation.errors.length > 0);
-
+        const errors = this.buildSetupErrors();
         return errors.length === 0 ? Either.success(this) : Either.error(errors);
     }
 
@@ -82,6 +76,22 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return DataSet.create({ ...this, orgUnits });
     }
 
+    setIndicators(indicators: Indicator[]): DataSet {
+        return this._update({ indicators });
+    }
+
+    validateIndicatorsStep(): ValidationError<DataSet>[] {
+        return this.indicators.length === 0
+            ? [
+                  {
+                      property: "indicators" as const,
+                      errors: ["indicators_required"],
+                      value: this.indicators,
+                  },
+              ]
+            : [];
+    }
+
     static buildAccess(permissions: Permissions): string {
         const dataDescription = DataSet.buildAccessDescription(permissions.data);
         const metadataDescription = DataSet.buildAccessDescription(permissions.metadata);
@@ -90,6 +100,28 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     static joinShortNames(dataSets: DataSet[], separator = ", "): string {
         return dataSets.map(dataSet => dataSet.shortName).join(separator);
+    }
+
+    private getValidationErrors(): ValidationError<DataSet>[] {
+        const setupErrors = this.buildSetupErrors();
+        const indicatorsErrors = this.validateIndicatorsStep();
+
+        return [...setupErrors, ...indicatorsErrors];
+    }
+
+    private buildSetupErrors(): ValidationError<DataSet>[] {
+        return [
+            {
+                property: "name" as const,
+                errors: validateRequired(this.name),
+                value: this.name,
+            },
+            {
+                property: "orgUnits" as const,
+                errors: validateOrgUnits(this.orgUnits),
+                value: this.orgUnits,
+            },
+        ].filter(validation => validation.errors.length > 0);
     }
 
     private static buildAccessDescription(permission: Permission): string {
@@ -106,6 +138,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     static initial(id: Id): DataSet {
         return DataSet.create({
+            indicators: [],
             access: [],
             coreCompetencies: [],
             created: "",

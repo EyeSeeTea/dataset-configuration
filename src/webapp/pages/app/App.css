@@ -19,3 +19,7 @@ li {
 .dropdown > div {
     margin-left: 0;
 }
+
+tr:has(.MuiAlert-message) {
+    background-color: rgb(255, 238, 238);
+}

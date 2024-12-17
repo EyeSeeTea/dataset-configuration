@@ -1,18 +1,14 @@
-import { Id } from "$/domain/entities/Ref";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
+import { DataSetUtils, ValidateDataSetNameOptions } from "$/domain/usecases/common/DataSetUtils";
 
 export class ValidateDataSetNameUseCase {
-    constructor(private dataSetRepository: DataSetRepository) {}
+    private dataSetUtils: DataSetUtils;
+    constructor(private dataSetRepository: DataSetRepository) {
+        this.dataSetUtils = new DataSetUtils(this.dataSetRepository);
+    }
 
     execute(options: ValidateDataSetNameOptions): FutureData<boolean> {
-        return this.dataSetRepository.getByName(options.name).map(dataSets => {
-            return dataSets.some(
-                dataSet =>
-                    dataSet.id !== options.dataSetId &&
-                    dataSet.name.toLowerCase() === options.name.toLowerCase()
-            );
-        });
+        return this.dataSetUtils.isDataSetNameDuplicate(options);
     }
 }
-export type ValidateDataSetNameOptions = { name: string; dataSetId: Id };

@@ -1,6 +1,10 @@
 import i18n from "$/utils/i18n";
 
-export type ValidationErrorKey = "field_cannot_be_blank" | "positive_number" | "org_unit_required";
+export type ValidationErrorKey =
+    | "field_cannot_be_blank"
+    | "positive_number"
+    | "org_unit_required"
+    | "indicators_required";
 
 export const validationErrorMessages: Record<
     ValidationErrorKey,
@@ -14,6 +18,7 @@ export const validationErrorMessages: Record<
         });
     },
     org_unit_required: () => i18n.t("At least one org. unit is required"),
+    indicators_required: () => i18n.t("At least one indicator is required"),
 };
 
 export function getErrorMessageFromErrors<T>(errors: ValidationError<T>[]): string {

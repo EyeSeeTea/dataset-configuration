@@ -13,7 +13,7 @@ import {
     D2CategoryOptionWithDates,
 } from "$/data/repositories/D2ApiCategoryOption";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiConfig";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Maybe } from "$/utils/ts-utils";
 
 export class ProjectD2Repository implements ProjectRepository {
@@ -27,8 +27,8 @@ export class ProjectD2Repository implements ProjectRepository {
 
     getList(): FutureData<Project[]> {
         return this.getCategories().flatMap(categories => {
-            return this.getCategoryOptionsByCode(categories.project.code).map(d2Response => {
-                return this.getProjectsWithDates(d2Response.objects);
+            return this.getCategoryOptionsByCode(categories.project.code).map(categoryOptions => {
+                return this.getProjectsWithDates(categoryOptions);
             });
         });
     }
@@ -51,7 +51,7 @@ export class ProjectD2Repository implements ProjectRepository {
                 order: "displayName:asc",
                 paging: false,
             })
-        );
+        ).map(response => response.objects);
     }
 
     private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {

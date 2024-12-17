@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-11-26T05:08:32.550Z\n"
-"PO-Revision-Date: 2024-11-26T05:08:32.550Z\n"
+"POT-Creation-Date: 2024-12-05T17:23:25.404Z\n"
+"PO-Revision-Date: 2024-12-05T17:23:25.404Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -45,6 +45,15 @@ msgid "{{fieldName}} must be a positive number"
 msgstr ""
 
 msgid "At least one org. unit is required"
+msgstr ""
+
+msgid "At least one indicator is required"
+msgstr ""
+
+msgid "DataSet not found"
+msgstr ""
+
+msgid "Data set name already exists: {{dataSetName}}"
 msgstr ""
 
 msgid "Add"
@@ -155,6 +164,12 @@ msgstr ""
 msgid "{{action}} dataSet"
 msgstr ""
 
+msgid "Data set name already exists"
+msgstr ""
+
+msgid "Validation name in progress"
+msgstr ""
+
 msgid "Filters"
 msgstr ""
 
@@ -174,6 +189,9 @@ msgid "Disaggregation"
 msgstr ""
 
 msgid "Active Filters"
+msgstr ""
+
+msgid "Search by name"
 msgstr ""
 
 msgid "Selected"
