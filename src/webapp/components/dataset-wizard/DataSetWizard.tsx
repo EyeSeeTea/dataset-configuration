@@ -137,7 +137,7 @@ export function useValidateDataSetWizard(props: {
             const validationMap: ValidationStepType = {
                 setup: () => dataSet.validateSetup(),
                 indicators: () => dataSet.validateIndicatorsStep(),
-                share: () => dataSet.validateSharingStep(),
+                share: () => dataSet.validateRegionCodes(),
             };
 
             const validate = validationMap[currentStep.key];

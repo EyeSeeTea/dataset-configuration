@@ -7,14 +7,13 @@ import {
     DataSet,
     DataSetList,
     OrgUnit,
-    Permissions,
 } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
-import { Permission } from "$/domain/entities/Permission";
+import { Permission, Permissions } from "$/domain/entities/Permission";
 import _ from "$/domain/entities/generic/Collection";
 import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";

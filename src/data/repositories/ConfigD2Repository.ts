@@ -5,6 +5,7 @@ import { Region } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
+import { extractFirstTwoLetters, extractPrefix } from "$/utils/string";
 
 export class ConfigD2Repository implements ConfigRepository {
     constructor(private api: D2Api) {}
@@ -43,7 +44,8 @@ export class ConfigD2Repository implements ConfigRepository {
             return d2Response.objects.map(region => ({
                 id: region.id,
                 name: region.name,
-                code: this.extractRegionCode(region.code),
+                // org. unit code includes the region code in the first two letters before the underscore
+                code: extractFirstTwoLetters(region.code),
             }));
         });
     }
@@ -55,19 +57,12 @@ export class ConfigD2Repository implements ConfigRepository {
                 paging: false,
             })
         ).map(d2Response => {
-            return d2Response.objects.map(region => ({
-                id: region.id,
-                name: region.name,
-                code: this.extractCode(region.name),
+            return d2Response.objects.map(d2UserGroup => ({
+                id: d2UserGroup.id,
+                name: d2UserGroup.name,
+                // user group name includes the region code in the first two letters
+                code: extractPrefix(d2UserGroup.name),
             }));
         });
-    }
-
-    private extractRegionCode(code: string): string {
-        return (code.slice(0, 2) || "").toUpperCase();
-    }
-
-    private extractCode(code: string): string {
-        return (code.split("_")[0] || "").toUpperCase();
     }
 }

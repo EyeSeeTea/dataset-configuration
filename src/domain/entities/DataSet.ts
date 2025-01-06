@@ -1,4 +1,4 @@
-import { Permission } from "$/domain/entities/Permission";
+import { Permission, Permissions } from "$/domain/entities/Permission";
 import { Project } from "$/domain/entities/Project";
 import { Id, ISODateString, Ref } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
@@ -10,6 +10,7 @@ import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Va
 import { Indicator } from "$/domain/entities/Indicator";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
+import { extractFirstTwoLetters, extractPrefix } from "$/utils/string";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -29,7 +30,6 @@ export type DataSetAttrs = {
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
-export type Permissions = { data: Permission; metadata: Permission };
 export type AccessData = { id: Id; permissions: Permissions; name: string; type: AccessType };
 export type AccessType = "users" | "groups";
 
@@ -57,11 +57,16 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     updateProject(project: Maybe<Project>, config: Config): DataSet {
         const name = project ? `${project.name} DataSet` : "";
-        const orgUnits = project ? project.orgsUnits : this.orgUnits;
+        const orgsUnits = project ? project.orgsUnits : this.orgUnits;
 
         const accessGroupsFromProject = this.getAccessFromProject(project, config);
 
-        return this._update({ access: accessGroupsFromProject, project, name, orgUnits });
+        return this._update({
+            access: accessGroupsFromProject,
+            project,
+            name,
+            orgUnits: orgsUnits,
+        });
     }
 
     updateAccess(config: Config): DataSet {
@@ -109,7 +114,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             : [];
     }
 
-    validateSharingStep(): ValidationError<DataSet>[] {
+    validateRegionCodes(): ValidationError<DataSet>[] {
         if (this.project) return [];
 
         const regionCodesFromOrgUnits = this.getRegionCodesFromAccess();
@@ -128,7 +133,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     getRegionCodesFromAccess(): string[] {
         return _(this.access)
             .filter(access => access.type === "groups")
-            .compactMap(access => access.name.split("_")[0])
+            .compactMap(access => extractPrefix(access.name))
             .uniq()
             .value();
     }
@@ -146,7 +151,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     private getValidationErrors(): ValidationError<DataSet>[] {
         const setupErrors = this.buildSetupErrors();
         const indicatorsErrors = this.validateIndicatorsStep();
-        const sharingErrors = this.validateSharingStep();
+        const sharingErrors = this.validateRegionCodes();
 
         return [...setupErrors, ...indicatorsErrors, ...sharingErrors];
     }
@@ -179,7 +184,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     private getAccessFromOrgUnits(orgUnits: OrgUnit[], config: Config): AccessData[] {
-        const orgsUnitsCodes = orgUnits.map(orgUnit => orgUnit.code.slice(0, 2));
+        const orgsUnitsCodes = orgUnits.map(orgUnit => extractFirstTwoLetters(orgUnit.code));
 
         const regions = config.regions.filter(region => orgsUnitsCodes.includes(region.code));
         const regionsCodes = regions.map(region => region.code);
@@ -193,7 +198,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
         if (!project || !project.code) return [];
-        const regionCode = (project.code?.slice(0, 2) || "").toUpperCase();
+        const regionCode = extractFirstTwoLetters(project.code);
 
         const region = config.regions.find(region => region.code === regionCode);
         const userGroups = config.userGroups.filter(userGroup => userGroup.code === region?.code);

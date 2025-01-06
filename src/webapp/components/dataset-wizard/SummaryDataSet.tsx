@@ -76,14 +76,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
         .map(indicator => indicator.coreCompetency?.name || "")
         .join(", ");
 
-    const regionsCodes = _(dataSet.access)
-        .filter(access => access.type === "groups")
-        .compactMap(access => {
-            return access.name.split("_")[0];
-        })
-        .uniq()
-        .value();
-
+    const regionsCodes = dataSet.getRegionCodesFromAccess();
     const selectedRegions = config.regions.filter(region => regionsCodes.includes(region.code));
 
     return (

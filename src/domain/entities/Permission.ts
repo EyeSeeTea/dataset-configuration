@@ -1,4 +1,3 @@
-import { Permissions } from "$/domain/entities/DataSet";
 import { Struct } from "$/domain/entities/generic/Struct";
 
 export type PermissionAttrs = { read: boolean; write: boolean };
@@ -13,12 +12,14 @@ export class Permission extends Struct<PermissionAttrs>() {
     }
 
     static setDefaultPermissionsForGroups(isAdmin: boolean): Permissions {
-        const adminDataPermission = Permission.create({ read: true, write: true });
+        const readWritePermission = Permission.create({ read: true, write: true });
         return {
-            data: adminDataPermission,
+            data: readWritePermission,
             metadata: isAdmin
-                ? adminDataPermission
+                ? readWritePermission
                 : Permission.create({ read: true, write: false }),
         };
     }
 }
+
+export type Permissions = { data: Permission; metadata: Permission };

@@ -22,7 +22,7 @@ describe("DataSet", () => {
             configTest
         );
 
-        const errors = dataSetToSave.validateSharingStep();
+        const errors = dataSetToSave.validateRegionCodes();
         const errorMessage = getErrorMessageFromErrors(errors);
         expect(errors.length).toBeGreaterThan(0);
         expect(errorMessage).toMatch("Select at least one country");
@@ -49,7 +49,7 @@ describe("DataSet", () => {
             ],
         }).updateAccess(configTest);
 
-        const result = dataSetToSave.validateSharingStep();
+        const result = dataSetToSave.validateRegionCodes();
         expect(result).toHaveLength(0);
 
         expectUserGroups(dataSetToSave);
@@ -62,7 +62,7 @@ describe("DataSet", () => {
             project: undefined,
         }).updateProject(projectTest, configTest);
 
-        const result = dataSetToSave.validateSharingStep();
+        const result = dataSetToSave.validateRegionCodes();
         expect(result).toHaveLength(0);
 
         expectUserGroups(dataSetToSave);

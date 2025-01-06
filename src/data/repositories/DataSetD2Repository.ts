@@ -2,7 +2,7 @@ import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
-import { AccessData, DataSet, DataSetList } from "$/domain/entities/DataSet";
+import { DataSet, DataSetList } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import {
     DataSetName,
@@ -12,11 +12,7 @@ import {
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { getUid } from "$/utils/uid";
 import _ from "$/domain/entities/generic/Collection";
-import {
-    DataSetD2Api,
-    OctalNotationPermission,
-    dataSetFieldsWithOrgUnits,
-} from "$/data/repositories/DataSetD2Api";
+import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/DataSetD2Api";
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
@@ -314,11 +310,11 @@ export class DataSetD2Repository implements DataSetRepository {
                 }),
             userGroupAccesses: _(dataSet.access)
                 .filter(access => access.type === "groups")
-                .map(access => {
+                .map(groupAccess => {
                     return {
-                        access: this.d2DataSetApi.generateFullPermission(access.permissions),
-                        id: access.id,
-                        displayName: access.name,
+                        access: this.d2DataSetApi.generateFullPermission(groupAccess.permissions),
+                        id: groupAccess.id,
+                        displayName: groupAccess.name,
                     };
                 })
                 .value(),
@@ -328,20 +324,6 @@ export class DataSetD2Repository implements DataSetRepository {
             openFuturePeriods: dataSet.openFuturePeriods,
             expiryDays: dataSet.expiryDays,
         };
-    }
-
-    private convertSharingGroupsToAccessData(d2UserGroups: Maybe<SharingUserGroup>): AccessData[] {
-        if (!d2UserGroups || Object.keys(d2UserGroups).length === 0) return [];
-
-        return Object.values(d2UserGroups).map(({ id, access }) => ({
-            id,
-            permissions: {
-                data: this.d2DataSetApi.buildPermission(access, "data"),
-                metadata: this.d2DataSetApi.buildPermission(access, "metadata"),
-            },
-            name: "",
-            type: "groups",
-        }));
     }
 
     private buildDataSetElements(dataSet: DataSetToSave) {
@@ -416,7 +398,6 @@ type D2DataSetSection = {
     indicators: Ref[];
 };
 
-type SharingUserGroup = Record<Id, { id: Id; access: OctalNotationPermission }>;
 const indicatorTypeLabel: Record<IndicatorAttrs["type"], string> = {
     outcomes: "Outcomes",
     outputs: "Outputs",
