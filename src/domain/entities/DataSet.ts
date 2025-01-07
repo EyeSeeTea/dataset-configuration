@@ -10,7 +10,7 @@ import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Va
 import { Indicator } from "$/domain/entities/Indicator";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
-import { extractFirstTwoLetters, extractPrefix } from "$/utils/string";
+import { extractRegionCode } from "$/domain/entities/Region";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -133,7 +133,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     getRegionCodesFromAccess(): string[] {
         return _(this.access)
             .filter(access => access.type === "groups")
-            .compactMap(access => extractPrefix(access.name))
+            .compactMap(access => Project.extractCode(access.name))
             .uniq()
             .value();
     }
@@ -184,7 +184,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     private getAccessFromOrgUnits(orgUnits: OrgUnit[], config: Config): AccessData[] {
-        const orgsUnitsCodes = orgUnits.map(orgUnit => extractFirstTwoLetters(orgUnit.code));
+        const orgsUnitsCodes = orgUnits.map(orgUnit => extractRegionCode(orgUnit.code));
 
         const regions = config.regions.filter(region => orgsUnitsCodes.includes(region.code));
         const regionsCodes = regions.map(region => region.code);
@@ -198,7 +198,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
         if (!project || !project.code) return [];
-        const regionCode = extractFirstTwoLetters(project.code);
+        const regionCode = extractRegionCode(project.code);
 
         const region = config.regions.find(region => region.code === regionCode);
         const userGroups = config.userGroups.filter(userGroup => userGroup.code === region?.code);

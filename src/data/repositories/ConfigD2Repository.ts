@@ -1,11 +1,11 @@
 import { apiToFuture } from "$/data/api-futures";
 import { metadataCodes } from "$/data/repositories/D2ApiMetadata";
 import { Config, UserGroup } from "$/domain/entities/Config";
-import { Region } from "$/domain/entities/Region";
+import { Project } from "$/domain/entities/Project";
+import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
-import { extractFirstTwoLetters, extractPrefix } from "$/utils/string";
 
 export class ConfigD2Repository implements ConfigRepository {
     constructor(private api: D2Api) {}
@@ -45,7 +45,7 @@ export class ConfigD2Repository implements ConfigRepository {
                 id: region.id,
                 name: region.name,
                 // org. unit code includes the region code in the first two letters before the underscore
-                code: extractFirstTwoLetters(region.code),
+                code: Project.extractCode(region.code),
             }));
         });
     }
@@ -61,7 +61,7 @@ export class ConfigD2Repository implements ConfigRepository {
                 id: d2UserGroup.id,
                 name: d2UserGroup.name,
                 // user group name includes the region code in the first two letters
-                code: extractPrefix(d2UserGroup.name),
+                code: extractRegionCode(d2UserGroup.name),
             }));
         });
     }
