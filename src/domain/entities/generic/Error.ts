@@ -4,7 +4,8 @@ export type ValidationErrorKey =
     | "field_cannot_be_blank"
     | "positive_number"
     | "org_unit_required"
-    | "indicators_required";
+    | "indicators_required"
+    | "regions_required";
 
 export const validationErrorMessages: Record<
     ValidationErrorKey,
@@ -19,6 +20,7 @@ export const validationErrorMessages: Record<
     },
     org_unit_required: () => i18n.t("At least one org. unit is required"),
     indicators_required: () => i18n.t("At least one indicator is required"),
+    regions_required: () => i18n.t("Select at least one country"),
 };
 
 export function getErrorMessageFromErrors<T>(errors: ValidationError<T>[]): string {

@@ -9,7 +9,7 @@ import { getDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
 import { useNavigateTo } from "$/webapp/routes";
 import { DataSet } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { getErrors } from "$/domain/entities/generic/Error";
+import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
 import { Project } from "$/domain/entities/Project";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 
@@ -31,7 +31,7 @@ const useStyles = makeStyles((theme: Theme) =>
 export type ValidationStatusType = "idle" | "loading" | "error" | "success";
 
 export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
-    const { compositionRoot } = useAppContext();
+    const { compositionRoot, config } = useAppContext();
     const { dataSet, id, projects, updateDataSet, dataSetSettings } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
@@ -43,7 +43,7 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const { validateSteps } = useValidateDataSetWizard({ validationStatus, dataSet });
 
     const goBackToHome = React.useCallback(() => {
-        navigateTo("createDataSets");
+        navigateTo("dataSets");
     }, [navigateTo]);
 
     const validateDataSetName = React.useCallback(
@@ -65,20 +65,27 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     );
 
     const stepsWithProps = React.useMemo(() => {
-        return steps.map(step => {
-            return {
-                ...step,
-                props: {
-                    dataSet,
-                    onValidate: validateDataSetName,
-                    validationStatus,
-                    onChange: updateDataSet,
-                    projects,
-                    dataSetSettings,
-                },
-            };
-        });
+        return steps
+            .filter(step => {
+                if (step.key !== "share") return true;
+                return dataSet.project === undefined;
+            })
+            .map(step => {
+                return {
+                    ...step,
+                    props: {
+                        config,
+                        dataSet,
+                        onValidate: validateDataSetName,
+                        validationStatus,
+                        onChange: updateDataSet,
+                        projects,
+                        dataSetSettings,
+                    },
+                };
+            });
     }, [
+        config,
         dataSet,
         dataSetSettings,
         projects,
@@ -125,11 +132,18 @@ export function useValidateDataSetWizard(props: {
             if (validationInProgressOrError) {
                 const errorMessage = getErrorByValidationStatus(validationStatus);
                 return Promise.resolve([errorMessage]);
-            } else if (currentStep.key === "setup") {
-                const result = dataSet.validateSetup();
-                return result.isError()
-                    ? Promise.resolve(getErrors(result.value.error))
-                    : Promise.resolve([]);
+            }
+
+            const validationMap: ValidationStepType = {
+                setup: () => dataSet.validateSetup(),
+                indicators: () => dataSet.validateIndicatorsStep(),
+                share: () => dataSet.validateRegionCodes(),
+            };
+
+            const validate = validationMap[currentStep.key];
+            if (validate) {
+                const result = validate();
+                return result.length > 0 ? Promise.resolve(getErrors(result)) : Promise.resolve([]);
             } else {
                 return Promise.resolve([]);
             }
@@ -150,5 +164,7 @@ function getErrorByValidationStatus(status: ValidationStatusType): string {
             return "";
     }
 }
+
+type ValidationStepType = Record<string, () => ValidationError<DataSet>[]>;
 
 DataSetWizard.displayName = "DataSetWizard";

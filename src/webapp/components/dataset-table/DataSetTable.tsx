@@ -30,6 +30,7 @@ const DataSetTable_: React.FC = React.memo(() => {
             <HomeTabs activeTab="dataSets" />
             <ObjectsTable
                 onActionButtonClick={goToCreateDataSet}
+                className="dataset-table"
                 {...tableConfig}
                 sideComponents={
                     <DataSetDetails

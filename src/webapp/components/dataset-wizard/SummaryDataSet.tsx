@@ -65,6 +65,7 @@ const SummaryDataSet_ = React.memo((props: SummaryDataSetProps) => {
 export const SummaryDataSet = component(SummaryDataSet_);
 
 export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgUnit[] }) => {
+    const { config } = useAppContext();
     const { dataSet, orgUnits } = props;
 
     const extraOrgUnits = dataSet.orgUnits.length - MAX_ORG_UNITS_TO_SHOW;
@@ -74,6 +75,9 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
     const coreCompetenciesNames = dataSet.indicators
         .map(indicator => indicator.coreCompetency?.name || "")
         .join(", ");
+
+    const regionsCodes = dataSet.getRegionCodesFromAccess();
+    const selectedRegions = config.regions.filter(region => regionsCodes.includes(region.code));
 
     return (
         <Grid item xs={12}>
@@ -86,7 +90,10 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
                     label={i18n.t("Organisation Units")}
                     value={`${orgUnits.map(ou => ou.name).join(", ")} ${orgUnitMessage}`}
                 />
-                <SummaryItem label="Countries" value=" - " />
+                <SummaryItem
+                    label="Countries"
+                    value={selectedRegions.map(region => region.name).join(", ")}
+                />
             </ul>
         </Grid>
     );
