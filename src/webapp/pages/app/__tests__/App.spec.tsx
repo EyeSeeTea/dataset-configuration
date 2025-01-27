@@ -4,6 +4,7 @@ import App from "$/webapp/pages/app/App";
 import { getTestContext } from "$/utils/tests";
 import { Provider } from "@dhis2/app-runtime";
 import { getD2APiFromInstance } from "$/types/d2-api";
+import { Config } from "$/domain/entities/Config";
 
 describe("App", () => {
     it("navigates to page", async () => {
@@ -17,9 +18,10 @@ function getView() {
     const { compositionRoot } = getTestContext();
     const baseUrl = "http://localhost:8080";
     const api = getD2APiFromInstance({ type: "local", url: baseUrl });
+    const configTests: Config = { regions: [], userGroups: [] };
     return render(
         <Provider config={{ baseUrl: "http://localhost:8080", apiVersion: 30 }}>
-            <App api={api} compositionRoot={compositionRoot} />
+            <App config={configTests} api={api} compositionRoot={compositionRoot} />
         </Provider>
     );
 }

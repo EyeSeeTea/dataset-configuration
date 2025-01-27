@@ -7,19 +7,19 @@ import {
     DataSet,
     DataSetList,
     OrgUnit,
-    Permissions,
 } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
-import { Permission } from "$/domain/entities/Permission";
+import { Permission, Permissions } from "$/domain/entities/Permission";
 import _ from "$/domain/entities/generic/Collection";
 import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Pager } from "@eyeseetea/d2-api/api";
+import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -149,6 +149,8 @@ export class DataSetD2Api {
                     name: categoryOption.displayName,
                     lastUpdated: categoryOption.lastUpdated,
                     isOpen: false,
+                    orgsUnits: [],
+                    code: categoryOption.code,
                 });
             });
         });
@@ -207,6 +209,7 @@ export class DataSetD2Api {
             orgUnits: d2DataSet.organisationUnits
                 ? d2DataSet.organisationUnits.map((ou): OrgUnit => {
                       return {
+                          code: ou.code,
                           id: ou.id,
                           name: ou.displayName,
                           path: ou.path.split("/").slice(1),
@@ -261,7 +264,7 @@ export class DataSetD2Api {
         return ccCodeParts.join("_");
     }
 
-    private buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
+    buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
         if (permissionType === "metadata") {
             const { canRead, canWrite } = this.buildPermissionByType(permissions, permissionType);
             return Permission.create({ read: canRead, write: canWrite });
@@ -314,7 +317,7 @@ export const dataSetFields = {
 
 export const dataSetFieldsWithOrgUnits = {
     ...dataSetFields,
-    organisationUnits: { id: true, displayName: true, path: true },
+    organisationUnits: { id: true, code: true, displayName: true, path: true },
 };
 
 type D2DataSetFields = MetadataPick<{
@@ -322,5 +325,4 @@ type D2DataSetFields = MetadataPick<{
 }>["dataSets"][number];
 
 type D2DataSet = { organisationUnits?: D2OrgUnit[] } & D2DataSetFields;
-type D2OrgUnit = { id: Id; path: string; displayName: string };
 export type OctalNotationPermission = string;

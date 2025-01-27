@@ -1,15 +1,16 @@
-import { Permission } from "$/domain/entities/Permission";
+import { Permission, Permissions } from "$/domain/entities/Permission";
 import { Project } from "$/domain/entities/Project";
 import { Id, ISODateString, Ref } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
-import { Either } from "$/domain/entities/generic/Either";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
+import { Config, UserGroup } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
+import { extractRegionCode } from "$/domain/entities/Region";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -28,12 +29,7 @@ export type DataSetAttrs = {
     indicators: Indicator[];
 };
 
-// export type DataSetToSave = Omit<DataSetAttrs, "orgUnits" | "created" | "lastUpdated"> & {
-//     orgUnits: Ref[];
-// };
-
-export type OrgUnit = { id: Id; name: string; path: Id[] };
-export type Permissions = { data: Permission; metadata: Permission };
+export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
 export type AccessData = { id: Id; permissions: Permissions; name: string; type: AccessType };
 export type AccessType = "users" | "groups";
 
@@ -54,14 +50,40 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return input.length > targetLength ? input.slice(0, targetLength) : input;
     }
 
-    validateSetup(): Either<ValidationError<DataSet>[], DataSet> {
+    validateSetup(): ValidationError<DataSet>[] {
         const errors = this.buildSetupErrors();
-        return errors.length === 0 ? Either.success(this) : Either.error(errors);
+        return errors.length === 0 ? [] : errors;
     }
 
-    updateProject(project: Maybe<Project>): DataSet {
+    updateProject(project: Maybe<Project>, config: Config): DataSet {
         const name = project ? `${project.name} DataSet` : "";
-        return this._update({ project, name });
+        const orgsUnits = project ? project.orgsUnits : this.orgUnits;
+
+        const accessGroupsFromProject = this.getAccessFromProject(project, config);
+
+        return this._update({
+            access: accessGroupsFromProject,
+            project,
+            name,
+            orgUnits: orgsUnits,
+        });
+    }
+
+    updateAccess(config: Config): DataSet {
+        const accessGroupsFromProject = this.getAccessFromProject(this.project, config);
+        const accessFromOrgUnits = this.getAccessFromOrgUnits(this.orgUnits, config);
+
+        return this._update({
+            access: this.project ? accessGroupsFromProject : accessFromOrgUnits,
+        });
+    }
+
+    updateAccessFromRegionsCodes(codes: string[], config: Config): DataSet {
+        const access = codes.flatMap(code => {
+            const userGroups = config.userGroups.filter(userGroup => userGroup.code === code);
+            return this.buildAccessGroups(userGroups);
+        });
+        return this._update({ access: access });
     }
 
     update<K extends keyof DataSet>(fieldName: K, value: DataSet[K]): DataSet {
@@ -92,6 +114,30 @@ export class DataSet extends Struct<DataSetAttrs>() {
             : [];
     }
 
+    validateRegionCodes(): ValidationError<DataSet>[] {
+        if (this.project) return [];
+
+        const regionCodesFromOrgUnits = this.getRegionCodesFromAccess();
+
+        return regionCodesFromOrgUnits.length > 0
+            ? []
+            : [
+                  {
+                      property: "access" as const,
+                      errors: ["regions_required"],
+                      value: this.access,
+                  },
+              ];
+    }
+
+    getRegionCodesFromAccess(): string[] {
+        return _(this.access)
+            .filter(access => access.type === "groups")
+            .compactMap(access => Project.extractCode(access.name))
+            .uniq()
+            .value();
+    }
+
     static buildAccess(permissions: Permissions): string {
         const dataDescription = DataSet.buildAccessDescription(permissions.data);
         const metadataDescription = DataSet.buildAccessDescription(permissions.metadata);
@@ -105,8 +151,9 @@ export class DataSet extends Struct<DataSetAttrs>() {
     private getValidationErrors(): ValidationError<DataSet>[] {
         const setupErrors = this.buildSetupErrors();
         const indicatorsErrors = this.validateIndicatorsStep();
+        const sharingErrors = this.validateRegionCodes();
 
-        return [...setupErrors, ...indicatorsErrors];
+        return [...setupErrors, ...indicatorsErrors, ...sharingErrors];
     }
 
     private buildSetupErrors(): ValidationError<DataSet>[] {
@@ -136,7 +183,44 @@ export class DataSet extends Struct<DataSetAttrs>() {
         }
     }
 
-    static initial(id: Id): DataSet {
+    private getAccessFromOrgUnits(orgUnits: OrgUnit[], config: Config): AccessData[] {
+        const orgsUnitsCodes = orgUnits.map(orgUnit => extractRegionCode(orgUnit.code));
+
+        const regions = config.regions.filter(region => orgsUnitsCodes.includes(region.code));
+        const regionsCodes = regions.map(region => region.code);
+
+        const userGroups = config.userGroups.filter(userGroup =>
+            regionsCodes.includes(userGroup.code)
+        );
+
+        return this.buildAccessGroups(userGroups);
+    }
+
+    private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
+        if (!project || !project.code) return [];
+        const regionCode = extractRegionCode(project.code);
+
+        const region = config.regions.find(region => region.code === regionCode);
+        const userGroups = config.userGroups.filter(userGroup => userGroup.code === region?.code);
+
+        return this.buildAccessGroups(userGroups);
+    }
+
+    private buildAccessGroups(userGroups: UserGroup[]): AccessData[] {
+        return userGroups.map(userGroup => this.setAccessPermissionGroup(userGroup));
+    }
+
+    private setAccessPermissionGroup(userGroup: UserGroup): AccessData {
+        const isAdmin = userGroup.name.split("_")[1]?.toLowerCase() === "administrators";
+        return {
+            id: userGroup.id,
+            name: userGroup.name,
+            permissions: Permission.setDefaultPermissionsForGroups(isAdmin),
+            type: "groups",
+        };
+    }
+
+    static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
             indicators: [],
             access: [],
@@ -155,6 +239,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             expiryDays: 0,
             openFuturePeriods: 0,
             notifyUser: false,
+            ...initialData,
         });
     }
 }

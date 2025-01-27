@@ -1,7 +1,11 @@
 import React from "react";
 import { DataSet, DataSetAttrs, DataSetList } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { useObjectsTable } from "@eyeseetea/d2-ui-components";
+import {
+    TableAction as DataTableAction,
+    ReferenceObject,
+    useObjectsTable,
+} from "@eyeseetea/d2-ui-components";
 import SharingIcon from "@material-ui/icons/Share";
 import EditIcon from "@material-ui/icons/Edit";
 import DomainIcon from "@material-ui/icons/Domain";
@@ -13,9 +17,9 @@ import ListIcon from "@material-ui/icons/List";
 
 import _ from "$/domain/entities/generic/Collection";
 import i18n from "$/utils/i18n";
-import { TableAction } from "$/webapp/components/dataset-table/DataSetTable";
 import { useNavigateTo } from "$/webapp/routes";
 import { parseSortField } from "$/utils/parse-sort-field";
+import { TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 
@@ -53,48 +57,6 @@ export function useTableConfig(props: TableConfigProps) {
                 ],
                 actions: [
                     {
-                        name: "edit",
-                        text: i18n.t("Edit"),
-                        icon: <EditIcon />,
-                        multiple: false,
-                        primary: true,
-                        onClick(selectedIds) {
-                            const dataSetId = _(selectedIds).first();
-                            if (!dataSetId) return;
-                            navigateTo("editDataSets", { id: dataSetId });
-                        },
-                    },
-                    {
-                        name: "sharing",
-                        text: i18n.t("Sharing Settings"),
-                        icon: <SharingIcon />,
-                        multiple: true,
-                        onClick(selectedIds) {
-                            onAction({ ids: selectedIds, action: "sharing" });
-                        },
-                    },
-                    {
-                        name: "assign_orgunits",
-                        text: i18n.t("Assign to Organisation Units"),
-                        icon: <DomainIcon />,
-                        multiple: true,
-                        onClick: selectedIds => {
-                            onAction({ ids: selectedIds, action: "orgUnits" });
-                        },
-                    },
-                    {
-                        name: "set_period_dates",
-                        text: i18n.t("Set output/outcome period dates"),
-                        icon: <DateRangeIcon />,
-                        multiple: true,
-                    },
-                    {
-                        name: "set_end_dates",
-                        text: i18n.t("Change output/outcome end date for year"),
-                        icon: <DateRangeIcon />,
-                        multiple: true,
-                    },
-                    {
                         name: "show_details",
                         text: i18n.t("Details"),
                         icon: <DetailsIcon />,
@@ -103,30 +65,7 @@ export function useTableConfig(props: TableConfigProps) {
                             onAction({ ids: selectedIds, action: "details" });
                         },
                     },
-                    {
-                        name: "clone",
-                        text: i18n.t("Clone"),
-                        icon: <CopyIcon />,
-                        multiple: false,
-                    },
-                    {
-                        name: "delete",
-                        text: i18n.t("Delete"),
-                        icon: <DeleteIcon />,
-                        multiple: true,
-                        onClick(selectedIds) {
-                            onAction({ ids: selectedIds, action: "remove" });
-                        },
-                    },
-                    {
-                        name: "logs",
-                        text: i18n.t("Logs"),
-                        icon: <ListIcon />,
-                        multiple: true,
-                        onClick(selectedIds) {
-                            onAction({ ids: selectedIds, action: "logs" });
-                        },
-                    },
+                    ...getCommonActions({ onAction, navigateTo, isActive: () => true }),
                 ],
                 initialSorting: { field: "name", order: "asc" },
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
@@ -168,7 +107,92 @@ export function useTableConfig(props: TableConfigProps) {
     return tableConfig;
 }
 
-export type TableConfigProps = {
+export type TableConfigProps = { onAction: (action: TableAction) => void; refreshTable: number };
+
+export type CommonActionsProps<T> = {
+    isActive: (data: T[]) => boolean;
     onAction: (action: TableAction) => void;
-    refreshTable: number;
+    navigateTo: ReturnType<typeof useNavigateTo>;
 };
+
+export function getCommonActions<T extends ReferenceObject>(
+    props: CommonActionsProps<T>
+): DataTableAction<T>[] {
+    const { onAction, navigateTo } = props;
+    return [
+        {
+            name: "edit",
+            text: i18n.t("Edit"),
+            icon: <EditIcon />,
+            multiple: false,
+            primary: true,
+            isActive: props.isActive,
+            onClick(selectedIds) {
+                const dataSetId = _(selectedIds).first();
+                if (!dataSetId) return;
+                navigateTo("editDataSets", { id: dataSetId });
+            },
+        },
+        {
+            name: "sharing",
+            text: i18n.t("Sharing Settings"),
+            icon: <SharingIcon />,
+            multiple: true,
+            isActive: props.isActive,
+            onClick(selectedIds) {
+                onAction({ ids: selectedIds, action: "sharing" });
+            },
+        },
+        {
+            name: "assign_orgunits",
+            text: i18n.t("Assign to Organisation Units"),
+            icon: <DomainIcon />,
+            multiple: true,
+            isActive: props.isActive,
+            onClick: selectedIds => {
+                onAction({ ids: selectedIds, action: "orgUnits" });
+            },
+        },
+        {
+            name: "set_period_dates",
+            text: i18n.t("Set output/outcome period dates"),
+            icon: <DateRangeIcon />,
+            multiple: true,
+            isActive: props.isActive,
+        },
+        {
+            name: "set_end_dates",
+            text: i18n.t("Change output/outcome end date for year"),
+            icon: <DateRangeIcon />,
+            multiple: true,
+            isActive: props.isActive,
+        },
+        {
+            name: "clone",
+            text: i18n.t("Clone"),
+            icon: <CopyIcon />,
+            multiple: false,
+            isActive: props.isActive,
+        },
+        {
+            name: "delete",
+            text: i18n.t("Delete"),
+            icon: <DeleteIcon />,
+            multiple: true,
+            isActive: props.isActive,
+            onClick(selectedIds) {
+                onAction({ ids: selectedIds, action: "remove" });
+            },
+        },
+        {
+            name: "logs",
+            text: i18n.t("Logs"),
+            icon: <ListIcon />,
+            multiple: true,
+            isActive: props.isActive,
+            onClick(selectedIds) {
+                onAction({ ids: selectedIds, action: "logs" });
+            },
+        },
+    ];
+}

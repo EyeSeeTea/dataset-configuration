@@ -309,12 +309,12 @@ export class DataSetD2Repository implements DataSetRepository {
                     };
                 }),
             userGroupAccesses: _(dataSet.access)
-                .compactMap(access => {
-                    if (access.type !== "groups") return undefined;
+                .filter(access => access.type === "groups")
+                .map(groupAccess => {
                     return {
-                        access: this.d2DataSetApi.generateFullPermission(access.permissions),
-                        id: access.id,
-                        displayName: access.name,
+                        access: this.d2DataSetApi.generateFullPermission(groupAccess.permissions),
+                        id: groupAccess.id,
+                        displayName: groupAccess.name,
                     };
                 })
                 .value(),

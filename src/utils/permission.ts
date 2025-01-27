@@ -1,6 +1,5 @@
 import { Maybe } from "$/utils/ts-utils";
-import { Permission } from "$/domain/entities/Permission";
-import { Permissions } from "$/domain/entities/DataSet";
+import { Permission, Permissions } from "$/domain/entities/Permission";
 
 export const NO_ACCESS_NOTATION = "--------";
 
