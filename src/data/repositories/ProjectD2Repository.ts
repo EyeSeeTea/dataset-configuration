@@ -15,13 +15,14 @@ import {
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Maybe } from "$/utils/ts-utils";
+import { Config } from "$/domain/entities/Config";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
     private d2ApiConfig: D2ApiConfig;
 
-    constructor(private api: D2Api) {
-        this.d2DataSetApi = new DataSetD2Api(this.api);
+    constructor(private api: D2Api, private config: Config) {
+        this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 

@@ -139,13 +139,27 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             const ids = state.selection.map(row => row.id);
             const currentIndicators = _(ids)
                 .compactMap(indicatorId => {
-                    return indicators.find(indicator => indicator.id === indicatorId);
+                    const indicatorInfo = indicators.find(
+                        indicator => indicator.id === indicatorId
+                    );
+                    if (!indicatorInfo) return undefined;
+                    const updatedIndicator = dataSet.indicators.find(
+                        indicator => indicator.id === indicatorId
+                    );
+                    return Indicator.create({
+                        ...indicatorInfo,
+                        categories: updatedIndicator?.categories || indicatorInfo.categories,
+                        relatedDataElements:
+                            updatedIndicator?.relatedDataElements ||
+                            indicatorInfo.relatedDataElements,
+                    });
                 })
                 .value();
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
+            // setSelectedIndicatorsIds(ids);
         },
-        [indicators, dataSet, onChange]
+        [dataSet, indicators, onChange]
     );
 
     return (

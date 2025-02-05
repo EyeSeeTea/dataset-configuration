@@ -1,20 +1,87 @@
+import { D2ApiIndicator } from "$/data/D2ApiIndicator";
 import { apiToFuture } from "$/data/api-futures";
-import { metadataCodes } from "$/data/repositories/D2ApiMetadata";
+import { D2ApiConfig, D2Config, metadataCodes } from "$/data/repositories/D2ApiMetadata";
+import { convertToCategories } from "$/data/utils";
+import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { Project } from "$/domain/entities/Project";
 import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
+import _ from "$/domain/entities/generic/Collection";
 
 export class ConfigD2Repository implements ConfigRepository {
-    constructor(private api: D2Api) {}
+    private d2ApiConfig: D2ApiConfig;
+    private d2ApiIndicator: D2ApiIndicator;
+    constructor(private api: D2Api) {
+        this.d2ApiConfig = new D2ApiConfig(this.api);
+        this.d2ApiIndicator = new D2ApiIndicator(this.api);
+    }
 
     get(): FutureData<Config> {
         return this.getOrgUnitLevelGroup().flatMap(orgUnitLevel => {
             return Future.joinObj({
                 regions: this.getRegions(orgUnitLevel),
                 userGroups: this.getUserGroups(),
+                indicators: this.getIndicators(),
+                categoryCombinations: this.getCategoryCombos([], 1),
+            });
+        });
+    }
+
+    private getCategoryCombos(
+        state: CategoryCombination[],
+        page: number
+    ): FutureData<CategoryCombination[]> {
+        return apiToFuture(
+            this.api.models.categoryCombos.get({
+                fields: {
+                    id: true,
+                    displayName: true,
+                    categories: {
+                        id: true,
+                        displayName: true,
+                        categoryOptions: { id: true, displayName: true },
+                    },
+                },
+                filter: {
+                    dataDimensionType: { eq: "DISAGGREGATION" },
+                    isDefault: { eq: "false" },
+                },
+                pageSize: 200,
+                page: page,
+            })
+        ).flatMap(d2Response => {
+            const combinations = d2Response.objects.map((d2CategoryCombo): CategoryCombination => {
+                return CategoryCombination.create({
+                    id: d2CategoryCombo.id,
+                    name: d2CategoryCombo.displayName,
+                    categories: convertToCategories(d2CategoryCombo.categories),
+                });
+            });
+            if (d2Response.pager.page < d2Response.pager.pageCount) {
+                return this.getCategoryCombos(
+                    state.concat(combinations),
+                    d2Response.pager.page + 1
+                );
+            } else {
+                return Future.success(state.concat(combinations));
+            }
+        });
+    }
+
+    private getConfig(): FutureData<D2Config> {
+        return this.d2ApiConfig.get();
+    }
+
+    private getIndicators() {
+        return this.getConfig().flatMap(config => {
+            return Future.joinObj({
+                outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
+                outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
+            }).map(({ outcomeIndicators, outputIndicators }) => {
+                return outcomeIndicators.concat(outputIndicators);
             });
         });
     }

@@ -5,8 +5,11 @@ import { AppContext, AppContextState } from "$/webapp/contexts/app-context";
 import { getTestCompositionRoot } from "$/CompositionRoot";
 import { createAdminUser } from "$/domain/entities/__tests__/userFixtures";
 import { D2Api } from "$/types/d2-api";
+import { Config } from "$/domain/entities/Config";
 
-export const configTest = {
+export const configTest: Config = {
+    categoryCombinations: [],
+    indicators: [],
     regions: [{ id: "ISeK6bTD3hr", code: "AF", name: "Afghanistan" }],
     userGroups: [
         { id: "JqI1AgplhXe", code: "AF", name: "AF_Administrators" },

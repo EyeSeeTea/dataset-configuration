@@ -20,12 +20,16 @@ import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Pager } from "@eyeseetea/d2-api/api";
 import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
+import { Indicator } from "$/domain/entities/Indicator";
+import { Config } from "$/domain/entities/Config";
+import { convertToCategories } from "$/data/utils";
+import { COMMENT_PREFIX } from "$/domain/entities/DataElement";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
     private d2ApiConfig: D2ApiConfig;
 
-    constructor(private api: D2Api) {
+    constructor(private api: D2Api, private config: Config) {
         this.d2ApiCategoryOption = new D2ApiCategoryOption(this.api);
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
@@ -205,7 +209,7 @@ export class DataSetD2Api {
         const dataElementGroups = this.buildDataElementsGroupsCodes(d2DataSet);
 
         return DataSet.create({
-            indicators: [],
+            indicators: this.buildIndicatorsFromDataSetElements(d2DataSet),
             orgUnits: d2DataSet.organisationUnits
                 ? d2DataSet.organisationUnits.map((ou): OrgUnit => {
                       return {
@@ -236,6 +240,90 @@ export class DataSetD2Api {
             expiryDays: d2DataSet.expiryDays,
             openFuturePeriods: d2DataSet.openFuturePeriods,
         });
+    }
+
+    private buildIndicatorsFromDataSetElements(d2DataSet: D2DataSet): Indicator[] {
+        const outputsIndicators = _(d2DataSet.dataSetElements)
+            .compactMap(dataSetElement => {
+                const indicator = this.config.indicators.find(
+                    indicator => indicator.id === dataSetElement.dataElement.id
+                );
+                if (!indicator) return undefined;
+                const categoryCombo = dataSetElement.categoryCombo;
+                const categories = convertToCategories(
+                    categoryCombo ? categoryCombo.categories : []
+                );
+
+                return Indicator.create({
+                    ...indicator,
+                    disaggregation: categoryCombo
+                        ? {
+                              id: categoryCombo.id,
+                              name: categoryCombo.displayName,
+                              categories: categories,
+                          }
+                        : indicator.disaggregation,
+                });
+            })
+            .value();
+
+        const outcomesIndicators = _(d2DataSet.indicators)
+            .compactMap(d2Indicator => {
+                const indicator = this.config.indicators.find(
+                    indicator => indicator.id === d2Indicator.id
+                );
+
+                if (!indicator) return undefined;
+
+                const dataElementsRefs = Indicator.extractDataElementsReferences(indicator);
+
+                const commentsDataElements = d2DataSet.dataSetElements.filter(dataElement =>
+                    dataElementsRefs.includes(dataElement.dataElement.code)
+                );
+                const relatedDataElements = d2DataSet.dataSetElements.filter(dataElement =>
+                    dataElementsRefs.includes(dataElement.dataElement.id)
+                );
+
+                return Indicator.create({
+                    ...indicator,
+                    relatedDataElements: relatedDataElements
+                        .concat(commentsDataElements)
+                        .map(dataElement => {
+                            return {
+                                id: dataElement.dataElement.id,
+                                name: dataElement.dataElement.displayName,
+                                code: dataElement.dataElement.code,
+                                isComment: dataElement.dataElement.code.endsWith(COMMENT_PREFIX),
+                                disaggregation: dataElement.categoryCombo
+                                    ? {
+                                          id: dataElement.categoryCombo.id,
+                                          name: dataElement.categoryCombo.displayName,
+                                          categories: convertToCategories(
+                                              dataElement.categoryCombo.categories
+                                          ),
+                                      }
+                                    : {
+                                          id: dataElement.dataElement.categoryCombo.id,
+                                          name: dataElement.dataElement.categoryCombo.displayName,
+                                          categories: convertToCategories(
+                                              dataElement.dataElement.categoryCombo.categories
+                                          ),
+                                      },
+                                categories: [],
+                            };
+                        }),
+                });
+            })
+            .value();
+
+        return outputsIndicators.concat(outcomesIndicators);
+    }
+
+    private extractId(string: string, re: RegExp): Id[] {
+        const globalRe = new RegExp(re, "g");
+        return _(Array.from(string.matchAll(globalRe), match => match[1]))
+            .compactMap(item => item)
+            .value();
     }
 
     private buildAccessByType(
@@ -298,6 +386,12 @@ export class DataSetD2Api {
     }
 }
 
+export const categoryComboFields = {
+    id: true,
+    displayName: true,
+    categories: { id: true, displayName: true, categoryOptions: { id: true, displayName: true } },
+};
+
 export const dataSetFields = {
     created: true,
     displayDescription: true,
@@ -313,6 +407,16 @@ export const dataSetFields = {
     userGroupAccesses: { id: true, displayName: true, access: true },
     userAccesses: { id: true, displayName: true, access: true },
     attributeValues: { value: true, attribute: { id: true } },
+    indicators: { id: true, numerator: true, denominator: true, code: true },
+    dataSetElements: {
+        dataElement: {
+            id: true,
+            displayName: true,
+            code: true,
+            categoryCombo: categoryComboFields,
+        },
+        categoryCombo: categoryComboFields,
+    },
 } as const;
 
 export const dataSetFieldsWithOrgUnits = {

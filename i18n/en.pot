@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2024-12-05T17:23:25.404Z\n"
-"PO-Revision-Date: 2024-12-05T17:23:25.404Z\n"
+"POT-Creation-Date: 2025-01-30T03:34:37.405Z\n"
+"PO-Revision-Date: 2025-01-30T03:34:37.405Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -48,6 +48,9 @@ msgid "At least one org. unit is required"
 msgstr ""
 
 msgid "At least one indicator is required"
+msgstr ""
+
+msgid "Select at least one country"
 msgstr ""
 
 msgid "DataSet not found"
@@ -98,6 +101,9 @@ msgstr ""
 msgid "Datasets"
 msgstr ""
 
+msgid "DataSets removed"
+msgstr ""
+
 msgid "Loading details..."
 msgstr ""
 
@@ -128,10 +134,13 @@ msgstr ""
 msgid "Sharing"
 msgstr ""
 
-msgid "DataSets removed"
+msgid "Access"
 msgstr ""
 
-msgid "Access"
+msgid "Details"
+msgstr ""
+
+msgid "Search"
 msgstr ""
 
 msgid "Edit"
@@ -149,13 +158,16 @@ msgstr ""
 msgid "Change output/outcome end date for year"
 msgstr ""
 
-msgid "Details"
-msgstr ""
-
 msgid "Clone"
 msgstr ""
 
-msgid "Search"
+msgid "Add disaggregate"
+msgstr ""
+
+msgid "Add to"
+msgstr ""
+
+msgid "Save"
 msgstr ""
 
 msgid "Create"
@@ -251,9 +263,6 @@ msgstr ""
 msgid "The dataSet is finished. Press the button Save to save the data"
 msgstr ""
 
-msgid "Save"
-msgstr ""
-
 msgid "and {{number}} more."
 msgstr ""
 
@@ -309,9 +318,6 @@ msgid "Org. Units"
 msgstr ""
 
 msgid "Core Competencies"
-msgstr ""
-
-msgid "Loading projects..."
 msgstr ""
 
 msgid "Public Access"

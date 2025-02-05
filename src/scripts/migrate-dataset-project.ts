@@ -4,6 +4,7 @@ import { D2Api } from "$/types/d2-api";
 import { getWebappCompositionRoot } from "$/CompositionRoot";
 import { DataSet } from "$/domain/entities/DataSet";
 import { writeFileSync } from "fs";
+import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
 
 function main() {
     const cmd = command({
@@ -30,7 +31,9 @@ function main() {
         handler: async args => {
             const auth = { username: args.username, password: args.password };
             const api = new D2Api({ baseUrl: args.url, auth: auth });
-            const compositionRoot = getWebappCompositionRoot(api);
+            const configRepository = new ConfigD2Repository(api);
+            const config = await configRepository.get().toPromise();
+            const compositionRoot = getWebappCompositionRoot(api, config);
             compositionRoot.dataSets.migrateProjects.execute().run(
                 response => {
                     console.debug("DataSets saved");

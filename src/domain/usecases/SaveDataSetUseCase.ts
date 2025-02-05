@@ -3,20 +3,13 @@ import { DataSet } from "$/domain/entities/DataSet";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { getErrors } from "$/domain/entities/generic/Error";
-import { Id } from "$/domain/entities/Ref";
-import { HashMap } from "$/domain/entities/generic/HashMap";
-import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
-import { Indicator } from "$/domain/entities/Indicator";
 import { DataSetUtils } from "$/domain/usecases/common/DataSetUtils";
 import i18n from "$/utils/i18n";
 
 export class SaveDataSetUseCase {
     private dataSetUtils: DataSetUtils;
 
-    constructor(
-        private dataSetRepository: DataSetRepository,
-        private dataElementRepository: DataElementRepository
-    ) {
+    constructor(private dataSetRepository: DataSetRepository) {
         this.dataSetUtils = new DataSetUtils(this.dataSetRepository);
     }
 
@@ -39,14 +32,7 @@ export class SaveDataSetUseCase {
                     )
                 );
 
-            return this.getDataElementsRelatedFromIndicators(dataSet).flatMap(
-                indicatorsWithDataElements => {
-                    const dataSetWithIndicatorsRelated = dataSet.setIndicators(
-                        indicatorsWithDataElements
-                    );
-                    return this.dataSetRepository.save([dataSetWithIndicatorsRelated]);
-                }
-            );
+            return this.dataSetRepository.save([dataSet]);
         });
     }
 
@@ -55,43 +41,5 @@ export class SaveDataSetUseCase {
             name: dataSet.name,
             dataSetId: dataSet.id,
         });
-    }
-
-    private getDataElementsRelatedFromIndicators(dataSet: DataSet): FutureData<Indicator[]> {
-        const relatedDataElementsFromIndicators =
-            this.getRelatedDataElementsFromIndicators(dataSet);
-
-        const dataElementIdentifiables = relatedDataElementsFromIndicators
-            .values()
-            .flatMap(ids => ids);
-
-        return this.dataElementRepository.getBy(dataElementIdentifiables).map(dataElements => {
-            return dataSet.indicators.map(indicator => {
-                return indicator.setRelatedDataElements(
-                    dataElements,
-                    relatedDataElementsFromIndicators
-                );
-            });
-        });
-    }
-
-    private getRelatedDataElementsFromIndicators(
-        dataSetToSave: DataSet
-    ): HashMap<string, string[]> {
-        return _(dataSetToSave.indicators)
-            .filter(indicator => indicator.type === "outcomes")
-            .toHashMap(indicator => {
-                const idsInNumerator = this.extractId(indicator.numerator, /#{(\w+)/);
-                const idsInDenominator = this.extractId(indicator.denominator, /#{(\w+)/);
-                const dataElementCode = indicator.code ? [`${indicator.code}-C`] : [];
-                return [indicator.id, [...idsInNumerator, ...idsInDenominator, ...dataElementCode]];
-            });
-    }
-
-    private extractId(string: string, re: RegExp): Id[] {
-        const globalRe = new RegExp(re, "g");
-        return _(Array.from(string.matchAll(globalRe), match => match[1]))
-            .compactMap(item => item)
-            .value();
     }
 }

@@ -62,7 +62,7 @@ async function getData(): Promise<CompositionRootResult> {
     try {
         const configRepository = new ConfigD2Repository(api);
         const config = await configRepository.get().toPromise();
-        const compositionRoot = getWebappCompositionRoot(api);
+        const compositionRoot = getWebappCompositionRoot(api, config);
 
         const userSettings = await api.get<{ keyUiLocale: string }>("/userSettings").getData();
         configI18n(userSettings);

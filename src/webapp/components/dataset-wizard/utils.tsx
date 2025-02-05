@@ -1,4 +1,5 @@
 import i18n from "$/utils/i18n";
+import { DisaggregationStep } from "$/webapp/components/dataset-wizard/DisaggregationStep";
 import { IndicatorsDataSet } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
 import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
@@ -15,6 +16,11 @@ export function getDataSetSteps() {
             component: IndicatorsDataSet,
             label: i18n.t("Indicators"),
             key: "indicators",
+        },
+        {
+            component: DisaggregationStep,
+            label: i18n.t("Disaggregation"),
+            key: "disaggregation",
         },
         {
             component: ShareOptionsDataSet,

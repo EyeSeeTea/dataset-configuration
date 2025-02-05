@@ -5,6 +5,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { MetadataResponse } from "@eyeseetea/d2-api/api";
 import { CancelableResponse } from "@eyeseetea/d2-api";
 import { apiToFuture } from "$/data/api-futures";
+import { Category } from "$/domain/entities/Category";
 
 export function chunkRequest<Res>(
     ids: Id[],
@@ -41,3 +42,18 @@ export function runMetadata(d2Response: CancelableResponse<MetadataResponse>): F
             : Future.success(undefined)
     );
 }
+
+export function convertToCategories(d2Categories: D2Category[]): Category[] {
+    return d2Categories.map(category => ({
+        id: category.id,
+        name: category.displayName,
+        options: category.categoryOptions.map(option => ({
+            id: option.id,
+            name: option.displayName,
+        })),
+    }));
+}
+
+export type D2NamedRef = { id: Id; displayName: string };
+export type D2Category = D2NamedRef & { categoryOptions: D2NamedRef[] };
+export type D2CategoryCombo = D2NamedRef & { categories: D2Category[] };
