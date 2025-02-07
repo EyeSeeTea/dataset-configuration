@@ -3,20 +3,41 @@ import { ISODateString } from "$/domain/entities/Ref";
 import { User } from "$/domain/entities/User";
 import { Struct } from "$/domain/entities/generic/Struct";
 import _ from "$/domain/entities/generic/Collection";
+import i18n from "$/utils/i18n";
 
 export type LogsAttrs = {
     date: ISODateString;
-    actionDescription: string;
     action: "sharing" | "orgunits" | "delete" | "edit" | "create" | "clone" | "unknown";
     user: Pick<User, "id" | "username" | "name">;
     status: LogStatus;
     type: "dataSets";
-    dataSets: Pick<DataSet, "id" | "shortName">[];
+    dataSets: Pick<DataSet, "id" | "name">[];
 };
 
-export type LogStatus = "success" | "failure";
+export type LogAction = "sharing" | "orgunits" | "delete" | "edit" | "create" | "clone" | "unknown";
+export type LogStatus = "success" | "failed";
+export type PartialLog = Pick<Log, "action" | "status">;
 
 export class Log extends Struct<LogsAttrs>() {
+    get actionDescription(): string {
+        switch (this.action) {
+            case "sharing":
+                return i18n.t("change sharing settings");
+            case "orgunits":
+                return i18n.t("change organisation units");
+            case "delete":
+                return i18n.t("delete");
+            case "edit":
+                return i18n.t("edit dataset");
+            case "create":
+                return i18n.t("create new dataset");
+            case "clone":
+                return i18n.t("clone dataset");
+            default:
+                return i18n.t("unknown action");
+        }
+    }
+
     static buildLogsWithDataSetDetails(dataSets: DataSet[], logs: Log[]): Log[] {
         return logs.map(log => {
             const logDataSets = _(log.dataSets)
@@ -25,6 +46,18 @@ export class Log extends Struct<LogsAttrs>() {
                 })
                 .value();
             return Log.create({ ...log, dataSets: logDataSets });
+        });
+    }
+
+    static generateLogFromDataSets(dataSets: Log["dataSets"], user: User, log: PartialLog): Log {
+        return Log.create({
+            dataSets: dataSets.map(dataSet => {
+                return { id: dataSet.id, name: dataSet.name };
+            }),
+            date: new Date().toISOString(),
+            type: "dataSets",
+            user: { id: user.id, name: user.name, username: user.username },
+            ...log,
         });
     }
 }

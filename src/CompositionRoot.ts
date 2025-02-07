@@ -61,9 +61,21 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
         dataSets: {
             getByIds: new GetDataSetsByIdsUseCase(repositories.dataSetsRepository),
             getAll: new GetDataSetsUseCase(repositories.dataSetsRepository),
-            remove: new RemoveDataSetsUseCase(repositories.dataSetsRepository),
-            saveSharing: new SaveSharingDataSetsUseCase(repositories.dataSetsRepository),
-            saveOrgUnits: new SaveOrgUnitDataSetUseCase(repositories.dataSetsRepository),
+            remove: new RemoveDataSetsUseCase(
+                repositories.dataSetsRepository,
+                repositories.usersRepository,
+                repositories.logRepository
+            ),
+            saveSharing: new SaveSharingDataSetsUseCase(
+                repositories.dataSetsRepository,
+                repositories.logRepository,
+                repositories.usersRepository
+            ),
+            saveOrgUnits: new SaveOrgUnitDataSetUseCase(
+                repositories.dataSetsRepository,
+                repositories.usersRepository,
+                repositories.logRepository
+            ),
             migrateProjects: new MigrateDataSetProjectsUseCase(
                 repositories.dataSetsRepository,
                 repositories.projectRepository

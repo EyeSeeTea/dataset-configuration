@@ -1,12 +1,22 @@
-import { FutureData } from "$/domain/entities/generic/Future";
+import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
+import { LogRepository } from "$/domain/repositories/LogRepository";
+import { UserUtils } from "$/domain/usecases/common/UserUtils";
+import { UserRepository } from "$/domain/repositories/UserRepository";
 
 export class SaveOrgUnitDataSetUseCase {
-    constructor(private dataSetRepository: DataSetRepository) {}
+    private userUtils: UserUtils;
+    constructor(
+        private dataSetRepository: DataSetRepository,
+        private userRepository: UserRepository,
+        private logRepository: LogRepository
+    ) {
+        this.userUtils = new UserUtils(this.userRepository, this.logRepository);
+    }
 
     execute(options: SaveOrgUnitsOptions): FutureData<void> {
         return this.getDataSetsByIds(options.dataSetsIds).flatMap(dataSets => {
@@ -14,7 +24,26 @@ export class SaveOrgUnitDataSetUseCase {
                 options.action === "replace" || options.dataSetsIds.length === 1
                     ? this.replaceOrgUnits(dataSets, options.orgUnitsIds)
                     : this.mergeOrgUnits(dataSets, options.orgUnitsIds);
-            return this.dataSetRepository.save(dataSetsToSave);
+            return this.dataSetRepository
+                .save(dataSetsToSave)
+                .flatMap(() => {
+                    return this.userUtils
+                        .logAction({
+                            dataSets: dataSetsToSave,
+                            status: "success",
+                            action: "orgunits",
+                        })
+                        .toVoid();
+                })
+                .flatMapError(error => {
+                    return this.userUtils
+                        .logAction({
+                            dataSets: dataSetsToSave,
+                            status: "failed",
+                            action: "orgunits",
+                        })
+                        .flatMap(() => Future.error(error));
+                });
         });
     }
 

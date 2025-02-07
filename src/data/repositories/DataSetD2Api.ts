@@ -45,6 +45,7 @@ export class DataSetD2Api {
                         sharing: { public: true },
                     },
                     filter: {
+                        id: { in: options.filters.ids },
                         "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
                         "attributeValues.value": { eq: "true" },
                         identifiable: { token: options.filters.search },
