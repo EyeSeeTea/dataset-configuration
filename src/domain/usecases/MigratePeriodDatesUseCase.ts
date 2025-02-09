@@ -18,7 +18,7 @@ export class MigratePeriodDatesUseCase {
                         periodDate: dataSet.outputDate,
                     };
                 });
-            console.debug("DataSets to update:", dataSetPeriodDates);
+            console.debug("DataSets to update:", dataSetPeriodDates.length);
             return this.periodRepository.save(dataSetPeriodDates);
         });
     }

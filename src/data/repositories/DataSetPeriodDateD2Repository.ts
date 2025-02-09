@@ -62,14 +62,7 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
                             };
                         });
                         return apiToFuture(
-                            this.api.metadata.post(
-                                {
-                                    dataSets: dataSetsToSave,
-                                },
-                                {
-                                    importMode: "VALIDATE",
-                                }
-                            )
+                            this.api.metadata.post({ dataSets: dataSetsToSave })
                         ).map(response => {
                             const errorMessage = getErrorFromResponse(response);
                             const stats = Stats.create({

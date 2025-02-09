@@ -123,7 +123,7 @@ export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) =>
                     value={periodDate.endDate || null}
                     onChange={value => onUpdatePeriodDate(value, "endDate")}
                     label={i18n.t("End date of data input")}
-                    minDate={periodDate.startDate}
+                    minDate={periodDate.startDate || ""}
                     format="yyyy-MM-DD"
                 />
             </DatesContainer>
