@@ -159,13 +159,9 @@ export function getCommonActions<T extends ReferenceObject>(
             icon: <DateRangeIcon />,
             multiple: true,
             isActive: props.isActive,
-        },
-        {
-            name: "set_end_dates",
-            text: i18n.t("Change output/outcome end date for year"),
-            icon: <DateRangeIcon />,
-            multiple: true,
-            isActive: props.isActive,
+            onClick: selectedIds => {
+                onAction({ ids: selectedIds, action: "set_period_dates" });
+            },
         },
         {
             name: "clone",
