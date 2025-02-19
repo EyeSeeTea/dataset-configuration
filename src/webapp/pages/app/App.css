@@ -48,3 +48,7 @@ tr:has(.MuiAlert-message) {
         margin-left: auto;
     }
 }
+
+.periods-text {
+    padding: 0.5em 0;
+}

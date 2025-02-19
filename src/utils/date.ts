@@ -12,3 +12,28 @@ export function toLongDateString(isoDate: ISODateString, options?: Intl.DateTime
         ...options,
     });
 }
+
+export function addToDate(
+    date: string,
+    units: "years" | "months" | "days",
+    unitValue: number
+): string {
+    if (!date) return date;
+    const newDate = new Date(date);
+
+    switch (units) {
+        case "years":
+            newDate.setFullYear(newDate.getFullYear() + unitValue);
+            break;
+        case "months":
+            newDate.setMonth(newDate.getMonth() + unitValue);
+            break;
+        case "days":
+            newDate.setDate(newDate.getDate() + unitValue);
+            break;
+        default:
+            throw new Error("Unidad no válida");
+    }
+
+    return newDate.toISOString();
+}

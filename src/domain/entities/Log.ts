@@ -7,14 +7,23 @@ import i18n from "$/utils/i18n";
 
 export type LogsAttrs = {
     date: ISODateString;
-    action: "sharing" | "orgunits" | "delete" | "edit" | "create" | "clone" | "unknown";
+    action: LogAction;
     user: Pick<User, "id" | "username" | "name">;
     status: LogStatus;
     type: "dataSets";
     dataSets: Pick<DataSet, "id" | "name">[];
 };
 
-export type LogAction = "sharing" | "orgunits" | "delete" | "edit" | "create" | "clone" | "unknown";
+export type LogAction =
+    | "sharing"
+    | "orgunits"
+    | "delete"
+    | "edit"
+    | "create"
+    | "clone"
+    | "unknown"
+    | "period_dates";
+
 export type LogStatus = "success" | "failed";
 export type PartialLog = Pick<Log, "action" | "status">;
 
@@ -33,6 +42,8 @@ export class Log extends Struct<LogsAttrs>() {
                 return i18n.t("create new dataset");
             case "clone":
                 return i18n.t("clone dataset");
+            case "period_dates":
+                return i18n.t("change period dates");
             default:
                 return i18n.t("unknown action");
         }

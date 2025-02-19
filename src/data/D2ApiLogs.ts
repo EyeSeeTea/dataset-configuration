@@ -133,6 +133,7 @@ export class D2ApiLogs {
                 description: i18n.t("change organisation units"),
             },
             "clone dataset": { action: "clone", description: i18n.t("clone dataset") },
+            "change period dates": { action: "period_dates", description: i18n.t("period dates") },
         };
     }
 
