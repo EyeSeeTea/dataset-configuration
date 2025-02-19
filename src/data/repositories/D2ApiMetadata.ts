@@ -33,12 +33,19 @@ export const metadataCodes = {
     },
     indicatorGroupSets: { theme: "Theme", status: "Status" },
     orgUnitLevels: { country: "Country" },
+    categoryCombination: {
+        projectTargetActual: "GL_CATBOMBO_ProjectCCTarAct",
+    },
 };
 
 const metadataFields = {
     attributes: {
         fields: { id: true, name: true, code: true },
         filter: { identifiable: { in: rec(metadataCodes.attributes).values() } },
+    },
+    categoryCombos: {
+        fields: { id: true, name: true, code: true },
+        filter: { identifiable: { in: rec(metadataCodes.categoryCombination).values() } },
     },
     categories: {
         fields: { id: true, name: true, code: true },
@@ -78,6 +85,12 @@ export class D2ApiConfig {
                 attributes: this.buildAttributes(d2Response.attributes),
                 categories: {
                     project: getOrThrowMetadata("categories", metadataCodes.categories.project),
+                },
+                categoryCombos: {
+                    projectTargetActual: getOrThrowMetadata(
+                        "categoryCombos",
+                        metadataCodes.categoryCombination.projectTargetActual
+                    ),
                 },
                 dataElementGroupSets: {
                     coreCompetency: getOrThrowMetadata(
@@ -170,6 +183,7 @@ export type D2Config = {
         outputDates: D2NamedCodeRef;
     };
     categories: { project: D2NamedCodeRef };
+    categoryCombos: { projectTargetActual: D2NamedCodeRef };
     dataElementGroupSets: {
         coreCompetency: D2NamedCodeRef;
         status: D2NamedCodeRef;

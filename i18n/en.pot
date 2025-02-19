@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-01-30T03:34:37.405Z\n"
-"PO-Revision-Date: 2025-01-30T03:34:37.405Z\n"
+"POT-Creation-Date: 2025-02-18T23:53:28.212Z\n"
+"PO-Revision-Date: 2025-02-18T23:53:28.212Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -23,6 +23,30 @@ msgstr ""
 msgid "clone dataset"
 msgstr ""
 
+msgid "period dates"
+msgstr ""
+
+msgid "Value"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "No value"
+msgstr ""
+
+msgid "Yes"
+msgstr ""
+
+msgid "No"
+msgstr ""
+
+msgid "Section"
+msgstr ""
+
+msgid "Current date out of accepted period"
+msgstr ""
+
 msgid "No public access"
 msgstr ""
 
@@ -30,6 +54,15 @@ msgid "Public view/edit"
 msgstr ""
 
 msgid "Public view"
+msgstr ""
+
+msgid "delete"
+msgstr ""
+
+msgid "change period dates"
+msgstr ""
+
+msgid "unknown action"
 msgstr ""
 
 msgid "Project id is required"
@@ -101,7 +134,28 @@ msgstr ""
 msgid "Datasets"
 msgstr ""
 
+msgid "Load logs older than"
+msgstr ""
+
+msgid "Set output/outcome period dates: {{dataSetsNames}}"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Start date of data input"
+msgstr ""
+
+msgid "End date of data input"
+msgstr ""
+
+msgid "Periods"
+msgstr ""
+
 msgid "DataSets removed"
+msgstr ""
+
+msgid "Period date updated"
 msgstr ""
 
 msgid "Loading details..."
@@ -155,9 +209,6 @@ msgstr ""
 msgid "Set output/outcome period dates"
 msgstr ""
 
-msgid "Change output/outcome end date for year"
-msgstr ""
-
 msgid "Clone"
 msgstr ""
 
@@ -165,9 +216,6 @@ msgid "Add disaggregate"
 msgstr ""
 
 msgid "Add to"
-msgstr ""
-
-msgid "Save"
 msgstr ""
 
 msgid "Create"
@@ -195,6 +243,21 @@ msgid "Theme"
 msgstr ""
 
 msgid "Group"
+msgstr ""
+
+msgid "None"
+msgstr ""
+
+msgid "Data Element"
+msgstr ""
+
+msgid "Global graying out (disable combinationsin all the dataSet)"
+msgstr ""
+
+msgid "Per indicator graying out"
+msgstr ""
+
+msgid "Core competency"
 msgstr ""
 
 msgid "Disaggregation"
@@ -281,6 +344,9 @@ msgstr ""
 msgid "Indicators"
 msgstr ""
 
+msgid "Disaggregation options"
+msgstr ""
+
 msgid "Share"
 msgstr ""
 
@@ -333,6 +399,9 @@ msgid "and {{number}} more..."
 msgstr ""
 
 msgid "Removing DataSets"
+msgstr ""
+
+msgid "Updating period date"
 msgstr ""
 
 msgid "Loading..."

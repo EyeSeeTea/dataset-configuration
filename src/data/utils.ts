@@ -79,5 +79,8 @@ export function convertAttributeValueToDate(
 
 export type D2NamedRef = { id: Id; displayName: string };
 export type D2Category = D2NamedRef & { categoryOptions: D2NamedRef[] };
-export type D2CategoryCombo = D2NamedRef & { categories: D2Category[] };
+export type D2CategoryCombo = D2NamedRef & {
+    categories: D2Category[];
+    categoryOptionCombos: D2NamedRef[];
+};
 type D2AttributeDateValue = string; // format: YYYYMMDD

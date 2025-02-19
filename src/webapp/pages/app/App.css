@@ -52,3 +52,17 @@ tr:has(.MuiAlert-message) {
 .periods-text {
     padding: 0.5em 0;
 }
+
+.dataelement-header {
+    border: 1px solid rgb(224, 224, 224); 
+    padding: 0.5em;
+}
+
+.dataelement-row {    
+    border: 1px solid rgb(224, 224, 224);
+    max-width: 33vw;
+    overflow: hidden;
+    padding: 0.5em;    
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,8 +1,12 @@
+import _ from "lodash";
 import React from "react";
 import { DataSet } from "$/domain/entities/DataSet";
-import { Indicator, IndicatorWithDataElement } from "$/domain/entities/Indicator";
+import {
+    DisaggregationAttrs,
+    Indicator,
+    IndicatorWithDataElement,
+} from "$/domain/entities/Indicator";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import _ from "$/domain/entities/generic/Collection";
 import { SearchBox } from "@eyeseetea/d2-ui-components";
 import {
     AddDisaggregateModal,
@@ -12,6 +16,9 @@ import i18n from "$/utils/i18n";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import { Button } from "@material-ui/core";
+import { generateUid } from "$/utils/uid";
+import { DataElement } from "$/domain/entities/DataElement";
+import { Category } from "$/domain/entities/Category";
 
 type DisaggregationStepProps = {
     dataSet: DataSet;
@@ -76,18 +83,33 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                     ...selectedIndicator.dataElements.map(dataElement => dataElement.id),
                 ].join(".");
 
+                const newDisaggregation = getDisaggregationForCategories(
+                    indicator.disaggregation,
+                    config.categoryCombinations,
+                    selectedCategories
+                );
+
                 const newIndicator = Indicator.create({
                     ...indicator,
+                    disaggregation: newDisaggregation,
                     categories: selectedCategories,
                     relatedDataElements:
                         selectedIndicator.indicator.type === "outcomes"
                             ? dataElements.map(dataElement => {
-                                  return { ...dataElement, categories: selectedCategories };
+                                  return {
+                                      ...dataElement,
+                                      categories: selectedCategories,
+                                      disaggregation: newDisaggregation,
+                                  };
                               })
                             : [],
                 });
                 const newDataElements = dataElements.map(dataElement => {
-                    return { ...dataElement, categories: selectedCategories };
+                    return {
+                        ...dataElement,
+                        categories: selectedCategories,
+                        disaggregation: newDisaggregation,
+                    };
                 });
 
                 const record: IndicatorWithDataElement = {
@@ -129,16 +151,6 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                     .uniq()
                     .join("/");
 
-                const categoriesNames = dataElements
-                    ? _(dataElements)
-                          .map(dataElement => {
-                              return dataElement.categories.map(category => category.name);
-                          })
-                          .flatten()
-                          .uniq()
-                          .join("/")
-                    : "";
-
                 return (
                     <div className="indicator-row" key={`${indicator.id}-${ids}`}>
                         <div>
@@ -146,7 +158,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                                 return <p key={dataElement.id}>{dataElement.name}</p>;
                             })}
                             <p>
-                                {disaggregationName} <strong>{categoriesNames}</strong>
+                                <strong>{disaggregationName}</strong>
                             </p>
                         </div>
                         <Button
@@ -188,8 +200,12 @@ function updateIndicatorsDataElements(
 
     return dataSet.indicators.map(indicator => {
         const dataElements = dataElementsByIndicator.filter(de => de.indicatorId === indicator.id);
+
         return Indicator.create({
             ...indicator,
+            disaggregation: dataElements[0]
+                ? dataElements[0].disaggregation
+                : indicator.disaggregation,
             categories:
                 indicator.type === "outcomes"
                     ? []
@@ -197,4 +213,87 @@ function updateIndicatorsDataElements(
             relatedDataElements: indicator.type === "outcomes" ? dataElements : [],
         });
     });
+}
+
+function getDisaggregationForCategories(
+    disaggregation: DataElement["disaggregation"],
+    categoryCombos: CategoryCombination[],
+    categories: Category[]
+): DisaggregationAttrs {
+    const categoriesById = _(categoryCombos)
+        .flatMap(cc => cc.categories)
+        .uniqBy(category => category.id)
+        .keyBy(category => category.id)
+        .value();
+
+    const getCategoryIds = (categories: Category[]) =>
+        _(categories)
+            .map(category => category.id)
+            .uniq()
+            .value();
+
+    const deCategories = _.at(
+        categoriesById,
+        _(disaggregation?.categories)
+            .map(c => c.id)
+            .value()
+    );
+
+    const allCategories = _(deCategories)
+        .concat(categories)
+        .uniqBy(category => category.id)
+        .value();
+
+    const allValidCategories =
+        allCategories.length > 1
+            ? allCategories.filter(category => categoriesById[category.id]?.name !== "default")
+            : allCategories;
+
+    const combinedCategoriesIds = getCategoryIds(allValidCategories);
+    const existingCategoryCombo = categoryCombos.find(cc =>
+        _(getCategoryIds(cc.categories)).sortBy().isEqual(_.sortBy(combinedCategoriesIds))
+    );
+
+    if (existingCategoryCombo) {
+        return {
+            id: existingCategoryCombo.id,
+            name: existingCategoryCombo.name,
+            categories: existingCategoryCombo.categories,
+            optionsCombos: existingCategoryCombo.optionsCombos.map(optionCombo => {
+                return {
+                    id: optionCombo.id,
+                    name: optionCombo.name,
+                    options: optionCombo.options,
+                    categoryCombo: { id: existingCategoryCombo.id },
+                };
+            }),
+        };
+    } else {
+        const newCategoryComboId = generateUid();
+        const categories = _.at(categoriesById, combinedCategoriesIds);
+        const categoryOptions = categories.map(c => c.options);
+        const categoryOptionCombos = _.product(...categoryOptions).map(cos => {
+            return {
+                id: generateUid(),
+                name: cos.map(co => co.name).join(", "),
+                categoryCombo: { id: newCategoryComboId },
+                categoryOptions: cos,
+            };
+        });
+        const ccName = allValidCategories.map(cc => cc.name).join("/");
+        const newCategoryCombo: DisaggregationAttrs = {
+            id: newCategoryComboId,
+            name: ccName,
+            categories: categories,
+            optionsCombos: categoryOptionCombos.map(coc => {
+                return {
+                    id: coc.id,
+                    name: coc.name,
+                    options: coc.categoryOptions,
+                    categoryCombo: { id: newCategoryComboId },
+                };
+            }),
+        };
+        return newCategoryCombo;
+    }
 }

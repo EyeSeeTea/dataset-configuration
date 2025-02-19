@@ -29,6 +29,7 @@ export type DataSetAttrs = {
     notifyUser: boolean;
     indicators: Indicator[];
     periodDate: Maybe<PeriodDate>;
+    disabledFields: Array<{ dataElementId: Id; optionComboId: Id; competencyId: Id }>;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -222,6 +223,10 @@ export class DataSet extends Struct<DataSetAttrs>() {
         };
     }
 
+    setDisabledFields(disabledFields: DataSetAttrs["disabledFields"]): DataSet {
+        return this._update({ disabledFields });
+    }
+
     static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
             indicators: [],
@@ -242,6 +247,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             openFuturePeriods: 0,
             notifyUser: false,
             periodDate: undefined,
+            disabledFields: [],
             ...initialData,
         });
     }

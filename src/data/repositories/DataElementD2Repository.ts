@@ -22,6 +22,8 @@ export class DataElementD2Repository implements DataElementRepository {
 
     private buildDataElement(d2DataElement: D2ApiDataElement): DataElement {
         return {
+            valueType: d2DataElement.valueType,
+            description: d2DataElement.displayDescription,
             code: d2DataElement.code,
             id: d2DataElement.id,
             name: d2DataElement.displayName,
@@ -32,6 +34,12 @@ export class DataElementD2Repository implements DataElementRepository {
                       id: d2DataElement.categoryCombo.id,
                       name: d2DataElement.categoryCombo.displayName,
                       categories: convertToCategories(d2DataElement.categoryCombo.categories),
+                      optionsCombos: d2DataElement.categoryCombo.categoryOptionCombos.map(coc => ({
+                          id: coc.id,
+                          name: coc.displayName,
+                          categoryCombo: { id: "" },
+                          options: [],
+                      })),
                   }
                 : undefined,
         };
@@ -44,6 +52,8 @@ export class DataElementD2Repository implements DataElementRepository {
                     id: true,
                     displayName: true,
                     code: true,
+                    valueType: true,
+                    displayDescription: true,
                     categoryCombo: {
                         id: true,
                         displayName: true,
@@ -52,6 +62,7 @@ export class DataElementD2Repository implements DataElementRepository {
                             displayName: true,
                             categoryOptions: { id: true, displayName: true },
                         },
+                        categoryOptionCombos: { id: true, displayName: true },
                     },
                 },
                 filter: { identifiable: { in: identifiables } },
@@ -64,6 +75,8 @@ export class DataElementD2Repository implements DataElementRepository {
 }
 
 type D2ApiDataElement = {
+    valueType: string;
+    displayDescription: string;
     code: string;
     id: string;
     displayName: string;
