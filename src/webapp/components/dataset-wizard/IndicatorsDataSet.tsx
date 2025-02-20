@@ -157,7 +157,6 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 .value();
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
-            // setSelectedIndicatorsIds(ids);
         },
         [dataSet, indicators, onChange]
     );

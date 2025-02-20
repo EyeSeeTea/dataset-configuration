@@ -74,6 +74,13 @@ export class Future<E, D> {
         return this._promise();
     }
 
+    static fromPromise<Data>(promise: Promise<Data>): Future<Error, Data> {
+        return Future.fromComputation((resolve, reject) => {
+            promise.then(resolve).catch(err => reject(err ? err.message : "Unknown error"));
+            return () => {};
+        });
+    }
+
     static flatten<E, D>(futures: Array<Future<E, D[]>>): Future<E, D[]> {
         return Future.sequential(futures).map(listOfValues => _(listOfValues).flatten().value());
     }

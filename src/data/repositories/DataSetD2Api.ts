@@ -210,6 +210,18 @@ export class DataSetD2Api {
         const projectDetails = projects.find(project => project.id === projectAttributeId);
         const dataElementGroups = this.buildDataElementsGroupsCodes(d2DataSet);
 
+        const disabledFields = d2DataSet.sections.flatMap(section => {
+            const degCode = this.extractCompetencyCode(section.id, section.code);
+            const coreCompetency = coreCompetencies.find(cc => cc.code === degCode);
+            return section.greyedFields.map((greyField): DataSet["disabledFields"][number] => {
+                return {
+                    competencyId: coreCompetency?.id ?? "",
+                    dataElementId: greyField.dataElement.id,
+                    optionComboId: greyField.categoryOptionCombo.id,
+                };
+            });
+        });
+
         return DataSet.create({
             periodDate: this.buildPeriodDateFromAttributes(d2DataSet, attributes),
             indicators: this.buildIndicatorsFromDataSetElements(d2DataSet),
@@ -242,6 +254,7 @@ export class DataSetD2Api {
             notifyUser: d2DataSet.notifyCompletingUser,
             expiryDays: d2DataSet.expiryDays,
             openFuturePeriods: d2DataSet.openFuturePeriods,
+            disabledFields: disabledFields,
         });
     }
 
@@ -301,6 +314,14 @@ export class DataSetD2Api {
                               id: categoryCombo.id,
                               name: categoryCombo.displayName,
                               categories: categories,
+                              optionsCombos: categoryCombo.categoryOptionCombos.map(
+                                  optionCombo => ({
+                                      id: optionCombo.id,
+                                      name: optionCombo.displayName,
+                                      categoryCombo: { id: "" },
+                                      options: [],
+                                  })
+                              ),
                           }
                         : indicator.disaggregation,
                 });
@@ -330,6 +351,8 @@ export class DataSetD2Api {
                         .concat(commentsDataElements)
                         .map(dataElement => {
                             return {
+                                valueType: dataElement.dataElement.valueType,
+                                description: dataElement.dataElement.displayDescription,
                                 id: dataElement.dataElement.id,
                                 name: dataElement.dataElement.displayName,
                                 code: dataElement.dataElement.code,
@@ -341,6 +364,7 @@ export class DataSetD2Api {
                                           categories: convertToCategories(
                                               dataElement.categoryCombo.categories
                                           ),
+                                          optionsCombos: [],
                                       }
                                     : {
                                           id: dataElement.dataElement.categoryCombo.id,
@@ -348,6 +372,7 @@ export class DataSetD2Api {
                                           categories: convertToCategories(
                                               dataElement.dataElement.categoryCombo.categories
                                           ),
+                                          optionsCombos: [],
                                       },
                                 categories: [],
                             };
@@ -357,13 +382,6 @@ export class DataSetD2Api {
             .value();
 
         return outputsIndicators.concat(outcomesIndicators);
-    }
-
-    private extractId(string: string, re: RegExp): Id[] {
-        const globalRe = new RegExp(re, "g");
-        return _(Array.from(string.matchAll(globalRe), match => match[1]))
-            .compactMap(item => item)
-            .value();
     }
 
     private buildAccessByType(
@@ -429,7 +447,12 @@ export class DataSetD2Api {
 export const categoryComboFields = {
     id: true,
     displayName: true,
-    categories: { id: true, displayName: true, categoryOptions: { id: true, displayName: true } },
+    categories: {
+        id: true,
+        displayName: true,
+        categoryOptions: { id: true, displayName: true },
+    },
+    categoryOptionCombos: { id: true, displayName: true },
 };
 
 export const dataSetFields = {
@@ -443,7 +466,15 @@ export const dataSetFields = {
     lastUpdated: true,
     sharing: { public: true },
     displayShortName: true,
-    sections: { id: true, displayName: true, code: true },
+    sections: {
+        id: true,
+        displayName: true,
+        code: true,
+        greyedFields: {
+            dataElement: true,
+            categoryOptionCombo: true,
+        },
+    },
     userGroupAccesses: { id: true, displayName: true, access: true },
     userAccesses: { id: true, displayName: true, access: true },
     attributeValues: { value: true, attribute: { id: true } },
@@ -451,9 +482,11 @@ export const dataSetFields = {
     dataSetElements: {
         dataElement: {
             id: true,
+            displayDescription: true,
             displayName: true,
             code: true,
             categoryCombo: categoryComboFields,
+            valueType: true,
         },
         categoryCombo: categoryComboFields,
     },

@@ -20,7 +20,7 @@ type AddDisaggregateModalProps = {
 function getSelectedCategoriesByIndicator(indicator: IndicatorWithDataElement): Id[] {
     const firstDataElement = indicator.dataElements[0];
     if (!firstDataElement) return [];
-    return _(firstDataElement.categories)
+    return _(firstDataElement.disaggregation?.categories ?? [])
         .map(category => category.id)
         .uniq()
         .sort()

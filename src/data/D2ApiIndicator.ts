@@ -23,6 +23,7 @@ export class D2ApiIndicator {
                         displayName: true,
                         indicators: {
                             code: true,
+                            displayDescription: true,
                             attributeValues: { attribute: { id: true }, value: true },
                             denominator: true,
                             displayName: true,
@@ -65,6 +66,8 @@ export class D2ApiIndicator {
                             );
 
                             return Indicator.create({
+                                valueType: "",
+                                description: indicator.displayDescription,
                                 relatedDataElements: [],
                                 denominator: indicator.denominator,
                                 numerator: indicator.numerator,
@@ -104,6 +107,7 @@ export class D2ApiIndicator {
                         dataElements: {
                             id: true,
                             displayName: true,
+                            displayDescription: true,
                             code: true,
                             categoryCombo: {
                                 id: true,
@@ -160,6 +164,8 @@ export class D2ApiIndicator {
                         );
 
                         return Indicator.create({
+                            valueType: "",
+                            description: dataElement.displayDescription,
                             denominator: "",
                             numerator: "",
                             coreCompetency: { id: deg.id, code: deg.code, name: deg.displayName },
@@ -178,6 +184,7 @@ export class D2ApiIndicator {
                                       categories: convertToCategories(
                                           dataElement.categoryCombo.categories
                                       ),
+                                      optionsCombos: [],
                                   }
                                 : undefined,
                             relatedDataElements: [],

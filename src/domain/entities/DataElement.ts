@@ -1,14 +1,17 @@
 import { Category } from "$/domain/entities/Category";
-import { Id, NamedRef } from "$/domain/entities/Ref";
+import { DisaggregationAttrs } from "$/domain/entities/Indicator";
+import { Id } from "$/domain/entities/Ref";
 import { Maybe } from "$/utils/ts-utils";
 
 export type DataElement = {
     id: Id;
     name: string;
     code: string;
-    disaggregation: Maybe<NamedRef & { categories: Category[] }>;
+    description: string;
+    disaggregation: Maybe<DisaggregationAttrs>;
     categories: Category[];
     isComment: boolean;
+    valueType: string;
 };
 
 export const COMMENT_PREFIX = "-C";

@@ -1,0 +1,275 @@
+#macro(renderIndicators $indicators)
+    #if( $indicators.size() > 0 )
+        #set( $mark = 0 )
+        <div class="indicatorArea">
+            <table>
+                #foreach( $indicator in $indicators )
+                    #if( $mark == 1 )
+                        #set( $mark = 0 )
+                    #else
+                        #set( $mark = 1 )
+                    #end
+
+                    <tr>
+                        <td #if( $mark == 1 )class="alt nrcindicatorName"#else class="reg nrcindicatorName"#end>
+                            <span>$indicator.displayName</span>
+                        </td>
+
+                        <td>
+                            <input id="indicator${indicator.id}" indicatorid="${indicator.id}" name="indicator" type="text" class="indicator">
+                        </td>
+                    </tr>
+                #end
+            </table>
+        </div>
+    #end
+#end
+
+#macro(renderSectionTable $dataElements $categoryComboId $group $groupCount)
+    #set( $allOptionCombos = $orderedCategoryOptionCombos.get( $categoryComboId ) )
+
+    <table class="sectionTable" cellspacing="0">
+        #set( $categories = $orderedCategories.get( $categoryComboId ) )
+        #set( $mark = 0 )
+        #set( $optionCombos = $helpers.getVisibleOptionCombos($allOptionCombos, $dataElements) )
+
+        <thead>
+            #set( $rowTotalRendered = false )
+
+            #foreach( $headersRow in $helpers.getHeaders($categories, $optionCombos ) )
+                <tr>
+                    <th class="nrcinfoheader">#if ($group != "null" && $velocityCount == 1 && $groupCount == 1) $group #end</th>
+
+                    #foreach( $header in $headersRow )
+                        <th colspan="$header.colSpan" scope="col" class="nrcdataheader">
+                            <span align="center">
+                                #if( $header.displayName == 'default' )
+                                    ${i18n.getString( "value" )}
+                                #else
+                                    ${encoder.htmlEncode( $header.displayName )}
+                                #end
+                            </span>
+                        </th>
+                    #end
+
+                    #if( $section.showRowTotals && $!rowTotalRendered && $optionCombos.size() > 1)
+                        #set( $rowTotalRendered = true )
+                        <th rowspan="$categories.size()">
+                            ${i18n.getString( "total" )}
+                        </th>
+                    #end
+                </tr>
+            #end
+        </thead>
+
+        <tbody>
+            #foreach( $modelDataElement in $dataElements )
+                #set ($dataElement = $helpers.createViewDataElement($modelDataElement))
+                #set( $rowTotalIds = "row-$dataElement.id" )
+                #set( $cellCounter = 1 )
+
+                #if( $mark == 1 )
+                    #set( $mark = 0 )
+                #else
+                    #set( $mark = 1 )
+                #end
+
+                <tr>
+                    <td id="${dataElement.id}-cell" class="nrcindicatorName #if( $mark == 1 )#else reg#end">
+                        <span id="${dataElement.id}-dataelement" #if( $decoration && $dataElement.hasDescription() ) title="$!{dataElement.displayDescription}"#end >
+                            #if( $decoration && $!dataElement.hasUrl() )<a href="${dataElement.url}" target="_blank">#end${encoder.htmlEncode( $dataElement.displayFormName )}#if( $decoration && $dataElement.hasUrl() )</a>#end
+                        </span>
+                    </td>
+
+                    #foreach( $optionCombo in $optionCombos )
+                        #set( $dataEntryId = "${dataElement.id}-${optionCombo.id}-val" )
+                        #set( $commentId = "${dataElement.id}-${optionCombo.id}-comment" )
+                        #set( $rowTotalIds = "${rowTotalIds}-$optionCombo.id" )
+                        #set( $greyedField = false )
+                        #set( $greyedField = $greyedFields.getOr( "${dataElement.id}.${optionCombo.id}", false ) )
+
+                        #if( $dataElement.valueType == "BOOLEAN" )
+                            <td>
+                                <label>
+                                    <input type="radio" name="${dataEntryId}" class="entryselect" id="${dataEntryId}" value="" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end>
+                                    $i18n.getString( "no_value" )
+                                </label>
+                                <label>
+                                    <input type="radio" name="${dataEntryId}" class="entryselect" id="${dataEntryId}" value="true" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end>
+                                    $i18n.getString( "yes" )
+                                </label>
+                                <label>
+                                    <input type="radio" name="${dataEntryId}" class="entryselect" id="${dataEntryId}" value="false" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end>
+                                    $i18n.getString( "no" )
+                                </label>
+                                <img class="commentlink" id="${commentId}">
+                            </td>
+                        #elseif( $dataElement.valueType == "TRUE_ONLY" )
+                            <td><input name="entrytrueonly" class="entrytrueonly" id="${dataEntryId}" type="checkbox" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end><img class="commentlink" id="${commentId}"></td>
+                        #elseif( "LONG_TEXT" == $dataElement.valueType )
+                            <td><textarea name="entryfield" class="entryfield entryarea" id="${dataEntryId}" tabindex="${tabIndex}" #if( $greyedField || !$hasAccess ) disabled="disabled"#end></textarea></td>
+                        #elseif( "FILE_RESOURCE" == $dataElement.valueType )
+                            <td>
+                                <div class="entryfileresource" id="${dataEntryId}" tabindex="${tabIndex}">
+                                    <input class="entryfileresource-input" id="input-${dataEntryId}" #if( $greyedField || !$hasAccess ) disabled="disabled" #end>
+                                    <div class="upload-field">
+                                        <div class="upload-fileinfo">
+                                            <div class="upload-fileinfo-size"></div>
+                                            <div class="upload-fileinfo-name"></div>
+                                        </div>
+                                        <div class="upload-progress">
+                                            <div class="upload-progress-bar"></div>
+                                            <div class="upload-progress-info"></div>
+                                        </div>
+                                    </div>
+                                    <div class="upload-button-group">
+                                        <button class="upload-button"></button>
+                                    </div>
+                                    <input type="file" style="display: none;">
+                                </div>
+                            </td>
+                        #elseif( $dataElement.valueType == "TIME" )
+                            <td>
+                                <input type="text" name="entrytime" class="entryfield" id="${dataEntryId}" tabindex="${tabIndex}" />
+                            </td>
+                        #else
+                            #if( $dataElement.optionSet )
+                              <td><input name="entryoptionset" class="entryoptionset" id="${dataEntryId}" type="text" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end><img class="commentlink" id="${commentId}"></td>
+                            #else
+                              <td><input name="entryfield" class="entryfield" id="${dataEntryId}" type="text" tabindex="${tabIndex}"#if( $greyedField || !$hasAccess ) disabled="disabled"#end></td>
+                            #end
+                        #end
+
+                        #set( $tabIndex = $tabIndex + 1 )
+                    #end
+
+                    #set( $needRowColumnTotal = false )
+                    #if($section.showRowTotals &&  $optionCombos.size() > 1 )
+                        #set( $needRowColumnTotal = true )
+                        <td>
+                            <input class="dataelementtotal" type="text" id="$helpers.getRowTotalId($dataElement, $optionCombos)" disabled>
+                        </td>
+                    #end
+                </tr>
+            #end
+
+            #if($section.showColumnTotals && $dataElements.size() > 1)
+                #if( $mark == 1 )
+                    #set( $mark = 0 )
+                #else
+                    #set( $mark = 1 )
+                #end
+
+                <tr>
+                    <td #if( $mark == 1 )class="alt nrcindicatorName"#else class="reg nrcindicatorName"#end>
+                        ${i18n.getString( "total" )}
+                    </td>
+
+                    #set( $columnTotalIds = "col" )
+
+                    #foreach( $optionCombo in $optionCombos )
+                        #set( $columnTotalIds = "${columnTotalIds}-$optionCombo.id" )
+                        <td>
+                            <input class="dataelementtotal" type="text" id="col-${optionCombo.id}" disabled>
+                        </td>
+                    #end
+
+                    #if( $needRowColumnTotal )
+                        <td>
+                            <input class="dataelementtotal" type="text" id="$columnTotalIds" disabled>
+                        </td>
+                    #end
+                </tr>
+            #end
+        </tbody>
+    </table>
+#end
+
+#macro( renderSection $section $title )
+    <div class="formSection sectionContainer">
+        <div class="cent"><h3>$!encoder.htmlEncode( $title )</h3></div>
+        #if ( $description )
+            <div class="cent sectionDescription">$!encoder.htmlEncode( $description )</div>
+        #end
+        #set( $themes = $groupedItems.get( $section.id ) )
+
+        #foreach( $theme in $themes.keys() )
+            #set( $identifier = "theme-" + $section.id + "-" + $velocityCount )
+
+            <ul class="list-unstyled">
+                <li class="panel panel-default">
+                    <div class="panel-heading" data-target="#${identifier}" data-toggle="collapse">
+                        <h5 class="panel-title accordion-toggle">
+                            <a class="nrc-panel-title">
+                                #if($theme == "null") Default #else $theme #end
+                            </a>
+                        </h5>
+                    </div>
+
+                    <div id="${identifier}" class="panel-collapse in">
+                        #set( $groups = $themes.get( $theme ) )
+                        #foreach( $group in $groups.keys() )
+                            #set( $items = $groups.get( $group ) )
+
+                            #if ($section.type == "output")
+                                #set( $dataElementsByCategoryCombo = $helpers.getDataElementsByCategoryCombo($items) )
+                                
+                                #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
+                                    #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
+                                    #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
+                                #end
+                            #elseif ($section.type == "outcome")
+                                #set( $dataElementsByCategoryCombo = $helpers.getDataElementsByCategoryComboForIndicators($items) )
+
+                                #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
+                                    #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
+                                    #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
+                                #end
+
+                                #renderIndicators($items)
+                            #end
+                        #end
+                    </div>
+                </li>
+            </ul>
+        #end
+        
+    </div>
+    <div></div>
+
+#end
+
+#set( $tabIndex = 1 )
+#set( $hasAccess = $auth.hasAccess( "dhis-web-dataentry", "saveValue" ) )
+#set( $decoration = $dataSet.dataElementDecoration )
+
+#if( $dataSet.renderAsTabs )
+    <div id="tabs" class="dataset-configuration-custom-form">
+        <ul>
+            #foreach( $section in $sections )
+                #if( $section.name )
+                    <li><a href="#tab-${section.id}">$encoder.htmlEncode( $section.name )</a></li>
+                #else
+                    <li><a href="#tab-${section.id}">$i18n.getString("section") $velocityCount</a></li>
+                #end
+            #end
+        </ul>
+        
+        #foreach( $section in $sections )
+            <div id="tab-${section.id}" class="type-${section.type}">
+                <div class="in-period">
+                    #renderSection( $section )
+                </div>
+
+                <div class="out-of-period" style="display: none">
+                    ${i18n.getString( "current_date_out_of_period" )}:
+                    <span class="info"></span>
+                </div>
+            </div>
+        #end
+    </div>
+#else
+    #foreach( $section in $sections )
+        #renderSection( $section $section.name )
+    #end
+#end

@@ -47,7 +47,6 @@ export class ConfigD2Repository implements ConfigRepository {
                 },
                 filter: {
                     dataDimensionType: { eq: "DISAGGREGATION" },
-                    isDefault: { eq: "false" },
                 },
                 pageSize: 200,
                 page: page,
@@ -58,6 +57,7 @@ export class ConfigD2Repository implements ConfigRepository {
                     id: d2CategoryCombo.id,
                     name: d2CategoryCombo.displayName,
                     categories: convertToCategories(d2CategoryCombo.categories),
+                    optionsCombos: [],
                 });
             });
             if (d2Response.pager.page < d2Response.pager.pageCount) {

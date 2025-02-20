@@ -6037,6 +6037,11 @@ html-escaper@^2.0.0:
   resolved "https://registry.yarnpkg.com/html-escaper/-/html-escaper-2.0.2.tgz#dfd60027da36a36dfcbe236262c00a5822681453"
   integrity sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==
 
+htmlencode@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/htmlencode/-/htmlencode-0.0.4.tgz#f7e2d6afbe18a87a78e63ba3308e753766740e3f"
+  integrity sha512-0uDvNVpzj/E2TfvLLyyXhKBRvF1y84aZsyRxRXFsQobnHaL4pcaXk+Y9cnFlvnxrBLeXDNq/VJBD+ngdBgQG1w==
+
 http-cache-semantics@^4.0.0:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/http-cache-semantics/-/http-cache-semantics-4.1.1.tgz#abe02fcb2985460bf0323be664436ec3476a6d5a"
@@ -7004,16 +7009,6 @@ lodash.isplainobject@^4.0.3:
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz#7c526a52d89b45c45cc690b88163be0497f550cb"
   integrity sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==
-
-lodash.keyby@4.6.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/lodash.keyby/-/lodash.keyby-4.6.0.tgz#7f6a1abda93fd24e22728a4d361ed8bcba5a4354"
-  integrity sha512-PRe4Cn20oJM2Sn6ljcZMeKgyhTHpzvzFmdsp9rK+6K0eJs6Tws0MqgGFpfX/o2HjcoQcBny1Eik9W7BnVTzjIQ==
-
-lodash.mapvalues@4.6.0:
-  version "4.6.0"
-  resolved "https://registry.yarnpkg.com/lodash.mapvalues/-/lodash.mapvalues-4.6.0.tgz#1bafa5005de9dd6f4f26668c30ca37230cc9689c"
-  integrity sha512-JPFqXFeZQ7BfS00H58kClY7SPVeHertPE0lNuCyZ26/XlN8TvakYD7b9bGyNmXbT/D3BbtPAAmq90gPWqLkxlQ==
 
 lodash.merge@^4.6.0, lodash.merge@^4.6.2:
   version "4.6.2"
@@ -9539,6 +9534,11 @@ value-or-function@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/value-or-function/-/value-or-function-3.0.0.tgz#1c243a50b595c1be54a754bfece8563b9ff8d813"
   integrity sha512-jdBB2FrWvQC/pnPtIqcLsMaQgjhdb6B7tk1MMyTKapox+tQZbdRP4uLxu/JY0t7fbfDCUMnuelzEYv5GsxHhdg==
+
+velocityjs@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/velocityjs/-/velocityjs-1.0.0.tgz#0c0ceb8725e870e2c50f4b9ab33beff70d3566d7"
+  integrity sha512-lm5xKk3HYAQEUnnVLOgcqeBHJjm7HIGZ5Em7K/bElo6Ovw898gPt6FhHUBhn8DGgO03m+6/Hg8wICIh1DBeyMA==
 
 vinyl-fs@^3.0.1:
   version "3.0.3"

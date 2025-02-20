@@ -2,13 +2,21 @@ import _ from "$/domain/entities/generic/Collection";
 import { Category } from "$/domain/entities/Category";
 import { COMMENT_PREFIX, DataElement } from "$/domain/entities/DataElement";
 import { CoreCompetency } from "$/domain/entities/DataSet";
-import { Id, NamedRef } from "$/domain/entities/Ref";
+import { Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe } from "$/utils/ts-utils";
 
+export type DisaggregationAttrs = {
+    id: Id;
+    name: string;
+    categories: Category[];
+    optionsCombos: Array<NamedRef & { categoryCombo: Ref; options: NamedRef[] }>;
+};
+
 export type IndicatorAttrs = {
     id: Id;
+    description: string;
     name: string;
     code: string;
     theme: string;
@@ -16,17 +24,79 @@ export type IndicatorAttrs = {
     type: "outputs" | "outcomes";
     scope: IndicatorScope;
     group: string;
-    disaggregation: Maybe<NamedRef & { categories: Category[] }>;
+    disaggregation: Maybe<DisaggregationAttrs>;
     coreCompetency: CoreCompetency;
     denominator: string;
     numerator: string;
     relatedDataElements: DataElement[];
     categories: Category[];
+    valueType: string;
 };
 
 export type IndicatorScope = "core" | "local" | "donor";
 
 export class Indicator extends Struct<IndicatorAttrs>() {
+    get combinations() {
+        if (this.type === "outputs") {
+            return [
+                this.generateCombination(this.disaggregation, [
+                    {
+                        categories: this.categories,
+                        code: this.code,
+                        name: this.name,
+                        id: this.id,
+                        isComment: false,
+                        disaggregation: this.disaggregation,
+                        description: this.description,
+                        valueType: this.valueType,
+                    },
+                ]),
+            ];
+        } else {
+            const commentsDataElements = this.relatedDataElements.filter(
+                dataElement => dataElement.isComment
+            );
+            const commentCombination = commentsDataElements.map(dataElement => {
+                return this.generateCombination(dataElement.disaggregation, [dataElement]);
+            });
+
+            // getting the first dataElement because all the no comment
+            // dataElements share the same disaggregation
+            const relatedDataElements = this.relatedDataElements.filter(
+                dataElement => !dataElement.isComment
+            );
+            const firstDataElement = relatedDataElements[0];
+
+            const firstCombination = firstDataElement
+                ? this.generateCombination(firstDataElement.disaggregation, relatedDataElements)
+                : undefined;
+
+            return _([...commentCombination, firstCombination])
+                .compact()
+                .value();
+        }
+    }
+
+    private generateCombination(
+        disaggregation: DataElement["disaggregation"],
+        dataElements: DataElement[]
+    ): IndicatorCombination {
+        return {
+            dataElements: dataElements.map(dataElement => {
+                return {
+                    ...dataElement,
+                    disaggregation: dataElement.disaggregation,
+                    categories: dataElement.categories,
+                    coreCompetency: this.coreCompetency,
+                };
+            }),
+            coreCompetency: this.coreCompetency,
+            id: disaggregation?.id ?? "",
+            name: disaggregation?.name ?? "",
+            categories: disaggregation?.categories ?? [],
+        };
+    }
+
     setRelatedDataElements(
         dataElements: DataElement[],
         relatedDataElementsIndicators: HashMap<string, string[]>
@@ -77,6 +147,8 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                                 disaggregation: indicator.disaggregation,
                                 isComment: false,
                                 categories: indicator.categories,
+                                description: indicator.description,
+                                valueType: indicator.valueType,
                             },
                         ],
                     },
@@ -119,3 +191,11 @@ export class Indicator extends Struct<IndicatorAttrs>() {
 }
 
 export type IndicatorWithDataElement = { indicator: Indicator; dataElements: DataElement[] };
+
+export type IndicatorCombination = {
+    id: Id;
+    name: string;
+    categories: Category[];
+    dataElements: Array<DataElement & { coreCompetency: CoreCompetency }>;
+    coreCompetency: CoreCompetency;
+};

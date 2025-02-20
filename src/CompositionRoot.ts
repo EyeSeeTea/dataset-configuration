@@ -1,3 +1,4 @@
+import { CategoryComboD2Repository } from "$/data/repositories/CategoryComboD2Repository";
 import { CoreCompetencyD2Repository } from "$/data/repositories/CoreCompetencyD2Repository";
 import { DataElementD2Repository } from "$/data/repositories/DataElementD2Repository";
 import { DataSetD2Repository } from "$/data/repositories/DataSetD2Repository";
@@ -14,6 +15,7 @@ import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
 import { Config } from "$/domain/entities/Config";
+import { CategoryComboRepository } from "$/domain/repositories/CategoryComboRepository";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { DataSetPeriodDateRepository } from "$/domain/repositories/DataSetPeriodDateRepository";
@@ -23,6 +25,7 @@ import { LogRepository } from "$/domain/repositories/LogRepository";
 import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
+import { GetCombinationsByIdsUseCase } from "$/domain/usecases/GetCombinationsByIdsUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -59,10 +62,14 @@ type Repositories = {
     indicatorRepository: IndicatorRepository;
     dataElementRepository: DataElementRepository;
     dataSetPeriodDateRepository: DataSetPeriodDateRepository;
+    categoryComboRepository: CategoryComboRepository;
 };
 
 function getCompositionRoot(repositories: Repositories, config: Config) {
     return {
+        combination: {
+            getByIds: new GetCombinationsByIdsUseCase(repositories.categoryComboRepository),
+        },
         dataSets: {
             getByIds: new GetDataSetsByIdsUseCase(repositories.dataSetsRepository),
             getAll: new GetDataSetsUseCase(repositories.dataSetsRepository),
@@ -138,6 +145,7 @@ export function getWebappCompositionRoot(api: D2Api, config: Config) {
         indicatorRepository: new IndicatorD2Repository(api, config),
         dataElementRepository: new DataElementD2Repository(api),
         dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository(api),
+        categoryComboRepository: new CategoryComboD2Repository(api),
     };
 
     return getCompositionRoot(repositories, config);
@@ -155,6 +163,7 @@ export function getTestCompositionRoot() {
         indicatorRepository: new IndicatorD2Repository({} as D2Api, {} as Config),
         dataElementRepository: new DataElementD2Repository({} as D2Api),
         dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository({} as D2Api),
+        categoryComboRepository: new CategoryComboD2Repository({} as D2Api),
     };
 
     return getCompositionRoot(repositories, {} as Config);

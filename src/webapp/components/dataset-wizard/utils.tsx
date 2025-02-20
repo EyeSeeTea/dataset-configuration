@@ -1,5 +1,6 @@
 import i18n from "$/utils/i18n";
 import { DisaggregationStep } from "$/webapp/components/dataset-wizard/DisaggregationStep";
+import { GreyFieldsStep } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
 import { IndicatorsDataSet } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
 import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
@@ -21,6 +22,11 @@ export function getDataSetSteps() {
             component: DisaggregationStep,
             label: i18n.t("Disaggregation"),
             key: "disaggregation",
+        },
+        {
+            component: GreyFieldsStep,
+            label: i18n.t("Disaggregation options"),
+            key: "greyfields",
         },
         {
             component: ShareOptionsDataSet,

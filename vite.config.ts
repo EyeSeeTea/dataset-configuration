@@ -42,6 +42,7 @@ export default ({ mode }) => {
                 $: path.resolve(__dirname, "./src"),
             },
         },
+        assetsInclude: ["**/*.vm"],
     });
 };
 
