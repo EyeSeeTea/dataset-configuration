@@ -1,5 +1,4 @@
 // @ts-nocheck
-import velocity from "velocityjs";
 import htmlencode from "htmlencode";
 import _ from "lodash";
 
@@ -308,7 +307,7 @@ const getTemplate = (dataset, _periodDates, _sections, categoryCombos, dataSetTo
     const { disabledFields } = dataSetToSave;
     const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
-    const view = velocity.render(data.template, context, {}, config);
+    const view = window.Velocity.render(data.template, context, {}, config);
     return `
         <style>${data.css}</style>
         <script>

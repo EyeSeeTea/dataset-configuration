@@ -224,7 +224,7 @@ export class DataSetD2Repository implements DataSetRepository {
     ) {
         const allCategoryCombos =
             ccByDataSet.find(cc => cc.dataSetId === dataSet.id)?.categoryCombos ?? [];
-        const html = getTemplate(dataSet, {}, [], allCategoryCombos, dataSetToSave);
+        const html = getTemplate(dataSet, allCategoryCombos, dataSetToSave);
         const id = dataSet.dataEntryForm?.id || generateUid();
         return {
             id,
