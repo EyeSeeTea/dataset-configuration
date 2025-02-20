@@ -6,7 +6,6 @@ import { Id } from "$/domain/entities/Ref";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { useNavigateTo } from "$/webapp/routes";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
 
 export function useGetDataSetsByIds(ids: Id[]) {
     const { compositionRoot } = useAppContext();
@@ -67,7 +66,7 @@ export function useSaveOrgUnits() {
     return { saveOrgUnits };
 }
 
-export function useDeleteDataSets(props: DataSetIdsAndCallback) {
+export function useDeleteDataSets(props: DeleteDataSetsProps) {
     const { ids, onError, onSuccess } = props;
     const { compositionRoot } = useAppContext();
     const loading = useLoading();
@@ -91,35 +90,6 @@ export function useDeleteDataSets(props: DataSetIdsAndCallback) {
     return { deleteDataSets };
 }
 
-export function useUpdatePeriodDate(props: DataSetIdsAndCallback) {
-    const { ids, onError, onSuccess } = props;
-    const { compositionRoot } = useAppContext();
-    const loading = useLoading();
-
-    const updatePeriodDate = React.useCallback(
-        (periodDate: PeriodDate) => {
-            if (!ids.length) return;
-
-            loading.show(true, i18n.t("Updating period date"));
-            return compositionRoot.dataSets.savePeriodDate
-                .execute({ dataSetsIds: ids, periodDate })
-                .run(
-                    () => {
-                        loading.hide();
-                        onSuccess();
-                    },
-                    err => {
-                        loading.hide();
-                        onError(err.message);
-                    }
-                );
-        },
-        [compositionRoot.dataSets.savePeriodDate, ids, onError, onSuccess, loading]
-    );
-
-    return { updatePeriodDate };
-}
-
 export function useDataSetsRoutes() {
     const navigateTo = useNavigateTo();
 
@@ -130,5 +100,4 @@ export function useDataSetsRoutes() {
     return { goToCreateDataSet };
 }
 
-type CallbackMethodsType = { onError: (message: string) => void; onSuccess: () => void };
-type DataSetIdsAndCallback = { ids: Id[] } & CallbackMethodsType;
+type DeleteDataSetsProps = { ids: Id[]; onError: (message: string) => void; onSuccess: () => void };

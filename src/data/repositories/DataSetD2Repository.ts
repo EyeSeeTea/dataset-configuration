@@ -538,14 +538,10 @@ export class DataSetD2Repository implements DataSetRepository {
             value: dataSet.project?.id,
         };
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
-        const { inputDate, periodDate } = this.parsePeriodDate(dataSet, attributes);
 
-        const attributesToSave = [
-            projectAttribute,
-            createdByAttribute,
-            inputDate,
-            periodDate,
-        ].filter(attribute => attribute.value);
+        const attributesToSave = [projectAttribute, createdByAttribute].filter(
+            attribute => attribute.value
+        );
 
         const filteredExisting =
             existingAttributes?.filter(
@@ -553,30 +549,6 @@ export class DataSetD2Repository implements DataSetRepository {
             ) || [];
 
         return [...filteredExisting, ...attributesToSave];
-    }
-
-    private parsePeriodDate(
-        dataSetToSave: DataSetToSave,
-        attributes: D2Config["attributes"]
-    ): { inputDate: D2Attribute; periodDate: D2Attribute } {
-        const periods = dataSetToSave.periodDate
-            ? dataSetToSave.periodDate.periodsShortFormat.map(period => {
-                  return `${period.year}=${period.startDate}-${period.endDate}`;
-              })
-            : [];
-
-        return {
-            inputDate: {
-                attribute: { id: attributes.inputDates.id },
-                value: dataSetToSave.periodDate
-                    ? `${dataSetToSave.periodDate.startDateShortFormat}-${dataSetToSave.periodDate.endDateShortFormat}`
-                    : "",
-            },
-            periodDate: {
-                attribute: { id: attributes.periodDates.id },
-                value: periods.join(","),
-            },
-        };
     }
 
     private getIndicatorTypeName(type: string): string {
@@ -619,5 +591,3 @@ type D2CategoryCombo = {
     categories: Ref[];
     userGroupAccesses: Array<{ access: string; id: string }>;
 };
-
-type D2Attribute = { attribute: { id: Id }; value: string };

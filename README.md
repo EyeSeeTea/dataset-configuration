@@ -70,12 +70,6 @@ $ yarn localize
 
 Check the example script, entry `"script-example"`in `package.json`->scripts and `src/scripts/example.ts`.
 
-Migrate output dates to period dates
-
-```bash
- npx ts-node src/scripts/migrate-dataset-period-dates.ts -u 'http://localhost:8080' --username 'username' --password 'password'
-```
-
 ### Misc Notes
 
 -   Requests to DHIS2 will be transparently proxied (see `vite.config.ts` -> `server.proxy`) from `http://localhost:8081/dhis2/xyz` to `${VITE_DHIS2_BASE_URL}/xyz`. This prevents CORS and cross-domain problems.
