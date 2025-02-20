@@ -308,13 +308,13 @@ const getTemplate = (dataset, _periodDates, _sections, categoryCombos, dataSetTo
     const { disabledFields } = dataSetToSave;
     const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
-    const htmlForm = velocity.render(data.template, context, {}, config);
+    const view = velocity.render(data.template, context, {}, config);
     return `
         <style>${data.css}</style>
         <script>
             ${data.js}
         </script>
-        ${htmlForm}
+        ${view}
     `;
 };
 
