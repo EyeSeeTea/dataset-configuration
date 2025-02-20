@@ -5,4 +5,5 @@ export type DataSetSettings = {
     dataSet: DataSet;
     coreCompetencies: CoreCompetency[];
     indicators: Indicator[];
+    existingIndicatorsIds: string[];
 };

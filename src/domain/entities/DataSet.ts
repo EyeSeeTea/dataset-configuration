@@ -11,6 +11,7 @@ import { Indicator } from "$/domain/entities/Indicator";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
+import { PeriodDate } from "$/domain/entities/PeriodDate";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -27,6 +28,7 @@ export type DataSetAttrs = {
     openFuturePeriods: number;
     notifyUser: boolean;
     indicators: Indicator[];
+    periodDate: Maybe<PeriodDate>;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -34,7 +36,7 @@ export type AccessData = { id: Id; permissions: Permissions; name: string; type:
 export type AccessType = "users" | "groups";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
-export type DataSetList = Pick<DataSetAttrs, "id" | "name" | "lastUpdated" | "permissions">;
+export type DataSetList = Pick<DataSet, "id" | "name" | "lastUpdated" | "permissions">;
 
 export class DataSet extends Struct<DataSetAttrs>() {
     validate(): ValidationError<DataSet>[] {
@@ -239,6 +241,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             expiryDays: 0,
             openFuturePeriods: 0,
             notifyUser: false,
+            periodDate: undefined,
             ...initialData,
         });
     }

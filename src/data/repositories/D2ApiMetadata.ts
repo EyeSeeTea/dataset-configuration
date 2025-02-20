@@ -9,6 +9,10 @@ export const metadataCodes = {
         group: "DE_IND_GROUP",
         project: "GL_DATASET_PROJECT",
         createdByApp: "GL_CREATED_BY_DATASET_CONFIGURATION",
+        inputDates: "GL_INTERVAL_DATES",
+        periodDates: "GL_DATASET_PERIOD_DATES",
+        outcomeDates: "GL_OUTCOME_DATES",
+        outputDates: "GL_OUTPUT_DATES",
     },
     categories: { project: "GL_Project" },
     dataElementGroupSets: {
@@ -20,6 +24,7 @@ export const metadataCodes = {
         coreIndicator: "GL_MAND_DEGROUP",
         localIndicator: "GL_Local_DEGROUP",
         donorIndicator: "GL_Donor_DEGROUP",
+        outputIndicator: "GL_Output_DEGROUP",
     },
     indicatorGroup: {
         coreIndicator: "Global Indicators (Mandatory)",
@@ -101,6 +106,10 @@ export class D2ApiConfig {
                         "dataElementGroups",
                         metadataCodes.dataElementGroups.coreIndicator
                     ),
+                    outputIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
+                        metadataCodes.dataElementGroups.outputIndicator
+                    ),
                 },
                 indicatorGroups: {
                     coreIndicator: getOrThrowMetadata(
@@ -135,6 +144,10 @@ export class D2ApiConfig {
             group: getOrThrow(attributes, metadataCodes.attributes.group),
             project: getOrThrow(attributes, metadataCodes.attributes.project),
             createdByApp: getOrThrow(attributes, metadataCodes.attributes.createdByApp),
+            inputDates: getOrThrow(attributes, metadataCodes.attributes.inputDates),
+            periodDates: getOrThrow(attributes, metadataCodes.attributes.periodDates),
+            outcomeDates: getOrThrow(attributes, metadataCodes.attributes.outcomeDates),
+            outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates),
         };
     }
 }
@@ -147,7 +160,15 @@ function getOrThrow(modelData: D2NamedCodeRef[], code: string): D2NamedCodeRef {
 }
 
 export type D2Config = {
-    attributes: { project: D2NamedCodeRef; createdByApp: D2NamedCodeRef; group: D2NamedCodeRef };
+    attributes: {
+        project: D2NamedCodeRef;
+        createdByApp: D2NamedCodeRef;
+        group: D2NamedCodeRef;
+        inputDates: D2NamedCodeRef;
+        periodDates: D2NamedCodeRef;
+        outcomeDates: D2NamedCodeRef;
+        outputDates: D2NamedCodeRef;
+    };
     categories: { project: D2NamedCodeRef };
     dataElementGroupSets: {
         coreCompetency: D2NamedCodeRef;
@@ -158,6 +179,7 @@ export type D2Config = {
         coreIndicator: D2NamedCodeRef;
         localIndicator: D2NamedCodeRef;
         donorIndicator: D2NamedCodeRef;
+        outputIndicator: D2NamedCodeRef;
     };
     indicatorGroups: {
         coreIndicator: D2NamedCodeRef;

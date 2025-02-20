@@ -146,10 +146,9 @@ export type ChipFilterProps = {
 export type ChipItem = { text: string; value: string };
 
 export const ChipFilter = React.memo((props: ChipFilterProps) => {
-    const { items, label, onChange, value, mode = "single" } = props;
+    const { items, label, onChange, value: selectedValues, mode = "single" } = props;
 
     const handleChipClick = (itemValue: string) => {
-        const selectedValues = Array.isArray(value) ? value : [];
         const currentItem = items.find(item => item.value === itemValue);
 
         if (!currentItem) return;
@@ -172,7 +171,7 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
         }
     };
 
-    const isSelected = (itemValue: string) => value.includes(itemValue);
+    const isSelected = (itemValue: string) => selectedValues.includes(itemValue);
 
     return (
         <BodyFilterContainer>

@@ -14,4 +14,8 @@ export class LogD2Repository implements LogRepository {
     getByDataSets(options: GetLogsOptions): FutureData<Log[]> {
         return this.d2ApiLogs.getByDate(options);
     }
+
+    save(logs: Log[]): FutureData<void> {
+        return this.d2ApiLogs.save(logs);
+    }
 }

@@ -64,7 +64,12 @@ export function useGetDataSetSettings(props: { id: Id }) {
         );
     }, [compositionRoot.dataSets.getSettings, snackbar, id]);
 
-    return { dataSet, dataSetSettings, status, updateDataSet };
+    return {
+        dataSet,
+        dataSetSettings,
+        status,
+        updateDataSet,
+    };
 }
 
 function useGetProjects() {

@@ -1,6 +1,6 @@
 import { apiToFuture } from "$/data/api-futures";
-import { chunkRequest } from "$/data/utils";
-import { DataElement } from "$/domain/entities/DataElement";
+import { D2CategoryCombo, chunkRequest, convertToCategories } from "$/data/utils";
+import { COMMENT_PREFIX, DataElement } from "$/domain/entities/DataElement";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { D2Api } from "$/types/d2-api";
@@ -25,10 +25,13 @@ export class DataElementD2Repository implements DataElementRepository {
             code: d2DataElement.code,
             id: d2DataElement.id,
             name: d2DataElement.displayName,
+            isComment: d2DataElement.code.endsWith(COMMENT_PREFIX),
+            categories: [],
             disaggregation: d2DataElement.categoryCombo
                 ? {
                       id: d2DataElement.categoryCombo.id,
                       name: d2DataElement.categoryCombo.displayName,
+                      categories: convertToCategories(d2DataElement.categoryCombo.categories),
                   }
                 : undefined,
         };
@@ -41,7 +44,15 @@ export class DataElementD2Repository implements DataElementRepository {
                     id: true,
                     displayName: true,
                     code: true,
-                    categoryCombo: { id: true, displayName: true },
+                    categoryCombo: {
+                        id: true,
+                        displayName: true,
+                        categories: {
+                            id: true,
+                            displayName: true,
+                            categoryOptions: { id: true, displayName: true },
+                        },
+                    },
                 },
                 filter: { identifiable: { in: identifiables } },
                 paging: false,
@@ -56,5 +67,5 @@ type D2ApiDataElement = {
     code: string;
     id: string;
     displayName: string;
-    categoryCombo: { id: string; displayName: string };
+    categoryCombo: D2CategoryCombo;
 };
