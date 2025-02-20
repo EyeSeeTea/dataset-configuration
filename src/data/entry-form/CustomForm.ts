@@ -302,7 +302,7 @@ const convertToSections = (dataSet: DataSetToSave, categoryCombos: D2ApiCategory
     return result;
 };
 
-const getTemplate = (dataset, _periodDates, _sections, categoryCombos, dataSetToSave: DataSet) => {
+const getTemplate = (dataset, categoryCombos, dataSetToSave: DataSet) => {
     const templateSections = convertToSections(dataSetToSave, categoryCombos);
     const { disabledFields } = dataSetToSave;
     const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
