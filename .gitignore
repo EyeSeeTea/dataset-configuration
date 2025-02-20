@@ -40,3 +40,5 @@ cypress/fixtures/
 .idea/*
 
 docs/
+
+commands.sh
