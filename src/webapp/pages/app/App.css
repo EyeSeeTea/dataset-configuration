@@ -35,18 +35,17 @@ tr:has(.MuiAlert-message) {
     max-width: 600px;
 }
 
-
 .indicator-row {
     display: flex;
     padding-block: 1em;
+}
 
-    p {
-        margin: 0;
-    }
-    
-    button {
-        margin-left: auto;
-    }
+.indicator-row p {
+    margin: 0;
+}
+
+.indicator-row button {
+    margin-left: auto;
 }
 
 .periods-text {
