@@ -22,7 +22,7 @@ import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { DataElement } from "$/domain/entities/DataElement";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 
-const defaultLabel = "default";
+export const defaultLabel = "default";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
