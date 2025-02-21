@@ -19,6 +19,7 @@ import { Button } from "@material-ui/core";
 import { generateUid } from "$/utils/uid";
 import { DataElement } from "$/domain/entities/DataElement";
 import { Category } from "$/domain/entities/Category";
+import { defaultLabel } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
 
 type DisaggregationStepProps = {
     dataSet: DataSet;
@@ -72,7 +73,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
 
         const updatedIndicator = indicatorsDataElements.map(
             (indicatorDataElement): IndicatorWithDataElement => {
-                const { indicator, dataElements } = indicatorDataElement;
+                const { indicator, originalDisaggregation, dataElements } = indicatorDataElement;
 
                 const currentFullId = [
                     indicator.id,
@@ -84,7 +85,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                 ].join(".");
 
                 const newDisaggregation = getDisaggregationForCategories(
-                    indicator.disaggregation,
+                    originalDisaggregation,
                     config.categoryCombinations,
                     selectedCategories
                 );
@@ -114,6 +115,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
 
                 const record: IndicatorWithDataElement = {
                     indicator: newIndicator,
+                    originalDisaggregation,
                     dataElements: newDataElements,
                 };
 
@@ -127,7 +129,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                 } else if (mode === "all") {
                     return record;
                 } else {
-                    return { indicator, dataElements };
+                    return { indicator, originalDisaggregation, dataElements };
                 }
             }
         );
@@ -218,7 +220,7 @@ function updateIndicatorsDataElements(
 function getDisaggregationForCategories(
     disaggregation: DataElement["disaggregation"],
     categoryCombos: CategoryCombination[],
-    categories: Category[]
+    selectedCategories: Category[]
 ): DisaggregationAttrs {
     const categoriesById = _(categoryCombos)
         .flatMap(cc => cc.categories)
@@ -232,21 +234,21 @@ function getDisaggregationForCategories(
             .uniq()
             .value();
 
-    const deCategories = _.at(
+    const dataElementCategories = _.at(
         categoriesById,
         _(disaggregation?.categories)
             .map(c => c.id)
             .value()
     );
 
-    const allCategories = _(deCategories)
-        .concat(categories)
+    const allCategories = _(dataElementCategories)
+        .concat(selectedCategories)
         .uniqBy(category => category.id)
         .value();
 
     const allValidCategories =
         allCategories.length > 1
-            ? allCategories.filter(category => categoriesById[category.id]?.name !== "default")
+            ? allCategories.filter(category => categoriesById[category.id]?.name !== defaultLabel)
             : allCategories;
 
     const combinedCategoriesIds = getCategoryIds(allValidCategories);

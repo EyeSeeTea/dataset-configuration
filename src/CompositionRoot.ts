@@ -96,7 +96,6 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             save: new SaveDataSetUseCase(repositories.dataSetsRepository),
             getSettings: new GetDataSetSettingsUseCase(
                 repositories.coreCompetencyRepository,
-                repositories.indicatorRepository,
                 repositories.dataSetsRepository,
                 config
             ),

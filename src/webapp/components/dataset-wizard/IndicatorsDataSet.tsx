@@ -1,6 +1,11 @@
 import React from "react";
 import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
-import { ObjectsTable, ObjectsTableProps, TableState } from "@eyeseetea/d2-ui-components";
+import {
+    ObjectsTable,
+    ObjectsTableProps,
+    TableSorting,
+    TableState,
+} from "@eyeseetea/d2-ui-components";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -53,6 +58,10 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         dataSet.indicators.map(indicator => indicator.id)
     );
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
+    const [sorting, setSorting] = React.useState<TableSorting<Indicator>>({
+        field: "status",
+        order: "asc",
+    });
 
     const { allGroups, allThemes, filteredRows } = useFilterIndicators({
         indicators,
@@ -157,6 +166,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 .value();
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
+            setSorting(state.sorting);
         },
         [dataSet, indicators, onChange]
     );
@@ -212,6 +222,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         searchBoxLabel={i18n.t("Search by name")}
                         searchBoxColumns={["name"]}
                         onChange={validateIndicators}
+                        sorting={sorting}
                     />
                 </Grid>
             </Grid>
@@ -288,25 +299,31 @@ function useFilterIndicators(props: {
     }, [indicators]);
 
     const filteredRows = React.useMemo(() => {
-        return indicators.filter(indicator => {
-            const isInCompetency =
-                selectedCompetencies.length > 0
-                    ? selectedCompetencies.includes(indicator.coreCompetency.id)
+        return indicators
+            .filter(indicator => {
+                const isInCompetency =
+                    selectedCompetencies.length > 0
+                        ? selectedCompetencies.includes(indicator.coreCompetency.id)
+                        : true;
+
+                const isInGroup = selectedGroup ? indicator.group === selectedGroup : true;
+                const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
+                const showSelected = onlySelected
+                    ? selectedIndicators.includes(indicator.id)
                     : true;
 
-            const isInGroup = selectedGroup ? indicator.group === selectedGroup : true;
-            const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
-            const showSelected = onlySelected ? selectedIndicators.includes(indicator.id) : true;
-
-            return (
-                showSelected &&
-                isInGroup &&
-                isInTheme &&
-                isInCompetency &&
-                indicator.scope.toLowerCase() === scope.toLowerCase() &&
-                indicator.type.toLowerCase() === selectedType.toLowerCase()
-            );
-        });
+                return (
+                    showSelected &&
+                    isInGroup &&
+                    isInTheme &&
+                    isInCompetency &&
+                    indicator.scope.toLowerCase() === scope.toLowerCase() &&
+                    indicator.type.toLowerCase() === selectedType.toLowerCase()
+                );
+            })
+            .sort((a, b) => {
+                return a.status.localeCompare(b.status);
+            });
     }, [
         selectedCompetencies,
         selectedGroup,

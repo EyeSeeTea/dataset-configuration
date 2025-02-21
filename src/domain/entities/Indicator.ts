@@ -119,18 +119,25 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                 const commentDataElement = indicator.relatedDataElements.find(
                     dataElement => dataElement.isComment
                 );
+                const commentDisaggregation = commentDataElement?.disaggregation;
+
                 const relatedDataElements = indicator.relatedDataElements.filter(
                     dataElement => !dataElement.isComment
                 );
+
+                const relatedDisaggregation = relatedDataElements[0]?.disaggregation;
+
                 const indicatorComment = commentDataElement
                     ? {
                           indicator: indicator,
+                          originalDisaggregation: commentDisaggregation,
                           dataElements: commentDataElement ? [commentDataElement] : [],
                       }
                     : undefined;
 
-                const indicatorRelatedDataElements = {
+                const indicatorRelatedDataElements: Maybe<IndicatorWithDataElement> = {
                     indicator,
+                    originalDisaggregation: relatedDisaggregation,
                     dataElements: relatedDataElements,
                 };
 
@@ -139,6 +146,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                 return [
                     {
                         indicator,
+                        originalDisaggregation: indicator.disaggregation,
                         dataElements: [
                             {
                                 id: indicator.id,
@@ -164,9 +172,10 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         if (!search) return indicators;
         const allDataElements = indicators.flatMap(indicator => indicator.dataElements);
         const filteredDataElements = allDataElements.filter(dataElement =>
-            dataElement.name.includes(search)
+            dataElement.name.toLowerCase().includes(search.toLowerCase())
         );
         const filteredIndicators = indicators.map(indicator => ({
+            ...indicator,
             indicator: indicator.indicator,
             dataElements: indicator.dataElements.filter(dataElement =>
                 filteredDataElements.includes(dataElement)
@@ -190,7 +199,11 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     }
 }
 
-export type IndicatorWithDataElement = { indicator: Indicator; dataElements: DataElement[] };
+export type IndicatorWithDataElement = {
+    originalDisaggregation: Maybe<DisaggregationAttrs>;
+    indicator: Indicator;
+    dataElements: DataElement[];
+};
 
 export type IndicatorCombination = {
     id: Id;

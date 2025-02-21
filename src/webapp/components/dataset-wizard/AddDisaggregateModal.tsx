@@ -1,5 +1,12 @@
 import React from "react";
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from "@material-ui/core";
+import {
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Typography,
+} from "@material-ui/core";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Dropdown, MultipleDropdown } from "@eyeseetea/d2-ui-components";
 import i18n from "$/utils/i18n";
@@ -32,6 +39,7 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     const [categoriesIds, setCategoriesIds] = React.useState<Id[]>(
         getSelectedCategoriesByIndicator(indicator)
     );
+
     const [mode, setMode] = React.useState<AddDisaggregateMode>("indicator");
 
     const updateMode = (value: Maybe<string>) => {
@@ -71,6 +79,10 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
             </DialogTitle>
             <DialogContent>
                 <div className="dropdown-disaggregates">
+                    <Typography>
+                        {i18n.t("Current Disaggregation")}:{" "}
+                        <strong>{indicator.originalDisaggregation?.name}</strong>
+                    </Typography>
                     <MultipleDropdown
                         items={categories}
                         label={i18n.t("Add disaggregate")}

@@ -16,14 +16,17 @@ export class CategoryCombination extends Struct<CategoryCombinationAttrs>() {
         combinations: CategoryCombination[],
         indicatorDataElement: IndicatorWithDataElement
     ): Category[] {
-        const { dataElements } = indicatorDataElement;
+        const { originalDisaggregation } = indicatorDataElement;
+
+        const categoriesIds = originalDisaggregation?.categories.map(category => category.id) ?? [];
+        const categoriesIdsSets = new Set(categoriesIds);
 
         const allCategories = combinations.flatMap(combination => {
-            const disaggregationId = dataElements[0]?.disaggregation?.id;
-            return combination.id === disaggregationId ? [] : combination.categories;
+            return combination.id === originalDisaggregation?.id ? [] : combination.categories;
         });
 
         return _(allCategories)
+            .filter(category => !categoriesIdsSets.has(category.id))
             .uniqBy(category => category.id)
             .sortBy(category => category.name)
             .value();
