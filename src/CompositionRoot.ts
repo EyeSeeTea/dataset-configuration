@@ -1,3 +1,5 @@
+import { AppSettingsD2Repository } from "$/data/repositories/AppSettingsD2Repository";
+import { AppSettingsDataD2Repository } from "$/data/repositories/AppSettingsDataD2Repository";
 import { CategoryComboD2Repository } from "$/data/repositories/CategoryComboD2Repository";
 import { CoreCompetencyD2Repository } from "$/data/repositories/CoreCompetencyD2Repository";
 import { DataElementD2Repository } from "$/data/repositories/DataElementD2Repository";
@@ -15,6 +17,8 @@ import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
 import { Config } from "$/domain/entities/Config";
+import { AppSettingsDataRepository } from "$/domain/repositories/AppSettingsDataRepository";
+import { AppSettingsRepository } from "$/domain/repositories/AppSettingsRepository";
 import { CategoryComboRepository } from "$/domain/repositories/CategoryComboRepository";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
@@ -25,6 +29,8 @@ import { LogRepository } from "$/domain/repositories/LogRepository";
 import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
+import { GetAppSettingsDataUseCase } from "$/domain/usecases/GetAppSettingsDataUseCase";
+import { GetAppSettingsUseCase } from "$/domain/usecases/GetAppSettingsUseCase";
 import { GetCombinationsByIdsUseCase } from "$/domain/usecases/GetCombinationsByIdsUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
@@ -37,6 +43,7 @@ import { GetRelatedDataElementsUseCase } from "$/domain/usecases/GetRelatedDataE
 import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
 import { MigratePeriodDatesUseCase } from "$/domain/usecases/MigratePeriodDatesUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
+import { SaveAppSettingsUseCase } from "$/domain/usecases/SaveAppSettingsUseCase";
 import { SaveDataSetUseCase } from "$/domain/usecases/SaveDataSetUseCase";
 import { SaveOrgUnitDataSetUseCase } from "$/domain/usecases/SaveOrgUnitDataSetUseCase";
 import { SavePeriodDateUseCase } from "$/domain/usecases/SavePeriodDateUseCase";
@@ -63,10 +70,17 @@ type Repositories = {
     dataElementRepository: DataElementRepository;
     dataSetPeriodDateRepository: DataSetPeriodDateRepository;
     categoryComboRepository: CategoryComboRepository;
+    appSettingsRepository: AppSettingsRepository;
+    appSettingsDataRepository: AppSettingsDataRepository;
 };
 
 function getCompositionRoot(repositories: Repositories, config: Config) {
     return {
+        appSettings: {
+            getData: new GetAppSettingsDataUseCase(repositories.appSettingsDataRepository),
+            get: new GetAppSettingsUseCase(repositories.appSettingsRepository),
+            save: new SaveAppSettingsUseCase(repositories.appSettingsRepository),
+        },
         combination: {
             getByIds: new GetCombinationsByIdsUseCase(repositories.categoryComboRepository),
         },
@@ -145,6 +159,8 @@ export function getWebappCompositionRoot(api: D2Api, config: Config) {
         dataElementRepository: new DataElementD2Repository(api),
         dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository(api),
         categoryComboRepository: new CategoryComboD2Repository(api),
+        appSettingsRepository: new AppSettingsD2Repository(api),
+        appSettingsDataRepository: new AppSettingsDataD2Repository(api),
     };
 
     return getCompositionRoot(repositories, config);
@@ -163,6 +179,8 @@ export function getTestCompositionRoot() {
         dataElementRepository: new DataElementD2Repository({} as D2Api),
         dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository({} as D2Api),
         categoryComboRepository: new CategoryComboD2Repository({} as D2Api),
+        appSettingsRepository: new AppSettingsD2Repository({} as D2Api),
+        appSettingsDataRepository: new AppSettingsDataD2Repository({} as D2Api),
     };
 
     return getCompositionRoot(repositories, {} as Config);

@@ -88,7 +88,7 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
             <Grid item xs={12}>
                 <TextField
                     fullWidth
-                    placeholder={i18n.t("Select Project")}
+                    label={i18n.t("Select Project")}
                     onClick={openProjectModal}
                     InputProps={{
                         readOnly: true,

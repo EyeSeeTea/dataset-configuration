@@ -20,6 +20,19 @@ li {
     margin-left: 0;
 }
 
+.dropdown-resetmargins > div {
+    margin-inline-start: 0;
+    margin-block-start: 0;
+}
+
+.dropdown-resetmargins > label {
+    margin-inline-start: 0;
+}
+
+.dropdown-resetmargins div[role="button"] {
+    color: #000;
+}
+
 tr:has(.MuiAlert-message) {
     background-color: rgb(255, 238, 238);
 }
@@ -64,4 +77,27 @@ tr:has(.MuiAlert-message) {
     padding: 0.5em;    
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding-block-start: 1em;
+}
+
+.setting-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding: 1em;
+}
+
+.settings-tabs {
+    background-color: rgb(228, 228, 228);
+}
+
+.settings-tabs button[role="tab"] {
+    flex-basis: 50% !important;
+    max-width: none;
 }

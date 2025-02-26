@@ -1,8 +1,9 @@
 import { NamedRef } from "$/domain/entities/Ref";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { D2Api } from "$/types/d2-api";
-import rec from "$/domain/entities/generic/Rec";
-import { apiToFuture } from "$/data/api-futures";
+import { D2ApiAppSettings } from "$/data/repositories/D2ApiAppSettings";
+import { AppSettings } from "$/domain/entities/AppSettings";
+import { Maybe } from "$/utils/ts-utils";
 
 export const metadataCodes = {
     attributes: {
@@ -38,72 +39,66 @@ export const metadataCodes = {
     },
 };
 
-const metadataFields = {
-    attributes: {
-        fields: { id: true, name: true, code: true },
-        filter: { identifiable: { in: rec(metadataCodes.attributes).values() } },
-    },
-    categoryCombos: {
-        fields: { id: true, name: true, code: true },
-        filter: { identifiable: { in: rec(metadataCodes.categoryCombination).values() } },
-    },
-    categories: {
-        fields: { id: true, name: true, code: true },
-        filter: { identifiable: { in: rec(metadataCodes.categories).values() } },
-    },
-    dataElementGroups: {
-        fields: { id: true, name: true, code: true },
-        filter: { identifiable: { in: rec(metadataCodes.dataElementGroups).values() } },
-    },
-    dataElementGroupSets: {
-        fields: { id: true, name: true, code: true },
-        filter: { identifiable: { in: rec(metadataCodes.dataElementGroupSets).values() } },
-    },
-    indicatorGroups: {
-        fields: { id: true, name: true, code: true },
-        filter: { name: { in: rec(metadataCodes.indicatorGroup).values() } },
-    },
-    indicatorGroupSets: {
-        fields: { id: true, name: true, code: true },
-        filter: { name: { in: rec(metadataCodes.indicatorGroupSets).values() } },
-    },
-};
+const metadataFieldsApp = [
+    "attributes",
+    "categoryCombos",
+    "categories",
+    "dataElementGroups",
+    "dataElementGroupSets",
+    "indicatorGroups",
+    "indicatorGroupSets",
+    "organisationUnitLevels",
+] as const;
+
+type MetadataKeyType = (typeof metadataFieldsApp)[number];
 
 export class D2ApiConfig {
-    constructor(private api: D2Api) {}
+    private d2ApiAppSettings: D2ApiAppSettings;
+    constructor(private api: D2Api) {
+        this.d2ApiAppSettings = new D2ApiAppSettings(this.api);
+    }
 
     get(): FutureData<D2Config> {
         return this.getMetadata();
     }
 
     private getMetadata(): FutureData<D2Config> {
-        return apiToFuture(this.api.metadata.get(metadataFields)).map(d2Response => {
-            const getOrThrowMetadata = (metadataKey: keyof typeof metadataFields, code: string) =>
-                getOrThrow(d2Response[metadataKey], code);
+        return this.d2ApiAppSettings.getMetadataFromSettings().map(settings => {
+            const { appSettings, metadata } = settings;
+            const getOrThrowMetadata = (metadataKey: MetadataKeyType, value: Maybe<string>) =>
+                getOrThrow(metadata[metadataKey], value);
+
+            const orgUnitLevel = getOrThrowMetadata(
+                "organisationUnitLevels",
+                appSettings.countryLevelId
+            );
+            const orgUnitLevelNumber = metadata.organisationUnitLevels.find(
+                level => level.id === orgUnitLevel.id
+            );
 
             return {
-                attributes: this.buildAttributes(d2Response.attributes),
+                attributes: this.buildAttributes(metadata.attributes, appSettings),
                 categories: {
-                    project: getOrThrowMetadata("categories", metadataCodes.categories.project),
+                    project: getOrThrowMetadata("categories", appSettings.defaultProjectId),
                 },
                 categoryCombos: {
                     projectTargetActual: getOrThrowMetadata(
                         "categoryCombos",
-                        metadataCodes.categoryCombination.projectTargetActual
+                        appSettings.categoryComboId
                     ),
                 },
                 dataElementGroupSets: {
                     coreCompetency: getOrThrowMetadata(
                         "dataElementGroupSets",
-                        metadataCodes.dataElementGroupSets.coreCompetency
+                        appSettings.coreCompetencyId
                     ),
                     theme: getOrThrowMetadata(
                         "dataElementGroupSets",
-                        metadataCodes.dataElementGroupSets.theme
+                        appSettings.dataElementThemeId
                     ),
                     status: getOrThrowMetadata(
                         "dataElementGroupSets",
-                        metadataCodes.dataElementGroupSets.status
+                        appSettings.statusDataElementId
                     ),
                 },
                 dataElementGroups: {
@@ -119,10 +114,7 @@ export class D2ApiConfig {
                         "dataElementGroups",
                         metadataCodes.dataElementGroups.coreIndicator
                     ),
-                    outputIndicator: getOrThrowMetadata(
-                        "dataElementGroups",
-                        metadataCodes.dataElementGroups.outputIndicator
-                    ),
+                    outputIndicator: getOrThrowMetadata("dataElementGroups", appSettings.outputId),
                 },
                 indicatorGroups: {
                     coreIndicator: getOrThrowMetadata(
@@ -139,40 +131,50 @@ export class D2ApiConfig {
                     ),
                 },
                 indicatorGroupSets: {
-                    theme: getOrThrowMetadata(
-                        "indicatorGroupSets",
-                        metadataCodes.indicatorGroupSets.theme
-                    ),
-                    status: getOrThrowMetadata(
-                        "indicatorGroupSets",
-                        metadataCodes.indicatorGroupSets.status
-                    ),
+                    theme: getOrThrowMetadata("indicatorGroupSets", appSettings.indicatorThemeId),
+                    status: getOrThrowMetadata("indicatorGroupSets", appSettings.statusIndicatorId),
                 },
+                organisationUnitLevels: {
+                    country: { ...orgUnitLevel, level: orgUnitLevelNumber?.level ?? 2 },
+                },
+                periodEndDateDay: appSettings.periodEndDateDay,
+                periodEndDateMonth: appSettings.periodEndDateMonth,
+                periodLastYearEndDate: appSettings.periodLastYearEndDate,
+                periodLastYearUnits: appSettings.periodLastYearUnits,
             };
         });
     }
 
-    private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
+    private buildAttributes(
+        attributes: D2NamedCodeRef[],
+        appSettings: AppSettings
+    ): D2Config["attributes"] {
         return {
-            group: getOrThrow(attributes, metadataCodes.attributes.group),
+            group: getOrThrow(attributes, appSettings.groupField),
             project: getOrThrow(attributes, metadataCodes.attributes.project),
-            createdByApp: getOrThrow(attributes, metadataCodes.attributes.createdByApp),
-            inputDates: getOrThrow(attributes, metadataCodes.attributes.inputDates),
-            periodDates: getOrThrow(attributes, metadataCodes.attributes.periodDates),
+            createdByApp: getOrThrow(attributes, appSettings.dataSetFilterField),
+            inputDates: getOrThrow(attributes, appSettings.inputDateField),
+            periodDates: getOrThrow(attributes, appSettings.periodDateField),
             outcomeDates: getOrThrow(attributes, metadataCodes.attributes.outcomeDates),
             outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates),
         };
     }
 }
 
-function getOrThrow(modelData: D2NamedCodeRef[], code: string): D2NamedCodeRef {
-    const model = modelData.find(attribute => attribute.code === code || attribute.name === code);
-    if (!model) throw new Error(`Metadata object not found: code="${code}"`);
+function getOrThrow(modelData: D2NamedCodeRef[], value: Maybe<string>): D2NamedCodeRef {
+    const model = modelData.find(
+        attribute => attribute.code === value || attribute.name === value || attribute.id === value
+    );
+    if (!model) throw new Error(`Metadata object not found: code="${value}"`);
 
     return model;
 }
 
 export type D2Config = {
+    periodEndDateMonth: number;
+    periodEndDateDay: number;
+    periodLastYearEndDate: number;
+    periodLastYearUnits: string;
     attributes: {
         project: D2NamedCodeRef;
         createdByApp: D2NamedCodeRef;
@@ -201,6 +203,7 @@ export type D2Config = {
         donorIndicator: D2NamedCodeRef;
     };
     indicatorGroupSets: { theme: D2NamedCodeRef; status: D2NamedCodeRef };
+    organisationUnitLevels: { country: D2NamedCodeRef & { level: number } };
 };
 
 type D2NamedCodeRef = NamedRef & { code: string };

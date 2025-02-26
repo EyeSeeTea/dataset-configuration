@@ -20,12 +20,20 @@ export class ConfigD2Repository implements ConfigRepository {
     }
 
     get(): FutureData<Config> {
-        return this.getOrgUnitLevelGroup().flatMap(orgUnitLevel => {
+        return this.getConfig().flatMap(apiConfig => {
             return Future.joinObj({
-                regions: this.getRegions(orgUnitLevel),
+                regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
                 userGroups: this.getUserGroups(),
                 indicators: this.getIndicators(),
                 categoryCombinations: this.getCategoryCombos([], 1),
+            }).map(response => {
+                return {
+                    ...response,
+                    periodEndDateMonth: apiConfig.periodEndDateMonth,
+                    periodEndDateDay: apiConfig.periodEndDateDay,
+                    periodLastYearEndDate: apiConfig.periodLastYearEndDate,
+                    periodLastYearUnits: apiConfig.periodLastYearUnits,
+                };
             });
         });
     }

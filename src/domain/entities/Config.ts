@@ -10,4 +10,8 @@ export type Config = {
     indicators: Indicator[];
     regions: Region[];
     userGroups: UserGroup[];
+    periodEndDateMonth: number;
+    periodEndDateDay: number;
+    periodLastYearEndDate: number;
+    periodLastYearUnits: string;
 };

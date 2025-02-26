@@ -103,7 +103,14 @@ const DataSetActions_ = React.memo((props: DataSetActionsProps) => {
 
 export type TableAction = {
     ids: Id[];
-    action: "remove" | "sharing" | "orgUnits" | "logs" | "details" | "set_period_dates";
+    action:
+        | "remove"
+        | "sharing"
+        | "orgUnits"
+        | "logs"
+        | "details"
+        | "set_period_dates"
+        | "app-settings";
 };
 export type TableConfigProps = { onAction: (action: TableAction) => void; refreshTable: number };
 export const DataSetActions = component(DataSetActions_);

@@ -15,6 +15,10 @@ export const configTest: Config = {
         { id: "JqI1AgplhXe", code: "AF", name: "AF_Administrators" },
         { id: "da40GWQupNL", code: "AF", name: "AF_Users" },
     ],
+    periodEndDateDay: 1,
+    periodEndDateMonth: 4,
+    periodLastYearEndDate: 0,
+    periodLastYearUnits: "month",
 };
 
 export function getTestContext() {

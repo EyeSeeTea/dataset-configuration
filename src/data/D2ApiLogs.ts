@@ -9,8 +9,9 @@ import _ from "$/domain/entities/generic/Collection";
 import { D2LogsCodec } from "$/data/LogCodec";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
+import { APP_NAMESPACE } from "$/data/repositories/D2ApiAppSettings";
 
-const LOGS_NAMESPACE = "dataset-configuration";
+const LOGS_NAMESPACE = APP_NAMESPACE;
 const LOGS_PAGE_CURRENT_KEY = "logs-page-current";
 const LOGS_PAGE_PREFIX = "logs-page-";
 const MAX_LOGS_PAGES = 100;
