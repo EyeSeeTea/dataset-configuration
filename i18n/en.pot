@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-02-18T23:53:28.212Z\n"
-"PO-Revision-Date: 2025-02-18T23:53:28.212Z\n"
+"POT-Creation-Date: 2025-02-28T04:55:46.170Z\n"
+"PO-Revision-Date: 2025-02-28T04:55:46.170Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -213,6 +213,9 @@ msgid "Clone"
 msgstr ""
 
 msgid "Add disaggregate"
+msgstr ""
+
+msgid "Current Disaggregation"
 msgstr ""
 
 msgid "Add to"

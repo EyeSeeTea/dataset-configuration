@@ -2,19 +2,17 @@
 import htmlencode from "htmlencode";
 import _ from "lodash";
 
-import customFormTemplate from "./sectionForm.vm?raw";
-import customFormJs from "./script.js?raw";
-import customFormCss from "./style.css?raw";
 import { DataSet } from "$/domain/entities/DataSet";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
-import { groupConsecutiveBy } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
 import i18n from "$/utils/i18n";
+import { template, jsTemplate } from "$/data/entry-form/custom-template";
+import { cssTemplate } from "$/data/entry-form/css-template";
 
 const data = {
-    template: customFormTemplate,
-    css: customFormCss,
-    js: customFormJs,
+    template: atob(template),
+    css: cssTemplate,
+    js: atob(jsTemplate),
 };
 
 const a = obj => (obj.toArray ? obj.toArray() : obj);
@@ -316,5 +314,26 @@ const getTemplate = (dataset, categoryCombos, dataSetToSave: DataSet) => {
         ${view}
     `;
 };
+
+export function groupConsecutiveBy(
+    xs: any,
+    mapper: (data: NamedRef[][]) => NamedRef[][]
+): NamedRef[][][] {
+    const reducer = (acc: any, x: any) => {
+        if (_.isEmpty(acc)) {
+            return acc.concat([[x]]);
+        } else {
+            const last = _.last(acc) as any;
+            if (_.isEqual(mapper(_.last(last) ?? []), mapper(x))) {
+                last.push(x);
+                return acc;
+            } else {
+                return acc.concat([[x]]);
+            }
+        }
+    };
+
+    return _(xs).reduce(reducer, []);
+}
 
 export default getTemplate;

@@ -1,4 +1,4 @@
-.formSection {
+export const cssTemplate = `.formSection {
     border: 1px solid #cacaca;
     border-radius: 3px;
     margin: 0;
@@ -214,4 +214,4 @@
     border-collapse: collapse;
     border-bottom: 1px solid #cad5e5;
     min-height: 28px;
-}
+}`;

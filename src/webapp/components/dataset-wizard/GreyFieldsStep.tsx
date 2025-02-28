@@ -21,6 +21,7 @@ import { NamedRef, Ref } from "$/domain/entities/Ref";
 import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { DataElement } from "$/domain/entities/DataElement";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
+import { groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 
 export const defaultLabel = "default";
 
@@ -500,24 +501,3 @@ const GrayingAllContainer = styled.div`
     gap: 1em;
     padding-inline: 1em;
 `;
-
-export function groupConsecutiveBy(
-    xs: any,
-    mapper: (data: NamedRef[][]) => NamedRef[][]
-): NamedRef[][][] {
-    const reducer = (acc: any, x: any) => {
-        if (_.isEmpty(acc)) {
-            return acc.concat([[x]]);
-        } else {
-            const last = _.last(acc) as any;
-            if (_.isEqual(mapper(_.last(last) ?? []), mapper(x))) {
-                last.push(x);
-                return acc;
-            } else {
-                return acc.concat([[x]]);
-            }
-        }
-    };
-
-    return _(xs).reduce(reducer, []);
-}
