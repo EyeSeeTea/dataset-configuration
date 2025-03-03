@@ -46,8 +46,15 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                 const allIndicators = Indicator.buildAllIndicators(indicators);
                 setIndicatorsDataElements(allIndicators);
                 setRefresh(refresh + 1);
+                onChange(dataSet.setIndicators(indicators));
             }, console.error);
-    }, [compositionRoot.indicators.getRelated, dataSet, refresh, settings.existingIndicatorsIds]);
+    }, [
+        compositionRoot.indicators.getRelated,
+        dataSet,
+        onChange,
+        refresh,
+        settings.existingIndicatorsIds,
+    ]);
 
     const filteredIndicators = Indicator.filterIndicatorDataElements(
         indicatorsDataElements,

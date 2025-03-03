@@ -19,7 +19,9 @@ import { Indicator } from "$/domain/entities/Indicator";
 import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { Alert } from "@material-ui/lab";
+import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
+import { Maybe } from "$/utils/ts-utils";
+import styled from "styled-components";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -53,7 +55,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [selectedType, setType] = React.useState("Outputs");
     const [selectedGroup, setGroup] = React.useState("");
     const [selectedTheme, setTheme] = React.useState("");
-    const [onlySelected, setOnlySelected] = React.useState(false);
+    const [selectedFilterValue, setSelectedFilterValue] = React.useState<SelectedFilterValue>();
     const [selectedIndicators, setSelectedIndicators] = React.useState<Id[]>(
         dataSet.indicators.map(indicator => indicator.id)
     );
@@ -70,7 +72,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedCompetencies,
         selectedGroup,
         selectedTheme,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
     });
 
@@ -171,6 +173,10 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         [dataSet, indicators, onChange]
     );
 
+    const indicatorsPerCompetency = useGetSelectedIndicatorsByCompetency({
+        indicators: dataSet.indicators,
+    });
+
     return (
         <form>
             <Grid container spacing={1}>
@@ -192,6 +198,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         group={selectedGroup}
                         theme={selectedTheme}
                         onClose={() => setShowFilterModal(false)}
+                        indicatorsPerCompetency={indicatorsPerCompetency}
                     />
                 </FilterWrapper>
 
@@ -217,7 +224,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         columns={columns}
                         rows={filteredRows}
                         forceSelectionColumn
-                        filterComponents={<FilterTable onChange={setOnlySelected} />}
+                        filterComponents={<FilterTable onChange={setSelectedFilterValue} />}
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
                         searchBoxLabel={i18n.t("Search by name")}
                         searchBoxColumns={["name"]}
@@ -230,38 +237,44 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     );
 });
 
-export const FilterTable = React.memo((props: { onChange: (isSelected: boolean) => void }) => {
-    const { onChange } = props;
-    const [value, setValue] = React.useState<"selected" | "non-selected">("non-selected");
-    const isSelected = value === "selected";
+export const FilterTable = React.memo(
+    (props: { onChange: (value: Maybe<SelectedFilterValue>) => void }) => {
+        const { onChange } = props;
+        const [value, setValue] = React.useState<SelectedFilterValue>();
 
-    const onClick = React.useCallback(
-        (value: "selected" | "non-selected") => {
-            setValue(value);
-            onChange(value === "selected");
-        },
-        [onChange]
-    );
+        const handleAlignment = (
+            _event: React.MouseEvent<HTMLElement>,
+            newValue: Maybe<string>
+        ) => {
+            const selectedValue = selectedFilterValues.find(value => value === newValue);
+            setValue(selectedValue);
+            onChange(selectedValue);
+        };
 
-    return (
-        <div>
-            <Button
-                onClick={() => onClick("selected")}
-                variant={isSelected ? "outlined" : "text"}
-                color="primary"
-            >
-                {i18n.t("Selected")}
-            </Button>
-            <Button
-                onClick={() => onClick("non-selected")}
-                variant={!isSelected ? "outlined" : "text"}
-                color="primary"
-            >
-                {i18n.t("No Selected")}
-            </Button>
-        </div>
-    );
-});
+        return (
+            <>
+                <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
+                    <ToggleButtonStyled value="selected">
+                        <Button
+                            variant={value === "selected" ? "outlined" : "text"}
+                            color="primary"
+                        >
+                            {i18n.t("Selected")}
+                        </Button>
+                    </ToggleButtonStyled>
+                    <ToggleButtonStyled value="non-selected">
+                        <Button
+                            variant={value === "non-selected" ? "outlined" : "text"}
+                            color="primary"
+                        >
+                            {i18n.t("No Selected")}
+                        </Button>
+                    </ToggleButtonStyled>
+                </ToggleButtonGroup>
+            </>
+        );
+    }
+);
 
 function useFilterIndicators(props: {
     indicators: Indicator[];
@@ -270,7 +283,7 @@ function useFilterIndicators(props: {
     selectedCompetencies: string[];
     selectedGroup: string;
     selectedTheme: string;
-    onlySelected: boolean;
+    selectedFilterValue: Maybe<SelectedFilterValue>;
     selectedIndicators: Id[];
 }) {
     const {
@@ -280,7 +293,7 @@ function useFilterIndicators(props: {
         selectedCompetencies,
         selectedGroup,
         selectedTheme,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
     } = props;
 
@@ -301,6 +314,12 @@ function useFilterIndicators(props: {
     const filteredRows = React.useMemo(() => {
         return indicators
             .filter(indicator => {
+                if (!selectedFilterValue) return true;
+                return selectedFilterValue === "selected"
+                    ? selectedIndicators.includes(indicator.id)
+                    : !selectedIndicators.includes(indicator.id);
+            })
+            .filter(indicator => {
                 const isInCompetency =
                     selectedCompetencies.length > 0
                         ? selectedCompetencies.includes(indicator.coreCompetency.id)
@@ -308,12 +327,8 @@ function useFilterIndicators(props: {
 
                 const isInGroup = selectedGroup ? indicator.group === selectedGroup : true;
                 const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
-                const showSelected = onlySelected
-                    ? selectedIndicators.includes(indicator.id)
-                    : true;
 
                 return (
-                    showSelected &&
                     isInGroup &&
                     isInTheme &&
                     isInCompetency &&
@@ -331,7 +346,7 @@ function useFilterIndicators(props: {
         indicators,
         scope,
         selectedType,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
     ]);
 
@@ -348,3 +363,28 @@ export const StatusIndicator = React.memo((props: { status: string }) => {
         <span>{status}</span>
     );
 });
+
+export function useGetSelectedIndicatorsByCompetency(props: {
+    indicators: Indicator[];
+}): IndicatorPerCompetency[] {
+    const { indicators } = props;
+    return React.useMemo(() => {
+        return _(indicators)
+            .groupBy(c => c.coreCompetency.id)
+            .mapValues(([competencyId, indicators]) => {
+                return { id: competencyId, totalIndicators: indicators.length };
+            })
+            .values();
+    }, [indicators]);
+}
+
+const selectedFilterValues = ["selected", "non-selected"] as const;
+
+export type SelectedFilterValue = (typeof selectedFilterValues)[number];
+
+export type IndicatorPerCompetency = { id: Id; totalIndicators: number };
+
+const ToggleButtonStyled = styled(ToggleButton)`
+    backgroundcolor: none;
+    border: none;
+`;
