@@ -1,5 +1,7 @@
 import { AppSettingsD2Repository } from "$/data/repositories/AppSettingsD2Repository";
 import { AppSettingsDataD2Repository } from "$/data/repositories/AppSettingsDataD2Repository";
+import { AppSettingsDataTestRepository } from "$/data/repositories/test/AppSettingsDataTestRepository";
+import { AppSettingsTestRepository } from "$/data/repositories/test/AppSettingsTestRepository";
 import { CategoryComboD2Repository } from "$/data/repositories/CategoryComboD2Repository";
 import { CoreCompetencyD2Repository } from "$/data/repositories/CoreCompetencyD2Repository";
 import { DataElementD2Repository } from "$/data/repositories/DataElementD2Repository";
@@ -16,6 +18,10 @@ import { ProjectTestRepository } from "$/data/repositories/ProjectTestRepository
 import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
+import { CategoryComboTestRepository } from "$/data/repositories/test/CategoryComboTestRepository";
+import { CoreCompetencyTestRepository } from "$/data/repositories/test/CoreCompetencyTestRepository";
+import { DataSetPeriodDateTestRepository } from "$/data/repositories/test/DataSetPeriodDateTestRepository";
+import { IndicatorTestRepository } from "$/data/repositories/test/IndicatorTestRepository";
 import { Config } from "$/domain/entities/Config";
 import { AppSettingsDataRepository } from "$/domain/repositories/AppSettingsDataRepository";
 import { AppSettingsRepository } from "$/domain/repositories/AppSettingsRepository";
@@ -174,13 +180,13 @@ export function getTestCompositionRoot() {
         logRepository: new LogTestRepository(),
         projectRepository: new ProjectTestRepository(),
         orgUnitRepository: new OrgUnitTestRepository(),
-        coreCompetencyRepository: new CoreCompetencyD2Repository({} as D2Api),
-        indicatorRepository: new IndicatorD2Repository({} as D2Api, {} as Config),
+        coreCompetencyRepository: new CoreCompetencyTestRepository(),
+        indicatorRepository: new IndicatorTestRepository(),
         dataElementRepository: new DataElementD2Repository({} as D2Api),
-        dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository({} as D2Api),
-        categoryComboRepository: new CategoryComboD2Repository({} as D2Api),
-        appSettingsRepository: new AppSettingsD2Repository({} as D2Api),
-        appSettingsDataRepository: new AppSettingsDataD2Repository({} as D2Api),
+        dataSetPeriodDateRepository: new DataSetPeriodDateTestRepository(),
+        categoryComboRepository: new CategoryComboTestRepository(),
+        appSettingsRepository: new AppSettingsTestRepository(),
+        appSettingsDataRepository: new AppSettingsDataTestRepository(),
     };
 
     return getCompositionRoot(repositories, {} as Config);
