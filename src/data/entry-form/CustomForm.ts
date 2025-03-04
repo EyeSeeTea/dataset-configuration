@@ -1,6 +1,8 @@
 // @ts-nocheck
 import htmlencode from "htmlencode";
+import "lodash.product";
 import _ from "lodash";
+import velocity from "./velocity.ts";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
@@ -305,7 +307,7 @@ const getTemplate = (dataset, categoryCombos, dataSetToSave: DataSet) => {
     const { disabledFields } = dataSetToSave;
     const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
-    const view = window.Velocity.render(data.template, context, {}, config);
+    const view = velocity.render(data.template, context, {}, config);
     return `
         <style>${data.css}</style>
         <script>
