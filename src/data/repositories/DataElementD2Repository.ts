@@ -1,6 +1,6 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2CategoryCombo, chunkRequest, convertToCategories } from "$/data/utils";
-import { COMMENT_PREFIX, DataElement } from "$/domain/entities/DataElement";
+import { COMMENT_SUFIX, DataElement } from "$/domain/entities/DataElement";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { D2Api } from "$/types/d2-api";
@@ -25,7 +25,7 @@ export class DataElementD2Repository implements DataElementRepository {
             code: d2DataElement.code,
             id: d2DataElement.id,
             name: d2DataElement.displayName,
-            isComment: d2DataElement.code.endsWith(COMMENT_PREFIX),
+            isComment: d2DataElement.code.endsWith(COMMENT_SUFIX),
             categories: [],
             disaggregation: d2DataElement.categoryCombo
                 ? {

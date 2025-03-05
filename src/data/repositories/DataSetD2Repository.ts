@@ -19,10 +19,11 @@ import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
-import { Id, NamedRef, Ref } from "$/domain/entities/Ref";
+import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
 import { Category } from "$/domain/entities/Category";
+import { Disaggregation } from "$/domain/entities/DataElement";
 
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -159,18 +160,16 @@ export class DataSetD2Repository implements DataSetRepository {
 
             return optionsCombinations.map(optionCombination => {
                 const categoryOptionsName = optionCombination
-                    .map(optionsCombinations => {
-                        return optionsCombinations.name;
-                    })
+                    .map(optionsCombinations => optionsCombinations.name)
                     .join(", ");
 
                 return {
                     categoryCombo: { id: categoryCombo.id },
                     id: generateUid(),
                     name: categoryOptionsName,
-                    categoryOptions: optionCombination.map(categoryOption => {
-                        return { id: categoryOption.id };
-                    }),
+                    categoryOptions: optionCombination.map(categoryOption => ({
+                        id: categoryOption.id,
+                    })),
                 };
             });
         });
@@ -333,63 +332,63 @@ export class DataSetD2Repository implements DataSetRepository {
         const allCategoryCombos = dataSets.flatMap(dataSet => {
             return this.buildCategoryCombinationsByDataElements(dataSet)
                 .filter(cc => !cc.existing)
-                .map(cc => {
-                    const { categoryCombo } = cc;
-                    return categoryCombo;
-                });
+                .map(cc => cc.categoryCombo);
         });
         return _(allCategoryCombos)
             .uniqBy(cc => cc.id)
             .value();
     }
 
-    private buildCategoryCombinationsByDataElements(dataSet: DataSetToSave) {
+    private buildCategoryCombinationsByDataElements(
+        dataSet: DataSetToSave
+    ): DataElementWithCombination[] {
         return dataSet.indicators.flatMap(indicator => {
-            if (indicator.type === "outputs") {
-                if (indicator.categories.length === 0) return [];
-                return _([
-                    this.buildDataElementByCombination(
-                        indicator.id,
-                        indicator.categories,
-                        indicator.disaggregation,
-                        dataSet
-                    ),
-                ])
-                    .compactMap(deCombination => deCombination)
-                    .value();
-            } else if (indicator.type === "outcomes") {
-                const dataElementsComment = indicator.relatedDataElements.filter(
-                    dataElement => dataElement.isComment
-                );
-                const dataElementsRelated = indicator.relatedDataElements.filter(
-                    dataElement => !dataElement.isComment
-                );
-
-                const commentDataElement = _(dataElementsComment)
-                    .compactMap(dataElement => {
-                        return this.buildDataElementByCombination(
-                            dataElement.id,
-                            dataElement.categories,
-                            dataElement.disaggregation,
+            switch (indicator.type) {
+                case "outputs": {
+                    if (indicator.categories.length === 0) return [];
+                    return _([
+                        this.buildDataElementByCombination(
+                            indicator.id,
+                            indicator.categories,
+                            indicator.disaggregation,
                             dataSet
-                        );
-                    })
-                    .value();
+                        ),
+                    ])
+                        .compactMap(deCombination => deCombination)
+                        .value();
+                }
+                case "outcomes": {
+                    const dataElementsComment = indicator.relatedDataElements.filter(
+                        dataElement => dataElement.isComment
+                    );
+                    const dataElementsRelated = indicator.relatedDataElements.filter(
+                        dataElement => !dataElement.isComment
+                    );
 
-                const relatedDataElements = _(dataElementsRelated)
-                    .compactMap(dataElement => {
-                        return this.buildDataElementByCombination(
-                            dataElement.id,
-                            dataElement.categories,
-                            dataElement.disaggregation,
-                            dataSet
-                        );
-                    })
-                    .value();
+                    const commentDataElement = _(dataElementsComment)
+                        .compactMap(dataElement => {
+                            return this.buildDataElementByCombination(
+                                dataElement.id,
+                                dataElement.categories,
+                                dataElement.disaggregation,
+                                dataSet
+                            );
+                        })
+                        .value();
 
-                return [...commentDataElement, ...relatedDataElements];
-            } else {
-                throw Error(`Invalid indicator type: ${indicator.type}`);
+                    const relatedDataElements = _(dataElementsRelated)
+                        .compactMap(dataElement => {
+                            return this.buildDataElementByCombination(
+                                dataElement.id,
+                                dataElement.categories,
+                                dataElement.disaggregation,
+                                dataSet
+                            );
+                        })
+                        .value();
+
+                    return [...commentDataElement, ...relatedDataElements];
+                }
             }
         });
     }
@@ -397,9 +396,9 @@ export class DataSetD2Repository implements DataSetRepository {
     private buildDataElementByCombination(
         id: Id,
         categories: Category[],
-        disaggregation: Maybe<NamedRef & { categories: Category[] }>,
+        disaggregation: Maybe<Disaggregation>,
         dataSet: DataSetToSave
-    ) {
+    ): Maybe<DataElementWithCombination> {
         const categoriesNoDefault = categories.filter(category => category.name !== "default");
         if (categoriesNoDefault.length === 0) return undefined;
 
@@ -413,8 +412,6 @@ export class DataSetD2Repository implements DataSetRepository {
         const categoryComboName = [currentDisaggregation, ...categoriesNames]
             .filter(Boolean)
             .join("/");
-
-        const dimensionType = "DISAGGREGATION" as const;
 
         const currentCategoriesIds = categoriesFromDisaggregation
             .concat(categoriesNoDefault)
@@ -433,7 +430,7 @@ export class DataSetD2Repository implements DataSetRepository {
             indicatorId: id,
             existing: Boolean(existingCategoryOptionCombo?.id),
             categoryCombo: {
-                dataDimensionType: dimensionType,
+                dataDimensionType: "DISAGGREGATION" as const,
                 publicAccess: "r-------",
                 id: existingCategoryOptionCombo?.id ?? getUid(categoryComboName),
                 name: categoryComboName,
@@ -590,4 +587,18 @@ type D2CategoryCombo = {
     name: string;
     categories: Ref[];
     userGroupAccesses: Array<{ access: string; id: string }>;
+};
+
+type DataElementWithCombination = {
+    isComment: boolean;
+    indicatorId: Id;
+    existing: boolean;
+    categoryCombo: {
+        dataDimensionType: "DISAGGREGATION";
+        publicAccess: string;
+        id: Id;
+        name: string;
+        categories: Ref[];
+        userGroupAccesses: { access: string; id: Id }[];
+    };
 };

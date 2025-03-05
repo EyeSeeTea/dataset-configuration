@@ -35,7 +35,6 @@ tr:has(.MuiAlert-message) {
     max-width: 600px;
 }
 
-
 .indicator-row {
     display: flex;
     padding-block: 1em;
@@ -43,7 +42,7 @@ tr:has(.MuiAlert-message) {
     p {
         margin: 0;
     }
-    
+
     button {
         margin-left: auto;
     }
