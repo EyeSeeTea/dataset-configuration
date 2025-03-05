@@ -1,5 +1,3 @@
-import "lodash.product";
-import { product } from "lodash";
 import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
@@ -156,7 +154,7 @@ export class DataSetD2Repository implements DataSetRepository {
                 categoriesIds.includes(category.id)
             );
             const categoryOptions = categories.map(category => category.options);
-            const optionsCombinations = product(...categoryOptions);
+            const optionsCombinations = _(categoryOptions).cartesian().value();
 
             return optionsCombinations.map(optionCombination => {
                 const categoryOptionsName = optionCombination
