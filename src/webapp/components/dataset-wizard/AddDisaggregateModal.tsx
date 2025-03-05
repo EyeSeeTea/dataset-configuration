@@ -6,7 +6,7 @@ import i18n from "$/utils/i18n";
 import { IndicatorWithDataElement } from "$/domain/entities/Indicator";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Id } from "$/domain/entities/Ref";
-import { Maybe } from "$/utils/ts-utils";
+import { Maybe, UnionFromValues } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 
 type AddDisaggregateModalProps = {
@@ -104,5 +104,5 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     );
 });
 
-const disaggregationModes = ["indicator", "competency", "all"] as const;
-export type AddDisaggregateMode = (typeof disaggregationModes)[number];
+const disaggregationModes = ["indicator", "competency", "all"];
+export type AddDisaggregateMode = UnionFromValues<typeof disaggregationModes>;

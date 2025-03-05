@@ -1,8 +1,8 @@
 import _ from "$/domain/entities/generic/Collection";
 import { Category } from "$/domain/entities/Category";
-import { COMMENT_PREFIX, DataElement } from "$/domain/entities/DataElement";
+import { COMMENT_SUFIX, DataElement, Disaggregation } from "$/domain/entities/DataElement";
 import { CoreCompetency } from "$/domain/entities/DataSet";
-import { Id, NamedRef } from "$/domain/entities/Ref";
+import { Id } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe } from "$/utils/ts-utils";
@@ -16,7 +16,7 @@ export type IndicatorAttrs = {
     type: "outputs" | "outcomes";
     scope: IndicatorScope;
     group: string;
-    disaggregation: Maybe<NamedRef & { categories: Category[] }>;
+    disaggregation: Maybe<Disaggregation>;
     coreCompetency: CoreCompetency;
     denominator: string;
     numerator: string;
@@ -36,51 +36,50 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         const dataElementsForIndicator = dataElements.filter(dataElement =>
             relatedDataElements.includes(dataElement.isComment ? dataElement.code : dataElement.id)
         );
-        return this._update({
-            relatedDataElements: dataElementsForIndicator.map(dataElement => {
-                return { ...dataElement };
-            }),
-        });
+        return this._update({ relatedDataElements: dataElementsForIndicator });
     }
 
     static buildAllIndicators(indicators: Indicator[]): IndicatorWithDataElement[] {
         return indicators.flatMap((indicator): IndicatorWithDataElement[] => {
-            if (indicator.type === "outcomes") {
-                const commentDataElement = indicator.relatedDataElements.find(
-                    dataElement => dataElement.isComment
-                );
-                const relatedDataElements = indicator.relatedDataElements.filter(
-                    dataElement => !dataElement.isComment
-                );
-                const indicatorComment = commentDataElement
-                    ? {
-                          indicator: indicator,
-                          dataElements: commentDataElement ? [commentDataElement] : [],
-                      }
-                    : undefined;
+            switch (indicator.type) {
+                case "outcomes": {
+                    const commentDataElement = indicator.relatedDataElements.find(
+                        dataElement => dataElement.isComment
+                    );
+                    const relatedDataElements = indicator.relatedDataElements.filter(
+                        dataElement => !dataElement.isComment
+                    );
+                    const indicatorComment = commentDataElement
+                        ? {
+                              indicator: indicator,
+                              dataElements: commentDataElement ? [commentDataElement] : [],
+                          }
+                        : undefined;
 
-                const indicatorRelatedDataElements = {
-                    indicator,
-                    dataElements: relatedDataElements,
-                };
-
-                return _([indicatorComment, indicatorRelatedDataElements]).compact().value();
-            } else {
-                return [
-                    {
+                    const indicatorRelatedDataElements = {
                         indicator,
-                        dataElements: [
-                            {
-                                id: indicator.id,
-                                name: indicator.name,
-                                code: indicator.code,
-                                disaggregation: indicator.disaggregation,
-                                isComment: false,
-                                categories: indicator.categories,
-                            },
-                        ],
-                    },
-                ];
+                        dataElements: relatedDataElements,
+                    };
+
+                    return _([indicatorComment, indicatorRelatedDataElements]).compact().value();
+                }
+                case "outputs": {
+                    return [
+                        {
+                            indicator,
+                            dataElements: [
+                                {
+                                    id: indicator.id,
+                                    name: indicator.name,
+                                    code: indicator.code,
+                                    disaggregation: indicator.disaggregation,
+                                    isComment: false,
+                                    categories: indicator.categories,
+                                },
+                            ],
+                        },
+                    ];
+                }
             }
         });
     }
@@ -106,7 +105,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     static extractDataElementsReferences(indicator: Indicator): string[] {
         const idsInNumerator = this.extractId(indicator.numerator, /#{(\w+)/);
         const idsInDenominator = this.extractId(indicator.denominator, /#{(\w+)/);
-        const dataElementCode = indicator.code ? [`${indicator.code}${COMMENT_PREFIX}`] : [];
+        const dataElementCode = indicator.code ? [`${indicator.code}${COMMENT_SUFIX}`] : [];
         return [...idsInNumerator, ...idsInDenominator, ...dataElementCode];
     }
 
