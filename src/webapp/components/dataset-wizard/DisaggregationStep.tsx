@@ -20,6 +20,7 @@ import { generateUid } from "$/utils/uid";
 import { DataElement } from "$/domain/entities/DataElement";
 import { Category } from "$/domain/entities/Category";
 import { defaultLabel } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
+import { Maybe } from "$/utils/ts-utils";
 
 type DisaggregationStepProps = {
     dataSet: DataSet;
@@ -29,32 +30,24 @@ type DisaggregationStepProps = {
 
 export const DisaggregationStep = React.memo((props: DisaggregationStepProps) => {
     const { dataSet, onChange, dataSetSettings: settings } = props;
-    const { config, compositionRoot } = useAppContext();
+    const { config } = useAppContext();
     const [search, setSearch] = React.useState("");
     const [selectedIndicator, setSelectedIndicator] = React.useState<IndicatorWithDataElement>();
-    const [refresh, setRefresh] = React.useState(0);
-    const [indicatorsDataElements, setIndicatorsDataElements] = React.useState<
-        IndicatorWithDataElement[]
-    >([]);
 
-    React.useMemo(() => {
-        if (refresh > 0) return;
-
-        return compositionRoot.indicators.getRelated
-            .execute({ dataSet, indicatorsIdsToIgnore: settings.existingIndicatorsIds })
-            .run(indicators => {
-                const allIndicators = Indicator.buildAllIndicators(indicators);
-                setIndicatorsDataElements(allIndicators);
-                setRefresh(refresh + 1);
-                onChange(dataSet.setIndicators(indicators));
-            }, console.error);
-    }, [
-        compositionRoot.indicators.getRelated,
+    const { indicatorsDataElements, setIndicatorsDataElements } = useGetRelatedDataElements({
         dataSet,
+        settings,
         onChange,
-        refresh,
-        settings.existingIndicatorsIds,
-    ]);
+    });
+
+    const { updateIndicators } = useUpdateIndicators({
+        dataSet,
+        indicatorsDataElements,
+        onChange,
+        selectedIndicator,
+        setIndicatorsDataElements,
+        setSelectedIndicator,
+    });
 
     const filteredIndicators = Indicator.filterIndicatorDataElements(
         indicatorsDataElements,
@@ -64,6 +57,158 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
     const openDisaggregationModal = (indicatorDataElement: IndicatorWithDataElement) => {
         setSelectedIndicator(indicatorDataElement);
     };
+
+    return (
+        <div>
+            <SearchBox value={search} onChange={setSearch} />
+
+            {filteredIndicators.map(indicatorWithDataElement => {
+                const { indicator, dataElements } = indicatorWithDataElement;
+                const ids = dataElements.map(dataElement => dataElement.id).join(".");
+
+                return (
+                    <DataElementItem
+                        key={`${indicator.id}-${ids}`}
+                        indicatorWithDataElement={indicatorWithDataElement}
+                        onClick={openDisaggregationModal}
+                    />
+                );
+            })}
+
+            {selectedIndicator && (
+                <AddDisaggregateModal
+                    combinations={config.categoryCombinations}
+                    indicator={selectedIndicator}
+                    dataSet={dataSet}
+                    onClose={() => setSelectedIndicator(undefined)}
+                    onSave={updateIndicators}
+                />
+            )}
+        </div>
+    );
+});
+
+function updateIndicatorsDataElements(
+    dataSet: DataSet,
+    indicators: IndicatorWithDataElement[]
+): Indicator[] {
+    if (indicators.length === 0) return [];
+
+    const dataElementsByIndicator = indicators.flatMap(indicator =>
+        indicator.dataElements.map(dataElement => ({
+            ...dataElement,
+            indicatorId: indicator.indicator.id,
+        }))
+    );
+
+    return dataSet.indicators.map(indicator => {
+        const dataElements = dataElementsByIndicator.filter(de => de.indicatorId === indicator.id);
+        return Indicator.create({
+            ...indicator,
+            categories:
+                indicator.type === "outcomes"
+                    ? []
+                    : dataElements.flatMap(dataElement => dataElement.categories),
+            relatedDataElements: indicator.type === "outcomes" ? dataElements : [],
+        });
+    });
+}
+
+function DataElementItem(props: {
+    indicatorWithDataElement: IndicatorWithDataElement;
+    onClick: (indicatorWithDataElement: IndicatorWithDataElement) => void;
+}) {
+    const { indicatorWithDataElement, onClick } = props;
+
+    const { dataElements } = indicatorWithDataElement;
+
+    const disaggregationName = _(dataElements)
+        .map(dataElement => dataElement.disaggregation?.name)
+        .uniq()
+        .join("/");
+
+    const categoriesNames = dataElements
+        ? _(dataElements)
+              .map(dataElement => {
+                  return dataElement.categories.map(category => category.name);
+              })
+              .flatten()
+              .uniq()
+              .join("/")
+        : "";
+
+    return (
+        <div className="indicator-row">
+            <div>
+                {dataElements.map(dataElement => {
+                    return <p key={dataElement.id}>{dataElement.name}</p>;
+                })}
+                <p>
+                    {disaggregationName} <strong>{categoriesNames}</strong>
+                </p>
+            </div>
+            <Button
+                variant="contained"
+                color="primary"
+                onClick={() => onClick(indicatorWithDataElement)}
+            >
+                {i18n.t("Add disaggregate")}
+            </Button>
+        </div>
+    );
+}
+
+function useGetRelatedDataElements(props: {
+    dataSet: DataSet;
+    settings: DataSetSettings;
+    onChange: (dataSet: DataSet) => void;
+}) {
+    const { dataSet, onChange, settings } = props;
+    const { compositionRoot } = useAppContext();
+    const [refresh, setRefresh] = React.useState(0);
+    const [indicatorsDataElements, setIndicatorsDataElements] = React.useState<
+        IndicatorWithDataElement[]
+    >([]);
+
+    React.useMemo(() => {
+        if (refresh > 0) return;
+
+        return compositionRoot.indicators.getRelated
+            .execute({ dataSet, indicatorIdsToIgnore: settings.existingIndicatorIds })
+            .run(indicators => {
+                const allIndicators = Indicator.buildAllIndicators(indicators);
+                setIndicatorsDataElements(allIndicators);
+                setRefresh(refresh + 1);
+                onChange(dataSet.setIndicators(indicators));
+            }, console.error);
+    }, [
+        compositionRoot.indicators.getRelated,
+        dataSet,
+        refresh,
+        settings.existingIndicatorIds,
+        onChange,
+    ]);
+
+    return { indicatorsDataElements, setIndicatorsDataElements };
+}
+
+function useUpdateIndicators(props: {
+    selectedIndicator: Maybe<IndicatorWithDataElement>;
+    indicatorsDataElements: IndicatorWithDataElement[];
+    setIndicatorsDataElements: React.Dispatch<React.SetStateAction<IndicatorWithDataElement[]>>;
+    setSelectedIndicator: React.Dispatch<React.SetStateAction<Maybe<IndicatorWithDataElement>>>;
+    onChange: (dataSet: DataSet) => void;
+    dataSet: DataSet;
+}) {
+    const { config } = useAppContext();
+    const {
+        dataSet,
+        indicatorsDataElements,
+        selectedIndicator,
+        onChange,
+        setIndicatorsDataElements,
+        setSelectedIndicator,
+    } = props;
 
     const updateIndicators = (params: { categoriesIds: string[]; mode: AddDisaggregateMode }) => {
         if (!selectedIndicator) return;
@@ -146,82 +291,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
         onChange(dataSet.setIndicators(updateIndicatorsDataElements(dataSet, updatedIndicator)));
     };
 
-    return (
-        <div>
-            <SearchBox value={search} onChange={setSearch} />
-
-            {filteredIndicators.map(indicatorWithDataElement => {
-                const { indicator, dataElements } = indicatorWithDataElement;
-
-                const ids = dataElements.map(dataElement => dataElement.id).join(".");
-
-                const disaggregationName = _(dataElements)
-                    .map(dataElement => dataElement.disaggregation?.name)
-                    .uniq()
-                    .join("/");
-
-                return (
-                    <div className="indicator-row" key={`${indicator.id}-${ids}`}>
-                        <div>
-                            {dataElements.map(dataElement => {
-                                return <p key={dataElement.id}>{dataElement.name}</p>;
-                            })}
-                            <p>
-                                <strong>{disaggregationName}</strong>
-                            </p>
-                        </div>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => openDisaggregationModal(indicatorWithDataElement)}
-                        >
-                            {i18n.t("Add disaggregate")}
-                        </Button>
-                    </div>
-                );
-            })}
-
-            {selectedIndicator && (
-                <AddDisaggregateModal
-                    combinations={config.categoryCombinations}
-                    indicator={selectedIndicator}
-                    dataSet={dataSet}
-                    onClose={() => setSelectedIndicator(undefined)}
-                    onSave={updateIndicators}
-                />
-            )}
-        </div>
-    );
-});
-
-function updateIndicatorsDataElements(
-    dataSet: DataSet,
-    indicators: IndicatorWithDataElement[]
-): Indicator[] {
-    if (indicators.length === 0) return [];
-
-    const dataElementsByIndicator = indicators.flatMap(indicator =>
-        indicator.dataElements.map(dataElement => ({
-            ...dataElement,
-            indicatorId: indicator.indicator.id,
-        }))
-    );
-
-    return dataSet.indicators.map(indicator => {
-        const dataElements = dataElementsByIndicator.filter(de => de.indicatorId === indicator.id);
-
-        return Indicator.create({
-            ...indicator,
-            disaggregation: dataElements[0]
-                ? dataElements[0].disaggregation
-                : indicator.disaggregation,
-            categories:
-                indicator.type === "outcomes"
-                    ? []
-                    : dataElements.flatMap(dataElement => dataElement.categories),
-            relatedDataElements: indicator.type === "outcomes" ? dataElements : [],
-        });
-    });
+    return { updateIndicators };
 }
 
 function getDisaggregationForCategories(

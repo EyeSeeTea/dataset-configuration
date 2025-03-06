@@ -23,7 +23,7 @@ import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
-import { COMMENT_PREFIX } from "$/domain/entities/DataElement";
+import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { PeriodDate } from "$/domain/entities/PeriodDate";
 
 export class DataSetD2Api {
@@ -296,90 +296,9 @@ export class DataSetD2Api {
     }
 
     private buildIndicatorsFromDataSetElements(d2DataSet: D2DataSet): Indicator[] {
-        const outputsIndicators = _(d2DataSet.dataSetElements)
-            .compactMap(dataSetElement => {
-                const indicator = this.config.indicators.find(
-                    indicator => indicator.id === dataSetElement.dataElement.id
-                );
-                if (!indicator) return undefined;
-                const categoryCombo = dataSetElement.categoryCombo;
-                const categories = convertToCategories(
-                    categoryCombo ? categoryCombo.categories : []
-                );
+        const outputsIndicators = this.buildOutputsIndicators(d2DataSet);
 
-                return Indicator.create({
-                    ...indicator,
-                    disaggregation: categoryCombo
-                        ? {
-                              id: categoryCombo.id,
-                              name: categoryCombo.displayName,
-                              categories: categories,
-                              optionsCombos: categoryCombo.categoryOptionCombos.map(
-                                  optionCombo => ({
-                                      id: optionCombo.id,
-                                      name: optionCombo.displayName,
-                                      categoryCombo: { id: "" },
-                                      options: [],
-                                  })
-                              ),
-                          }
-                        : indicator.disaggregation,
-                });
-            })
-            .value();
-
-        const outcomesIndicators = _(d2DataSet.indicators)
-            .compactMap(d2Indicator => {
-                const indicator = this.config.indicators.find(
-                    indicator => indicator.id === d2Indicator.id
-                );
-
-                if (!indicator) return undefined;
-
-                const dataElementsRefs = Indicator.extractDataElementsReferences(indicator);
-
-                const commentsDataElements = d2DataSet.dataSetElements.filter(dataElement =>
-                    dataElementsRefs.includes(dataElement.dataElement.code)
-                );
-                const relatedDataElements = d2DataSet.dataSetElements.filter(dataElement =>
-                    dataElementsRefs.includes(dataElement.dataElement.id)
-                );
-
-                return Indicator.create({
-                    ...indicator,
-                    relatedDataElements: relatedDataElements
-                        .concat(commentsDataElements)
-                        .map(dataElement => {
-                            return {
-                                valueType: dataElement.dataElement.valueType,
-                                description: dataElement.dataElement.displayDescription,
-                                id: dataElement.dataElement.id,
-                                name: dataElement.dataElement.displayName,
-                                code: dataElement.dataElement.code,
-                                isComment: dataElement.dataElement.code.endsWith(COMMENT_PREFIX),
-                                disaggregation: dataElement.categoryCombo
-                                    ? {
-                                          id: dataElement.categoryCombo.id,
-                                          name: dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.categoryCombo.categories
-                                          ),
-                                          optionsCombos: [],
-                                      }
-                                    : {
-                                          id: dataElement.dataElement.categoryCombo.id,
-                                          name: dataElement.dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.dataElement.categoryCombo.categories
-                                          ),
-                                          optionsCombos: [],
-                                      },
-                                categories: [],
-                            };
-                        }),
-                });
-            })
-            .value();
+        const outcomesIndicators = this.buildOutcomesIndicators(d2DataSet);
 
         return outputsIndicators.concat(outcomesIndicators);
     }
@@ -442,6 +361,95 @@ export class DataSetD2Api {
             "----",
         ].join("");
     }
+
+    private buildOutputsIndicators(d2DataSet: D2DataSet) {
+        return _(d2DataSet.dataSetElements)
+            .compactMap(dataSetElement => {
+                const indicator = this.config.indicators.find(
+                    indicator => indicator.id === dataSetElement.dataElement.id
+                );
+                if (!indicator) return undefined;
+                const categoryCombo = dataSetElement.categoryCombo;
+                const categories = convertToCategories(
+                    categoryCombo ? categoryCombo.categories : []
+                );
+
+                return Indicator.create({
+                    ...indicator,
+                    disaggregation: categoryCombo
+                        ? {
+                              id: categoryCombo.id,
+                              name: categoryCombo.displayName,
+                              categories: categories,
+                              optionsCombos: categoryCombo.categoryOptionCombos.map(
+                                  optionCombo => ({
+                                      id: optionCombo.id,
+                                      name: optionCombo.displayName,
+                                      categoryCombo: { id: "" },
+                                      options: [],
+                                  })
+                              ),
+                          }
+                        : indicator.disaggregation,
+                });
+            })
+            .value();
+    }
+
+    private buildOutcomesIndicators(d2DataSet: D2DataSet) {
+        return _(d2DataSet.indicators)
+            .compactMap(d2Indicator => {
+                const indicator = this.config.indicators.find(
+                    indicator => indicator.id === d2Indicator.id
+                );
+
+                if (!indicator) return undefined;
+
+                const dataElementsRefs = Indicator.extractDataElementsReferences(indicator);
+
+                const commentsDataElements = d2DataSet.dataSetElements.filter(dataElement =>
+                    dataElementsRefs.includes(dataElement.dataElement.code)
+                );
+                const relatedDataElements = d2DataSet.dataSetElements.filter(dataElement =>
+                    dataElementsRefs.includes(dataElement.dataElement.id)
+                );
+
+                return Indicator.create({
+                    ...indicator,
+                    relatedDataElements: relatedDataElements
+                        .concat(commentsDataElements)
+                        .map(dataElement => {
+                            return {
+                                valueType: dataElement.dataElement.valueType,
+                                description: dataElement.dataElement.displayDescription,
+                                id: dataElement.dataElement.id,
+                                name: dataElement.dataElement.displayName,
+                                code: dataElement.dataElement.code,
+                                isComment: dataElement.dataElement.code.endsWith(COMMENT_SUFIX),
+                                disaggregation: dataElement.categoryCombo
+                                    ? {
+                                          id: dataElement.categoryCombo.id,
+                                          name: dataElement.categoryCombo.displayName,
+                                          categories: convertToCategories(
+                                              dataElement.categoryCombo.categories
+                                          ),
+                                          optionsCombos: [],
+                                      }
+                                    : {
+                                          id: dataElement.dataElement.categoryCombo.id,
+                                          name: dataElement.dataElement.categoryCombo.displayName,
+                                          categories: convertToCategories(
+                                              dataElement.dataElement.categoryCombo.categories
+                                          ),
+                                          optionsCombos: [],
+                                      },
+                                categories: [],
+                            };
+                        }),
+                });
+            })
+            .value();
+    }
 }
 
 export const categoryComboFields = {
@@ -453,7 +461,7 @@ export const categoryComboFields = {
         categoryOptions: { id: true, displayName: true },
     },
     categoryOptionCombos: { id: true, displayName: true },
-};
+} as const;
 
 export const dataSetFields = {
     created: true,

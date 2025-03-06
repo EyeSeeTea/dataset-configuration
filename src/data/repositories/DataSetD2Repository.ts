@@ -17,12 +17,13 @@ import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/Dat
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
+
+import getTemplate from "$/data/entry-form/CustomForm";
+import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import { IndicatorAttrs } from "$/domain/entities/Indicator";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
-import getTemplate from "$/data/entry-form/CustomForm";
-import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
