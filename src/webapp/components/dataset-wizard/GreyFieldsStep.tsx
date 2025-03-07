@@ -1,3 +1,4 @@
+import { differenceBy } from "lodash";
 import _, { Collection } from "$/domain/entities/generic/Collection";
 import React from "react";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
@@ -22,7 +23,6 @@ import { DataElement } from "$/domain/entities/DataElement";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 import { HashMap } from "$/domain/entities/generic/HashMap";
-import { differenceBy } from "lodash";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
@@ -71,19 +71,16 @@ const getKey = (categoryCombo: Ref, categoryOptions: Category["options"]) => {
 };
 
 export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
-    const { compositionRoot } = useAppContext();
     const { dataSet, onChange } = props;
     const [disableOptions, setDisabledOptions] = React.useState<string[]>([]);
     const [selectedCompetency, setSelectedCompetency] = React.useState<string>();
-    const [existingCombos, setExistingCombos] = React.useState<CategoryCombination[]>([]);
-    const [combinationById, setCombinationById] = React.useState<Record<string, NamedRef>>();
     const [greyedFields, setGreyedFields] = React.useState<Record<string, boolean>>(() => {
-        return dataSet.disabledFields.reduce((acc, fieldId) => {
-            return {
-                ...acc,
-                [`${fieldId.dataElementId}.${fieldId.optionComboId}`]: true,
-            };
-        }, {} as Record<string, boolean>);
+        return HashMap.fromPairs(
+            dataSet.disabledFields.map(fieldId => [
+                `${fieldId.dataElementId}.${fieldId.optionComboId}`,
+                true,
+            ])
+        ).toObject();
     });
 
     const { uniqueCategories, uniqueCombinations: combinations } = React.useMemo(
@@ -91,84 +88,13 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         [dataSet]
     );
 
-    React.useEffect(() => {
-        const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
-
-        const combinationsIds = _(allDataElements)
-            .compactMap(dataElement => dataElement?.disaggregation?.id)
-            .value();
-
-        return compositionRoot.combination.getByIds
-            .execute(combinationsIds)
-            .run(existingCombinations => {
-                const nonExistingCombinations = generateMissingCombinations(
-                    combinations,
-                    existingCombinations
-                );
-                const existingCombinationsById = _(existingCombinations).keyBy(
-                    combination => combination.id
-                );
-                const categoryCombosById = _(allDataElements)
-                    .compactMap((dataElement): Maybe<CategoryCombination> => {
-                        const { disaggregation } = dataElement;
-                        return disaggregation
-                            ? CategoryCombination.create({
-                                  ...disaggregation,
-                                  optionsCombos: disaggregation.optionsCombos.map(coc => {
-                                      return { ...coc, options: coc.options };
-                                  }),
-                              })
-                            : undefined;
-                    })
-                    .keyBy(x => x.id)
-                    .merge(existingCombinationsById);
-
-                const categoryCombinationPairs = categoryCombosById.values().flatMap(cc => {
-                    return cc.optionsCombos.map(coc2 => {
-                        return [getKey(cc, coc2.options), coc2] as [
-                            string,
-                            CategoryCombination["optionsCombos"][number]
-                        ];
-                    });
-                });
-
-                const cocByCategoryKey = HashMap.fromPairs(categoryCombinationPairs).toObject();
-                setExistingCombos(existingCombinations.concat(nonExistingCombinations));
-                setCombinationById(cocByCategoryKey);
-            }, console.error);
-    }, [combinations, compositionRoot.combination.getByIds]);
-
-    React.useEffect(() => {
-        const greyedFieldsCompetency = HashMap.fromObject(greyedFields)
-            .mapValues(([key]) => {
-                const [dataElementId, optionComboId] = key.split(".");
-                if (!dataElementId || !optionComboId) throw new Error("Invalid key");
-                const allDataElements = combinations.flatMap(
-                    dataElement => dataElement.dataElements
-                );
-                const currentDataElement = allDataElements.find(
-                    dataElement => dataElement.id === dataElementId
-                );
-                return {
-                    competencyId: currentDataElement?.coreCompetency.id ?? "",
-                    dataElementId,
-                    optionComboId,
-                };
-            })
-            .values();
-
-        onChange(dataSet.setDisabledFields(greyedFieldsCompetency));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [greyedFields, onChange]);
+    const { existingCombos, combinationById } = useGetExistingCombinations({ combinations });
 
     const allCoreCompetencies = dataSet.indicators.flatMap(indicator => indicator.coreCompetency);
 
     const coreCompetencies = _(allCoreCompetencies)
         .uniqBy(competency => competency.id)
-        .map(competency => ({
-            value: competency.id,
-            text: competency.name,
-        }))
+        .map(competency => ({ value: competency.id, text: competency.name }))
         .value();
 
     const updateOptions = (optionId: string, checked: boolean) => {
@@ -202,6 +128,12 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
             .toObject();
 
         setGreyedFields(prev => ({ ...prev, ...updatedGreyedFields }));
+        buildDisableFieldsFromGreyFields({
+            greyedFields: { ...greyedFields, ...updatedGreyedFields },
+            onChange,
+            dataSet,
+            combinations,
+        });
     };
 
     const updateCompetency = (competencyId: Maybe<string>) => {
@@ -224,6 +156,12 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
             ).toObject();
 
             setGreyedFields(prev => ({ ...prev, ...updatedGreyedFields }));
+            buildDisableFieldsFromGreyFields({
+                greyedFields: { ...greyedFields, ...updatedGreyedFields },
+                onChange,
+                dataSet,
+                combinations,
+            });
         };
 
         return (
@@ -270,7 +208,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
 
                     const firstRecord = consecutiveProducts[0];
                     if (!firstRecord) {
-                        console.warn("no record found for", idx, consecutiveProducts);
+                        console.warn(`no record found for ${idx}, ${consecutiveProducts}`);
                         return { label: "", cocs: [] };
                     }
                     const label = firstRecord[idx]?.name ?? "";
@@ -311,9 +249,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
             return (
                 <tr
                     key={deNum}
-                    style={{
-                        background: deNum % 2 === 0 ? "none" : "#f0f0f0",
-                    }}
+                    style={{ background: deNum % 2 === 0 ? "none" : "#f0f0f0" }}
                     className="dataelement-header "
                 >
                     <td className="dataelement-row" title={dse.name}>
@@ -334,9 +270,16 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
 
         const fieldId = [dataElement.id, categoryOptionCombo.id].join(".");
         const isGreyed = !!greyedFields[fieldId];
+
         const toggleGreyedFields = () => {
             setGreyedFields(prev => {
                 return { ...prev, [fieldId]: !isGreyed };
+            });
+            buildDisableFieldsFromGreyFields({
+                greyedFields: { ...greyedFields, [fieldId]: !isGreyed },
+                onChange,
+                dataSet,
+                combinations,
             });
         };
 
@@ -396,14 +339,10 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     return (
         <div>
             <Accordion>
-                <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    aria-controls="panel1a-content"
-                    id="global-grayingout"
-                >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} id="global-grayingout">
                     <Typography>
                         <strong>
-                            {i18n.t("Global graying out (disable combinationsin all the dataSet)")}
+                            {i18n.t("Global graying out (disable combinations in all the dataSet)")}
                         </strong>
                     </Typography>
                 </AccordionSummary>
@@ -418,20 +357,11 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                                         </Typography>
                                         {category.options.map(option => {
                                             return (
-                                                <FormControlLabel
-                                                    control={
-                                                        <Checkbox
-                                                            checked={
-                                                                !disableOptions.includes(option.id)
-                                                            }
-                                                            onChange={(_, checked) =>
-                                                                updateOptions(option.id, checked)
-                                                            }
-                                                            name={option.id}
-                                                        />
-                                                    }
-                                                    label={option.name}
+                                                <CategoryOptionCheckBox
                                                     key={option.id}
+                                                    disableOptions={disableOptions}
+                                                    option={option}
+                                                    updateOptions={updateOptions}
                                                 />
                                             );
                                         })}
@@ -443,11 +373,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                 </AccordionDetails>
             </Accordion>
             <Accordion>
-                <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    aria-controls="panel1a-content"
-                    id="global-grayingout"
-                >
+                <AccordionSummary expandIcon={<ExpandMoreIcon />} id="global-grayingout">
                     <Typography>
                         <strong>{i18n.t("Per indicator graying out")}</strong>
                     </Typography>
@@ -473,6 +399,27 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     );
 });
 
+function CategoryOptionCheckBox(props: {
+    option: NamedRef;
+    disableOptions: string[];
+    updateOptions: (optionId: string, checked: boolean) => void;
+}) {
+    const { option, disableOptions, updateOptions } = props;
+    return (
+        <FormControlLabel
+            control={
+                <Checkbox
+                    checked={!disableOptions.includes(option.id)}
+                    onChange={(_, checked) => updateOptions(option.id, checked)}
+                    name={option.id}
+                />
+            }
+            label={option.name}
+            key={option.id}
+        />
+    );
+}
+
 function SimpleCheckBox(props: { onClick?: () => void; checked: boolean }) {
     const { onClick, checked } = props;
 
@@ -486,6 +433,58 @@ function SimpleCheckBox(props: { onClick?: () => void; checked: boolean }) {
             <span />
         </span>
     );
+}
+
+function useGetExistingCombinations(props: { combinations: IndicatorCombination[] }) {
+    const { combinations } = props;
+    const { compositionRoot } = useAppContext();
+    const [existingCombos, setExistingCombos] = React.useState<CategoryCombination[]>([]);
+    const [combinationById, setCombinationById] = React.useState<Record<string, NamedRef>>();
+
+    React.useEffect(() => {
+        const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
+
+        const combinationsIds = _(allDataElements)
+            .compactMap(dataElement => dataElement?.disaggregation?.id)
+            .value();
+
+        return compositionRoot.combination.getByIds
+            .execute(combinationsIds)
+            .run(existingCombinations => {
+                const nonExistingCombinations = generateMissingCombinations(
+                    combinations,
+                    existingCombinations
+                );
+
+                const existingCombinationsById = _(existingCombinations).keyBy(
+                    combination => combination.id
+                );
+
+                const categoryCombosById = _(allDataElements)
+                    .compactMap((dataElement): Maybe<CategoryCombination> => {
+                        const { disaggregation } = dataElement;
+                        if (!disaggregation) return undefined;
+                        return CategoryCombination.buildFromDisaggregation(disaggregation);
+                    })
+                    .keyBy(catCombination => catCombination.id)
+                    .merge(existingCombinationsById);
+
+                const categoryCombinationPairs = categoryCombosById.values().flatMap(cc => {
+                    return cc.optionsCombos.map(coc2 => {
+                        return [getKey(cc, coc2.options), coc2] as [
+                            string,
+                            CategoryCombination["optionsCombos"][number]
+                        ];
+                    });
+                });
+
+                const cocByCategoryKey = HashMap.fromPairs(categoryCombinationPairs).toObject();
+                setExistingCombos(existingCombinations.concat(nonExistingCombinations));
+                setCombinationById(cocByCategoryKey);
+            }, console.error);
+    }, [combinations, compositionRoot.combination.getByIds]);
+
+    return { existingCombos, combinationById };
 }
 
 function generateGreyFieldsFromDataElements(dataElements: DataElement[], cocs: Ref[]) {
@@ -518,6 +517,34 @@ function generateMissingCombinations(
         .value();
 
     return CategoryCombination.buildFromDisaggregations(uniqueDisaggregations);
+}
+
+function buildDisableFieldsFromGreyFields(props: {
+    greyedFields: Record<string, boolean>;
+    onChange: (dataSet: DataSet) => void;
+    dataSet: DataSet;
+    combinations: IndicatorCombination[];
+}) {
+    const { combinations, greyedFields, onChange, dataSet } = props;
+
+    const greyedFieldsCompetency = HashMap.fromObject(greyedFields)
+        .mapValues(([key, value]) => {
+            if (!value) return undefined;
+            const [dataElementId, optionComboId] = key.split(".");
+            if (!dataElementId || !optionComboId) throw new Error("Invalid key");
+            const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
+            const currentDataElement = allDataElements.find(
+                dataElement => dataElement.id === dataElementId
+            );
+            return {
+                competencyId: currentDataElement?.coreCompetency.id ?? "",
+                dataElementId,
+                optionComboId,
+            };
+        })
+        .values();
+
+    onChange(dataSet.setDisabledFields(_(greyedFieldsCompetency).compact().value()));
 }
 
 const CategoriesCheckboxContainer = styled.div`

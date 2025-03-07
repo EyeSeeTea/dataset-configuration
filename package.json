@@ -29,7 +29,6 @@
         "font-awesome": "4.7.0",
         "htmlencode": "0.0.4",
         "lodash": "4.17.21",
-        "lodash.product": "18.10.0",
         "purify-ts": "1.2.0",
         "purify-ts-extra-codec": "0.6.0",
         "react": "^18.2.0",

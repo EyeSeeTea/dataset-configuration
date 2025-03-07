@@ -34,16 +34,20 @@ export class CategoryCombination extends Struct<CategoryCombinationAttrs>() {
 
     static buildFromDisaggregations(disaggregations: DisaggregationAttrs[]): CategoryCombination[] {
         return disaggregations.map(disaggregation => {
-            return CategoryCombination.create({
-                ...disaggregation,
-                optionsCombos: disaggregation.optionsCombos.map(optionCombo => {
-                    return {
-                        id: optionCombo.id,
-                        name: optionCombo.name,
-                        options: optionCombo.options,
-                    };
-                }),
-            });
+            return this.buildFromDisaggregation(disaggregation);
+        });
+    }
+
+    static buildFromDisaggregation(disaggregation: DisaggregationAttrs): CategoryCombination {
+        return CategoryCombination.create({
+            ...disaggregation,
+            optionsCombos: disaggregation.optionsCombos.map(optionCombo => {
+                return {
+                    id: optionCombo.id,
+                    name: optionCombo.name,
+                    options: optionCombo.options,
+                };
+            }),
         });
     }
 }
