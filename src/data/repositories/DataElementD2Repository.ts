@@ -59,6 +59,7 @@ export class DataElementD2Repository implements DataElementRepository {
                         displayName: true,
                         categories: {
                             id: true,
+                            name: true,
                             displayName: true,
                             categoryOptions: { id: true, displayName: true },
                         },

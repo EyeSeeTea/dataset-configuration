@@ -5,7 +5,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { MetadataResponse } from "@eyeseetea/d2-api/api";
 import { CancelableResponse } from "@eyeseetea/d2-api";
 import { apiToFuture } from "$/data/api-futures";
-import { Category } from "$/domain/entities/Category";
+import { Category, defaultLabel } from "$/domain/entities/Category";
 import { Maybe } from "$/utils/ts-utils";
 
 export function chunkRequest<Res>(
@@ -45,7 +45,7 @@ export function runMetadata(d2Response: CancelableResponse<MetadataResponse>): F
 export function convertToCategories(d2Categories: D2Category[]): Category[] {
     return d2Categories.map(category => ({
         id: category.id,
-        name: category.displayName,
+        name: category.name === defaultLabel ? category.name : category.displayName,
         options: category.categoryOptions.map(option => ({
             id: option.id,
             name: option.displayName,
@@ -78,7 +78,7 @@ export function convertAttributeValueToDate(
 }
 
 export type D2NamedRef = { id: Id; displayName: string };
-export type D2Category = D2NamedRef & { categoryOptions: D2NamedRef[] };
+export type D2Category = D2NamedRef & { name: string; categoryOptions: D2NamedRef[] };
 export type D2CategoryCombo = D2NamedRef & {
     categories: D2Category[];
     categoryOptionCombos: D2NamedRef[];

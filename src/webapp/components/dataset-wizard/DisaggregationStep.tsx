@@ -1,4 +1,5 @@
-import _ from "lodash";
+import isEqual from "lodash/isEqual";
+import _ from "$/domain/entities/generic/Collection";
 import React from "react";
 import { DataSet } from "$/domain/entities/DataSet";
 import {
@@ -18,9 +19,9 @@ import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import { Button } from "@material-ui/core";
 import { generateUid } from "$/utils/uid";
 import { DataElement } from "$/domain/entities/DataElement";
-import { Category } from "$/domain/entities/Category";
-import { defaultLabel } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
+import { Category, defaultLabel } from "$/domain/entities/Category";
 import { Maybe } from "$/utils/ts-utils";
+import { at } from "$/data/entry-form/CustomForm";
 
 type DisaggregationStepProps = {
     dataSet: DataSet;
@@ -299,11 +300,11 @@ function getDisaggregationForCategories(
     categoryCombos: CategoryCombination[],
     selectedCategories: Category[]
 ): DisaggregationAttrs {
-    const categoriesById = _(categoryCombos)
-        .flatMap(cc => cc.categories)
+    const allCategoriesFromCombos = categoryCombos.flatMap(cc => cc.categories);
+    const categoriesById = _(allCategoriesFromCombos)
         .uniqBy(category => category.id)
         .keyBy(category => category.id)
-        .value();
+        .toObject();
 
     const getCategoryIds = (categories: Category[]) =>
         _(categories)
@@ -311,15 +312,14 @@ function getDisaggregationForCategories(
             .uniq()
             .value();
 
-    const dataElementCategories = _.at(
+    const dataElementCategories = at(
         categoriesById,
-        _(disaggregation?.categories)
+        _(disaggregation?.categories ?? [])
             .map(c => c.id)
             .value()
     );
 
-    const allCategories = _(dataElementCategories)
-        .concat(selectedCategories)
+    const allCategories = _(dataElementCategories.concat(selectedCategories))
         .uniqBy(category => category.id)
         .value();
 
@@ -329,9 +329,13 @@ function getDisaggregationForCategories(
             : allCategories;
 
     const combinedCategoriesIds = getCategoryIds(allValidCategories);
-    const existingCategoryCombo = categoryCombos.find(cc =>
-        _(getCategoryIds(cc.categories)).sortBy().isEqual(_.sortBy(combinedCategoriesIds))
-    );
+
+    const existingCategoryCombo = _(categoryCombos)
+        .sortBy(categoryCombo => categoryCombo.name.length)
+        .find(categoryCombo => {
+            const sortedCategoriesIds = _(getCategoryIds(categoryCombo.categories)).sort();
+            return isEqual(sortedCategoriesIds, _(combinedCategoriesIds).sort());
+        });
 
     if (existingCategoryCombo) {
         return {
@@ -349,17 +353,21 @@ function getDisaggregationForCategories(
         };
     } else {
         const newCategoryComboId = generateUid();
-        const categories = _.at(categoriesById, combinedCategoriesIds);
-        const categoryOptions = categories.map(c => c.options);
-        const categoryOptionCombos = _.product(...categoryOptions).map(cos => {
-            return {
-                id: generateUid(),
-                name: cos.map(co => co.name).join(", "),
-                categoryCombo: { id: newCategoryComboId },
-                categoryOptions: cos,
-            };
-        });
-        const ccName = allValidCategories.map(cc => cc.name).join("/");
+        const categories = at(categoriesById, combinedCategoriesIds);
+        const categoryOptions = categories.map(category => category.options);
+        const categoryOptionCombos = _(categoryOptions)
+            .cartesian()
+            .map(cos => {
+                return {
+                    id: generateUid(),
+                    name: cos.map(co => co.name).join(", "),
+                    categoryCombo: { id: newCategoryComboId },
+                    categoryOptions: cos,
+                };
+            })
+            .value();
+
+        const ccName = categories.map(cc => cc.name).join("/");
         const newCategoryCombo: DisaggregationAttrs = {
             id: newCategoryComboId,
             name: ccName,

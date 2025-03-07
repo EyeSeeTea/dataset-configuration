@@ -457,6 +457,7 @@ export const categoryComboFields = {
     displayName: true,
     categories: {
         id: true,
+        name: true,
         displayName: true,
         categoryOptions: { id: true, displayName: true },
     },

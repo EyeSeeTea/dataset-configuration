@@ -1,5 +1,4 @@
-import "lodash.product";
-import _ from "lodash";
+import _, { Collection } from "$/domain/entities/generic/Collection";
 import React from "react";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
 import {
@@ -13,7 +12,7 @@ import {
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
-import { Category } from "$/domain/entities/Category";
+import { Category, defaultLabel } from "$/domain/entities/Category";
 import styled from "styled-components";
 import { Maybe } from "$/utils/ts-utils";
 import { useAppContext } from "$/webapp/contexts/app-context";
@@ -21,9 +20,9 @@ import { NamedRef, Ref } from "$/domain/entities/Ref";
 import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { DataElement } from "$/domain/entities/DataElement";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
-import { groupConsecutiveBy } from "$/data/entry-form/CustomForm";
-
-export const defaultLabel = "default";
+import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
+import { HashMap } from "$/domain/entities/generic/HashMap";
+import { differenceBy } from "lodash";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
@@ -32,11 +31,11 @@ type GreyFieldsStepProps = {
 
 function getCategories(dataSet: DataSet) {
     const allCombinations = dataSet.indicators.flatMap(indicator => indicator.combinations);
-    const combinationsByName = _.groupBy(allCombinations, combination => combination.name);
+    const combinationsByName = _(allCombinations).groupBy(combination => combination.name);
     const uniqueCombinations = _(allCombinations)
         .map(combination => {
             if (!combination.name) throw new Error("Combination not found");
-            const currentCombination = combinationsByName[combination.name];
+            const currentCombination = combinationsByName.get(combination.name);
             const allDataElements = currentCombination?.flatMap(cc => cc.dataElements) ?? [];
             return {
                 ...combination,
@@ -62,7 +61,12 @@ function getCategories(dataSet: DataSet) {
 }
 
 const getKey = (categoryCombo: Ref, categoryOptions: Category["options"]) => {
-    const sortedUniqueIds = _(categoryOptions).map("id").orderBy().uniq().value();
+    const sortedUniqueIds = _(categoryOptions)
+        .map(option => option.id)
+        .sort()
+        .uniq()
+        .value();
+
     return [categoryCombo.id, ...sortedUniqueIds].join(".");
 };
 
@@ -91,37 +95,52 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
 
         const combinationsIds = _(allDataElements)
-            .map(dataElement => dataElement?.disaggregation?.id)
-            .compact()
+            .compactMap(dataElement => dataElement?.disaggregation?.id)
             .value();
 
         return compositionRoot.combination.getByIds
             .execute(combinationsIds)
             .run(existingCombinations => {
+                const nonExistingCombinations = generateMissingCombinations(
+                    combinations,
+                    existingCombinations
+                );
+                const existingCombinationsById = _(existingCombinations).keyBy(
+                    combination => combination.id
+                );
                 const categoryCombosById = _(allDataElements)
-                    .map(dataElement => dataElement?.disaggregation)
-                    .keyBy("id")
-                    .merge(_.keyBy(existingCombinations, "id"))
-                    .value();
-
-                const cocByCategoryKey = _(categoryCombosById)
-                    .values()
-                    .flatMap(cc => {
-                        return cc.optionsCombos.map(coc2 => {
-                            return [getKey(cc, coc2.options), coc2];
-                        });
+                    .compactMap((dataElement): Maybe<CategoryCombination> => {
+                        const { disaggregation } = dataElement;
+                        return disaggregation
+                            ? CategoryCombination.create({
+                                  ...disaggregation,
+                                  optionsCombos: disaggregation.optionsCombos.map(coc => {
+                                      return { ...coc, options: coc.options };
+                                  }),
+                              })
+                            : undefined;
                     })
-                    .fromPairs()
-                    .value();
-                setExistingCombos(existingCombinations);
+                    .keyBy(x => x.id)
+                    .merge(existingCombinationsById);
+
+                const categoryCombinationPairs = categoryCombosById.values().flatMap(cc => {
+                    return cc.optionsCombos.map(coc2 => {
+                        return [getKey(cc, coc2.options), coc2] as [
+                            string,
+                            CategoryCombination["optionsCombos"][number]
+                        ];
+                    });
+                });
+
+                const cocByCategoryKey = HashMap.fromPairs(categoryCombinationPairs).toObject();
+                setExistingCombos(existingCombinations.concat(nonExistingCombinations));
                 setCombinationById(cocByCategoryKey);
             }, console.error);
     }, [combinations, compositionRoot.combination.getByIds]);
 
     React.useEffect(() => {
-        const result = _(greyedFields)
-            .map((value, key) => {
-                if (!value) return undefined;
+        const greyedFieldsCompetency = HashMap.fromObject(greyedFields)
+            .mapValues(([key]) => {
                 const [dataElementId, optionComboId] = key.split(".");
                 if (!dataElementId || !optionComboId) throw new Error("Invalid key");
                 const allDataElements = combinations.flatMap(
@@ -136,15 +155,15 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                     optionComboId,
                 };
             })
-            .compact()
-            .value();
+            .values();
 
-        onChange(dataSet.setDisabledFields(result));
+        onChange(dataSet.setDisabledFields(greyedFieldsCompetency));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [greyedFields, onChange]);
 
-    const coreCompetencies = _(dataSet.indicators)
-        .flatMap(indicator => indicator.coreCompetency)
+    const allCoreCompetencies = dataSet.indicators.flatMap(indicator => indicator.coreCompetency);
+
+    const coreCompetencies = _(allCoreCompetencies)
         .uniqBy(competency => competency.id)
         .map(competency => ({
             value: competency.id,
@@ -158,15 +177,14 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
             : [...disableOptions, optionId];
         setDisabledOptions(newDisabledOptions);
 
-        const cocToDisable = _(existingCombos)
-            .flatMap(combination => {
-                const options = combination.optionsCombos.filter(y =>
-                    y.options.some(z => z.id === optionId)
-                );
-                return options.length > 0 ? options.map(option => ({ id: option.id })) : undefined;
-            })
-            .compact()
-            .value();
+        const allOptionCombos = existingCombos.flatMap(existingCombo => {
+            const options = existingCombo.optionsCombos.filter(optionCombo =>
+                optionCombo.options.some(option => option.id === optionId)
+            );
+            return options.length > 0 ? options.map(option => ({ id: option.id })) : undefined;
+        });
+
+        const cocToDisable = _(allOptionCombos).compact().value();
 
         const combinationsWithOptions = combinations.filter(combination => {
             const options = combination.categories.flatMap(category => category.options);
@@ -176,21 +194,14 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         const dataElements = combinationsWithOptions.flatMap(
             combination => combination.dataElements
         );
-        const desIds = dataElements.map(de => ({ id: de.id }));
-        const dataElementsCocsProduct = _.product(desIds, cocToDisable);
 
-        const fieldIds = _(dataElementsCocsProduct)
-            .flatMap(([dse, coc]) => [dse?.id ?? "", coc?.id ?? ""].join("."))
-            .value();
+        const fieldIds = generateGreyFieldsFromDataElements(dataElements, cocToDisable);
 
         const updatedGreyedFields = _(fieldIds)
-            .map(fieldId => [fieldId, !checked])
-            .fromPairs()
-            .value();
+            .toHashMap(fieldId => [fieldId, !checked])
+            .toObject();
 
-        setGreyedFields(prev => {
-            return { ...prev, ...updatedGreyedFields };
-        });
+        setGreyedFields(prev => ({ ...prev, ...updatedGreyedFields }));
     };
 
     const updateCompetency = (competencyId: Maybe<string>) => {
@@ -202,26 +213,17 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         dataElements: DataElement[],
         categoryOptionCombos: NamedRef[]
     ) => {
-        const desIds = dataElements.map(de => ({ id: de.id }));
         const cocsIds = categoryOptionCombos.map(coc => ({ id: coc.id }));
-        const dataElementsCocsProduct = _.product(desIds, cocsIds);
-        const fieldIds = _(dataElementsCocsProduct)
-            .flatMap(([dse, coc]) => [dse?.id ?? "", coc?.id ?? ""].join("."))
-            .value();
+        const fieldIds = generateGreyFieldsFromDataElements(dataElements, cocsIds);
 
-        const allFieldsInColumnAreSelected = _(greyedFields)
-            .at(fieldIds)
-            .every(value => !value);
+        const allFieldsInColumnAreSelected = at(greyedFields, fieldIds).every(value => !value);
 
         const toggleAll = () => {
-            const updatedGreyedFields = _(fieldIds)
-                .map(fieldId => [fieldId, allFieldsInColumnAreSelected])
-                .fromPairs()
-                .value();
+            const updatedGreyedFields = HashMap.fromPairs(
+                fieldIds.map(fieldId => [fieldId, allFieldsInColumnAreSelected])
+            ).toObject();
 
-            setGreyedFields(prev => {
-                return { ...prev, ...updatedGreyedFields };
-            });
+            setGreyedFields(prev => ({ ...prev, ...updatedGreyedFields }));
         };
 
         return (
@@ -236,7 +238,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
 
     const renderTables = (combination: IndicatorCombination) => {
         const allOptions = combination.categories.map(category => category.options);
-        const cocsProduct = _.product(...allOptions);
+        const cocsProduct = _(allOptions).cartesian().value();
         return (
             <div key={combination.id}>
                 <h2>{combination.name === defaultLabel ? i18n.t("None") : combination.name}</h2>
@@ -253,12 +255,12 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         if (!combinationById) return;
 
         const nCategories = categoryOptionCombos[0] ? categoryOptionCombos[0].length : 0;
-        const rows = _.range(nCategories).map(idx => {
-            const consecutiveProducts = groupConsecutiveBy(categoryOptionCombos, cos =>
-                cos.slice(0, idx + 1)
-            );
-            return _(consecutiveProducts)
-                .map(consecutiveProducts => {
+        const rows = Collection.range(0, nCategories)
+            .map(idx => {
+                const consecutiveProducts = groupConsecutiveBy(categoryOptionCombos, cos =>
+                    cos.slice(0, idx + 1)
+                );
+                return consecutiveProducts.map(consecutiveProducts => {
                     const cocs = consecutiveProducts
                         .map(cos => {
                             const key = getKey(categoryCombo, cos);
@@ -273,23 +275,17 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                     }
                     const label = firstRecord[idx]?.name ?? "";
 
-                    return { label, cocs: _.compact(cocs) };
-                })
-                .value();
-        });
+                    return { label, cocs: _(cocs).compact().value() };
+                });
+            })
+            .value();
 
         return rows.map((row, rowNum) => {
             const isLastHeader = rowNum === rows.length - 1;
 
             return (
                 <tr key={rowNum}>
-                    <th
-                        style={{
-                            background: "#f0f0f0",
-                            border: "1px solid rgb(224, 224, 224)",
-                            padding: "0.5em",
-                        }}
-                    >
+                    <th style={{ background: "#f0f0f0" }} className="dataelement-header">
                         {isLastHeader && i18n.t("Data Element")}
                     </th>
 
@@ -356,7 +352,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
 
     const renderTable = (combination: IndicatorCombination, cocs: NamedRef[][]) => {
         const allDataElements = combination.dataElements;
-        const key = [combination, ..._.flatten(cocs)].map(x => x.id).join("-");
+        const key = [combination, ...cocs.flat()].map(x => x.id).join("-");
 
         return (
             <div style={{ paddingBlock: "0.5em" }}>
@@ -375,19 +371,20 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         cocs: NamedRef[][],
         categoryIndex: number
     ) => {
-        const nCategories = _(cocs).first()?.length ?? 0;
+        const nCategories = cocs[0]?.length ?? 0;
         if (cocs.length <= 12 || categoryIndex >= nCategories - 1) {
             return renderTable(categoryCombo, cocs);
         } else {
-            const consecutive = groupConsecutiveBy(cocs, (cos: any) =>
-                cos.slice(0, categoryIndex + 1)
+            const consecutive = groupConsecutiveBy(cocs, cos => cos.slice(0, categoryIndex + 1));
+            const tables = consecutive.flatMap(splitCocs =>
+                renderTablesForCocs(categoryCombo, splitCocs, categoryIndex + 1)
             );
-            const tables = _(consecutive)
-                .flatMap(splitCocs =>
-                    renderTablesForCocs(categoryCombo, splitCocs, categoryIndex + 1)
-                )
-                .value();
-            const key = categoryCombo.id + _(cocs).flatten().map("id").join("");
+            const key =
+                categoryCombo.id +
+                cocs
+                    .flat()
+                    .map(coc => coc.id)
+                    .join("");
             return <div key={key}>{tables}</div>;
         }
     };
@@ -489,6 +486,38 @@ function SimpleCheckBox(props: { onClick?: () => void; checked: boolean }) {
             <span />
         </span>
     );
+}
+
+function generateGreyFieldsFromDataElements(dataElements: DataElement[], cocs: Ref[]) {
+    const dataElementIds = dataElements.map(dataElement => ({ id: dataElement.id }));
+    const dataElementsCocsProduct = _([dataElementIds, cocs]).cartesian().value();
+
+    const fieldIds = dataElementsCocsProduct.flatMap(([dataElement, coc]) =>
+        [dataElement?.id ?? "", coc?.id ?? ""].join(".")
+    );
+    return fieldIds;
+}
+
+function generateMissingCombinations(
+    combinations: IndicatorCombination[],
+    existingCombinations: CategoryCombination[]
+): CategoryCombination[] {
+    const nonExistingCombinations = differenceBy(
+        combinations,
+        existingCombinations,
+        combination => combination.id
+    );
+
+    const allDataElements = nonExistingCombinations.flatMap(
+        combination => combination.dataElements
+    );
+
+    const uniqueDisaggregations = _(allDataElements)
+        .compactMap(dataElement => dataElement.disaggregation)
+        .uniqBy(disaggregation => disaggregation.id)
+        .value();
+
+    return CategoryCombination.buildFromDisaggregations(uniqueDisaggregations);
 }
 
 const CategoriesCheckboxContainer = styled.div`

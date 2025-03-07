@@ -181,6 +181,7 @@ export class D2ApiIndicator {
                                 displayName: true,
                                 categories: {
                                     id: true,
+                                    name: true,
                                     displayName: true,
                                     categoryOptions: { id: true, displayName: true },
                                 },
@@ -305,6 +306,7 @@ type D2DataElementFromGroup = {
         displayName: string;
         categories: Array<{
             id: Id;
+            name: string;
             displayName: string;
             categoryOptions: Array<{ id: Id; displayName: string }>;
         }>;
