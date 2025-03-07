@@ -325,9 +325,9 @@ const TableCategoryCombination = ({
         );
     } else {
         const consecutive = groupConsecutiveBy(cocs, cos => cos.slice(0, categoryIndex + 1));
-        const tables = consecutive.flatMap(splitCocs => (
+        const tables = consecutive.flatMap((splitCocs, index) => (
             <TableCategoryCombination
-                key={Math.random()} // para clave única, se recomienda una clave estable en producción
+                key={index}
                 combination={combination}
                 cocs={splitCocs}
                 categoryIndex={categoryIndex + 1}
