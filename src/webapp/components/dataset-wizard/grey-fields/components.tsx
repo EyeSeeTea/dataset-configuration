@@ -1,25 +1,12 @@
-import { differenceBy } from "lodash";
 import React from "react";
-import { Dropdown } from "@eyeseetea/d2-ui-components";
-import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
-    Checkbox,
-    FormControlLabel,
-    Typography,
-} from "@material-ui/core";
-import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
+import { Checkbox, FormControlLabel } from "@material-ui/core";
+
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
 import { Category, defaultLabel } from "$/domain/entities/Category";
-import styled from "styled-components";
-import { Maybe } from "$/utils/ts-utils";
-import { useAppContext } from "$/webapp/contexts/app-context";
 import { NamedRef, Ref } from "$/domain/entities/Ref";
 import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { DataElement } from "$/domain/entities/DataElement";
-import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import _, { Collection } from "$/domain/entities/generic/Collection";
