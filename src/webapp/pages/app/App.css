@@ -53,15 +53,15 @@ tr:has(.MuiAlert-message) {
 }
 
 .dataelement-header {
-    border: 1px solid rgb(224, 224, 224); 
+    border: 1px solid rgb(224, 224, 224);
     padding: 0.5em;
 }
 
-.dataelement-row {    
+.dataelement-row {
     border: 1px solid rgb(224, 224, 224);
     max-width: 33vw;
     overflow: hidden;
-    padding: 0.5em;    
+    padding: 0.5em;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
