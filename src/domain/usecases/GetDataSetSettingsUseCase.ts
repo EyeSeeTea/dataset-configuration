@@ -24,26 +24,28 @@ export class GetDataSetSettingsUseCase {
             return Future.success({
                 coreCompetencies,
                 dataSet,
-                indicators: this.config.indicators.map(indicator => {
-                    const existingIndicator = dataSet.indicators.find(
-                        ind => ind.id === indicator.id
-                    );
-                    return existingIndicator
-                        ? Indicator.create({
-                              ...indicator,
-                              disaggregation:
-                                  existingIndicator.type === "outputs"
-                                      ? existingIndicator.disaggregation
-                                      : undefined,
-                              relatedDataElements:
-                                  existingIndicator.type === "outcomes"
-                                      ? existingIndicator.relatedDataElements
-                                      : [],
-                          })
-                        : indicator;
-                }),
-                existingIndicatorsIds: dataSet.indicators.map(indicator => indicator.id),
+                indicators: this.getIndicatorsFromDataSet(dataSet),
+                existingIndicatorIds: dataSet.indicators.map(indicator => indicator.id),
             });
+        });
+    }
+
+    private getIndicatorsFromDataSet(dataSet: DataSet): Indicator[] {
+        return this.config.indicators.map(indicator => {
+            const existingIndicator = dataSet.indicators.find(ind => ind.id === indicator.id);
+            return existingIndicator
+                ? Indicator.create({
+                      ...indicator,
+                      disaggregation:
+                          existingIndicator.type === "outputs"
+                              ? existingIndicator.disaggregation
+                              : undefined,
+                      relatedDataElements:
+                          existingIndicator.type === "outcomes"
+                              ? existingIndicator.relatedDataElements
+                              : [],
+                  })
+                : indicator;
         });
     }
 

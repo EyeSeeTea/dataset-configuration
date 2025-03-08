@@ -49,6 +49,7 @@ export class ConfigD2Repository implements ConfigRepository {
                     displayName: true,
                     categories: {
                         id: true,
+                        name: true,
                         displayName: true,
                         categoryOptions: { id: true, displayName: true },
                     },

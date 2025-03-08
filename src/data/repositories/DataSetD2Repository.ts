@@ -1,4 +1,4 @@
-import lodash from "lodash";
+import differenceBy from "lodash/differenceBy";
 import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
@@ -17,12 +17,13 @@ import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/Dat
 import { Maybe } from "$/utils/ts-utils";
 import { chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
+
+import getTemplate from "$/data/entry-form/CustomForm";
+import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import { IndicatorAttrs } from "$/domain/entities/Indicator";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
-import getTemplate from "$/data/entry-form/CustomForm";
-import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
@@ -197,9 +198,10 @@ export class DataSetD2Repository implements DataSetRepository {
 
                 const ids = categoryCombos.map(cc => cc.id);
                 return this.D2ApiCategoryCombo.getByIds(ids).map(categoryCombos => {
-                    const nonExistingCategoryCombos = lodash.differenceBy(
+                    const nonExistingCategoryCombos = differenceBy(
                         d2CategoryCombos,
-                        categoryCombos
+                        categoryCombos,
+                        categoryCombo => categoryCombo.id
                     );
                     return {
                         dataSetId: dataSet.id,
@@ -217,6 +219,7 @@ export class DataSetD2Repository implements DataSetRepository {
     private buildDataEntryForm(
         dataSet: {
             id: Id;
+            dataSetElements: Array<{ dataElement: Ref; categoryCombo: { id: string | undefined } }>;
             dataEntryForm?: D2DataSetOwner["dataEntryForm"];
         },
         dataSetToSave: DataSetToSave,

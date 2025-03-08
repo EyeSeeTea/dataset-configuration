@@ -14,4 +14,4 @@ export type DataElement = {
     valueType: string;
 };
 
-export const COMMENT_PREFIX = "-C";
+export const COMMENT_SUFIX = "-C";

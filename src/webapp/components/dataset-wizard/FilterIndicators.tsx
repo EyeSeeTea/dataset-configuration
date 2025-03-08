@@ -8,10 +8,12 @@ import i18n from "$/utils/i18n";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
+import { IndicatorPerCompetency } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
 export type FilterType = "scope" | "core" | "outputType" | "theme" | "group";
 
 export type FilterIndicatorsProps = {
+    indicatorsPerCompetency: IndicatorPerCompetency[];
     coreCompetencies: CoreCompetency[];
     coreValues: string[];
     groups: string[];
@@ -65,7 +67,14 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         theme,
         types,
         selectedType,
+        indicatorsPerCompetency,
     } = props;
+
+    const coreCompetenciesItems = generateCoreCompetencies(
+        coreCompetencies,
+        indicatorsPerCompetency
+    );
+
     return (
         <FilterIndicatorContainer style={{ maxWidth: "300px" }}>
             <HeaderFilterContainer>
@@ -90,10 +99,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             />
 
             <ChipFilter
-                items={coreCompetencies.map(coreCompetency => ({
-                    text: coreCompetency.name,
-                    value: coreCompetency.id,
-                }))}
+                items={coreCompetenciesItems}
                 label={i18n.t("Core competencies")}
                 onChange={value => onFilterChange(value, "core")}
                 value={coreValue}
@@ -134,6 +140,24 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         </FilterIndicatorContainer>
     );
 });
+
+function generateCoreCompetencies(
+    coreCompetencies: CoreCompetency[],
+    indicatorsPerCompetency: IndicatorPerCompetency[]
+) {
+    return _(coreCompetencies)
+        .map(coreCompetency => {
+            const indicatorPerCompetency = indicatorsPerCompetency.find(
+                competency => competency.id === coreCompetency.id
+            );
+            const totalIndicators = indicatorPerCompetency
+                ? `(${indicatorPerCompetency.totalIndicators})`
+                : "";
+            const text = `${coreCompetency.name} ${totalIndicators}`;
+            return { text, value: coreCompetency.id };
+        })
+        .value();
+}
 
 export type ChipFilterProps = {
     items: ChipItem[];

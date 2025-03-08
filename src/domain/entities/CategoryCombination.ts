@@ -2,7 +2,7 @@ import { Category } from "$/domain/entities/Category";
 import { Id } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import _ from "$/domain/entities/generic/Collection";
-import { IndicatorWithDataElement } from "$/domain/entities/Indicator";
+import { DisaggregationAttrs, IndicatorWithDataElement } from "$/domain/entities/Indicator";
 
 export type CategoryCombinationAttrs = {
     id: Id;
@@ -30,5 +30,24 @@ export class CategoryCombination extends Struct<CategoryCombinationAttrs>() {
             .uniqBy(category => category.id)
             .sortBy(category => category.name)
             .value();
+    }
+
+    static buildFromDisaggregations(disaggregations: DisaggregationAttrs[]): CategoryCombination[] {
+        return disaggregations.map(disaggregation => {
+            return this.buildFromDisaggregation(disaggregation);
+        });
+    }
+
+    static buildFromDisaggregation(disaggregation: DisaggregationAttrs): CategoryCombination {
+        return CategoryCombination.create({
+            ...disaggregation,
+            optionsCombos: disaggregation.optionsCombos.map(optionCombo => {
+                return {
+                    id: optionCombo.id,
+                    name: optionCombo.name,
+                    options: optionCombo.options,
+                };
+            }),
+        });
     }
 }

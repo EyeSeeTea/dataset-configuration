@@ -1,26 +1,29 @@
-// @ts-nocheck
+// ignoring htmlencode because does not have types: @types/htmlencode
+// @ts-ignore
 import htmlencode from "htmlencode";
-import _ from "lodash";
+import isEqual from "lodash/isEqual";
+import last from "lodash/last";
 
-import customFormTemplate from "./sectionForm.vm?raw";
-import customFormJs from "./script.js?raw";
-import customFormCss from "./style.css?raw";
+import _ from "$/domain/entities/generic/Collection";
+import velocity from "./velocity";
 import { DataSet } from "$/domain/entities/DataSet";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
-import { groupConsecutiveBy } from "$/webapp/components/dataset-wizard/GreyFieldsStep";
 import i18n from "$/utils/i18n";
+import { template, jsTemplate } from "$/data/entry-form/custom-template";
+import { cssTemplate } from "$/data/entry-form/css-template";
+import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
+import { Maybe } from "$/utils/ts-utils";
+import { NamedRef, Ref } from "$/domain/entities/Ref";
+import { HashMap } from "$/domain/entities/generic/HashMap";
 
 const data = {
-    template: customFormTemplate,
-    css: customFormCss,
-    js: customFormJs,
+    template: atob(template),
+    css: cssTemplate,
+    js: atob(jsTemplate),
 };
 
-const a = obj => (obj.toArray ? obj.toArray() : obj);
-const _a = (...args) => _(a(...args));
-
-function getCategoryCombo(dataSetElement) {
+function getCategoryCombo(dataSetElement: DataSetTemplate["dataSetElements"][0]) {
     const { dataElement, categoryCombo } = dataSetElement;
 
     if (categoryCombo) {
@@ -35,7 +38,8 @@ function getCategoryCombo(dataSetElement) {
 }
 
 class Map {
-    constructor(obj) {
+    obj: any;
+    constructor(obj: any) {
         this.obj = obj;
     }
 
@@ -43,7 +47,7 @@ class Map {
         return Object.keys(this.obj).sort();
     }
 
-    get(key) {
+    get(key: string) {
         if (this.obj[key] !== undefined) {
             return this.obj[key];
         } else {
@@ -54,14 +58,14 @@ class Map {
         }
     }
 
-    getOr(key, defaultValue) {
+    getOr(key: string, defaultValue: any) {
         return this.obj[key] !== undefined ? this.obj[key] : defaultValue;
     }
 }
 
-const map = obj => new Map(obj);
+const map = (obj: any) => new Map(obj);
 
-const createViewDataElement = de => ({
+const createViewDataElement = (de: DataElementViewTemplate) => ({
     id: de.id,
     displayFormName: de.displayName,
     url: de.href,
@@ -72,122 +76,152 @@ const createViewDataElement = de => ({
     displayDescription: de.description,
 });
 
-function groupByKeys(objs, keys, thruFn = _.identity) {
-    if (_(keys).isEmpty()) {
+function groupByKeys(objs: ItemsSection[], keys: string[]): Map | ItemsSection[] {
+    if (keys.length === 0) {
         return objs;
     } else {
-        return _(objs)
-            .groupBy(keys[0])
-            .map((vs, k) => [k, groupByKeys(vs, keys.slice(1), thruFn)])
-            .fromPairs()
-            .thru(thruFn)
-            .value();
+        const firstKey = keys[0] as "theme" | "group";
+        const groupByKey = _(objs)
+            .groupBy(section => section[firstKey])
+            .toObject();
+
+        const includeThemeAndGroup = HashMap.fromObject(groupByKey)
+            .mapValues(([k, vs]) => [k, groupByKeys(vs, keys.slice(1))])
+            .values();
+
+        const sectionItemsByKey = _(includeThemeAndGroup)
+            .toHashMap(([k, vs]) => [k, vs])
+            .toObject();
+
+        return map(sectionItemsByKey);
     }
 }
 
-const getVisibleOptionCombos = (greyedFields, optionCombos, dataElements) =>
-    _a(optionCombos)
-        .filter(coc => _a(dataElements).some(de => !greyedFields[`${de.id}.${coc.id}`]))
-        .value();
+const getVisibleOptionCombos = (
+    greyedFields: Record<string, boolean>,
+    optionCombos: Ref[],
+    dataElements: Ref[]
+) => optionCombos.filter(coc => dataElements.some(de => !greyedFields[`${de.id}.${coc.id}`]));
 
-const getGroupedItems = sections =>
-    _a(sections)
-        .map(section => {
-            const groupedValues = _a(section.items).values();
-            const groupedItemsForSection = groupByKeys(groupedValues, ["theme", "group"], map);
+const getGroupedItems = (sections: SectionTemplate[]) =>
+    _(sections)
+        .toHashMap(section => {
+            const groupedValues = HashMap.fromObject(section.items).values();
+            const groupedItemsForSection = groupByKeys(groupedValues, ["theme", "group"]);
             return [section.id, groupedItemsForSection];
         })
-        .fromPairs()
-        .value();
+        .toObject();
 
-const getKey = cos => _a(cos).map("id").sortBy().uniq().join("-");
+const getKey = (cos: Ref[]) =>
+    _(cos)
+        .map(c => c.id)
+        .sort()
+        .uniq()
+        .join("-");
 
-const getOrderedCategoryOptionCombos = categoryCombos =>
-    _a(categoryCombos)
-        .map(categoryCombo => {
-            const categoryOptionsForCategories = _.product(
-                ...a(categoryCombo.categories).map(category => a(category.categoryOptions))
-            );
-            const cocByCosKey = _.keyBy(a(categoryCombo.categoryOptionCombos), coc =>
-                getKey(coc.categoryOptions)
-            );
-            const orderedCocs = a(categoryOptionsForCategories).map(
-                cos => cocByCosKey[getKey(cos)]
-            );
+const getOrderedCategoryOptionCombos = (categoryCombos: D2ApiCategoryComboType[]) => {
+    return _(categoryCombos)
+        .toHashMap(categoryCombo => {
+            const categoryOptionsForCategories = _(
+                categoryCombo.categories.map(category => category.categoryOptions)
+            )
+                .cartesian()
+                .value();
+            const cocByCosKey = _(categoryCombo.categoryOptionCombos)
+                .keyBy(coc => getKey(coc.categoryOptions))
+                .toObject();
+            const orderedCocs = categoryOptionsForCategories.map(cos => cocByCosKey[getKey(cos)]);
 
             return [categoryCombo.id, orderedCocs];
         })
-        .fromPairs()
-        .value();
+        .toObject();
+};
 
-const getHeaders = (categories, categoryOptionCombos) => {
-    const categoryOptionsForCategories = a(categories).map(category => a(category.categoryOptions));
-    const allCategoryOptions = _.product(...categoryOptionsForCategories);
-    const categoryOptionsByCategoryOptionKey = _.keyBy(allCategoryOptions, getKey);
-    return a(categories).map((category, catIndex) => {
-        const mapValue = _a(categoryOptionCombos)
-            .map(coc => categoryOptionsByCategoryOptionKey[getKey(coc.categoryOptions)])
-            .value();
+type CategoryHeader = {
+    categoryOptions: Array<NamedRef & { displayName: string }>;
+};
+
+const getHeaders = (
+    categories: CategoryHeader[],
+    categoryOptionCombos: { categoryOptions: Ref[] }[]
+) => {
+    const categoryOptionsForCategories = categories.map(category => category.categoryOptions);
+
+    const allCategoryOptions = _(categoryOptionsForCategories).cartesian().value();
+
+    const categoryOptionsByCategoryOptionKey = _(allCategoryOptions).keyBy(getKey).toObject();
+
+    return categories.map((_category, catIndex) => {
+        const mapValue = categoryOptionCombos.map(
+            coc => categoryOptionsByCategoryOptionKey[getKey(coc.categoryOptions)]
+        );
+
         const consecutive = groupConsecutiveBy(mapValue, cos =>
-            _a(cos)
+            _(cos ?? [])
                 .map(co => co.id)
                 .take(catIndex + 1)
                 .value()
         );
-        return _(consecutive)
-            .map(group => {
-                const categoryOption = group[0][catIndex];
-                return {
-                    colSpan: group.length,
-                    name: categoryOption.name,
-                    displayName: categoryOption.displayName,
-                };
-            })
-            .value();
+
+        return consecutive.map(groupCatOption => {
+            const firstItem = groupCatOption[0];
+            if (!firstItem) throw Error("groupCatOption is empty");
+            const categoryOption = firstItem[catIndex];
+            return {
+                colSpan: groupCatOption.length,
+                name: categoryOption?.name,
+                displayName: categoryOption?.displayName,
+            };
+        });
     });
 };
 
-const getRowTotalId = (dataElement, optionCombos) =>
-    ["row", dataElement.id, ...a(optionCombos).map(coc => coc.id)].join("-");
+const getRowTotalId = (dataElement: Ref, optionCombos: Ref[]) =>
+    ["row", dataElement.id, ...optionCombos.map(coc => coc.id)].join("-");
 
 const getContext = (
-    dataset,
-    sections,
-    allCategoryCombos,
+    dataset: DataSetTemplate,
+    sections: SectionTemplate[],
+    allCategoryCombos: D2ApiCategoryComboType[],
     disabledFields: DataSet["disabledFields"]
 ) => {
-    const categoryComboByDataElementId = _a(dataset.dataSetElements)
-        .map(dse => [dse.dataElement.id, getCategoryCombo(dse)])
-        .fromPairs()
-        .value();
-    const categoryCombosId = _a(dataset.dataSetElements)
+    const categoryComboByDataElementId = _(dataset.dataSetElements)
+        .toHashMap(dse => [dse.dataElement.id, getCategoryCombo(dse)])
+        .toObject();
+
+    const categoryCombosId = _(dataset.dataSetElements)
         .map(dse => getCategoryCombo(dse).id)
         .uniq()
         .value();
-    const categoryCombos = _a(allCategoryCombos).keyBy("id").at(categoryCombosId).value();
-    const orderedCategoryOptionCombos = getOrderedCategoryOptionCombos(categoryCombos);
-    const orderedCategories = _a(categoryCombos)
-        .map(cc => [cc.id, cc.categories])
-        .fromPairs()
-        .value();
-    const getDataElementsByCategoryCombo = dataElements =>
-        _a(dataElements)
-            .groupBy(de => categoryComboByDataElementId[de.id].id)
-            .thru(map)
-            .value();
-    const getDataElementsByCategoryComboForIndicators = indicators =>
-        _a(indicators)
-            .flatMap("dataElements")
-            .groupBy(de => categoryComboByDataElementId[de.id].id)
-            .thru(map)
-            .value();
 
-    const greyedFields = disabledFields.reduce((acc, fieldId) => {
-        return {
-            ...acc,
-            [`${fieldId.dataElementId}.${fieldId.optionComboId}`]: true,
-        };
-    }, {} as Record<string, boolean>);
+    const categoryCombos = at(
+        _(allCategoryCombos)
+            .keyBy(x => x.id)
+            .toObject(),
+        categoryCombosId
+    );
+
+    const orderedCategoryOptionCombos = getOrderedCategoryOptionCombos(categoryCombos);
+
+    const orderedCategories = _(categoryCombos)
+        .toHashMap(cc => [cc.id, cc.categories])
+        .toObject();
+
+    const getDataElementsByCategoryCombo = (dataElements: Ref[]) =>
+        mapDataElementRefs(dataElements, categoryComboByDataElementId);
+
+    const getDataElementsByCategoryComboForIndicators = (
+        indicators: Array<{ dataElements: Ref[] }>
+    ) => {
+        const allDataElements = indicators.flatMap(indicator => indicator.dataElements);
+        return mapDataElementRefs(allDataElements, categoryComboByDataElementId);
+    };
+
+    const greyedFields = _(disabledFields)
+        .toHashMap(disabledField => {
+            return [`${disabledField.dataElementId}.${disabledField.optionComboId}`, true];
+        })
+        .toObject();
 
     return {
         helpers: {
@@ -199,7 +233,7 @@ const getContext = (
             getRowTotalId,
         },
         i18n: {
-            getString: key => {
+            getString: (key: string) => {
                 switch (key) {
                     case "value":
                         return i18n.t("Value");
@@ -215,6 +249,8 @@ const getContext = (
                         return i18n.t("Section");
                     case "current_date_out_of_period":
                         return i18n.t("Current date out of accepted period");
+                    default:
+                        return "unknown";
                 }
             },
         },
@@ -223,7 +259,7 @@ const getContext = (
         },
         auth: {
             // Used in automatic form, cannot be calculated for a static custom form, leave it as true
-            hasAccess: (_app, _key) => true,
+            hasAccess: (_app: string, _key: string) => true,
         },
         dataSet: {
             renderAsTabs: dataset.renderAsTabs,
@@ -244,50 +280,23 @@ function getIndicatorTypeName(type: string): { key: string; name: string } {
         case "outcomes":
             return { key: "outcome", name: "Outcomes" };
         default:
-            return "";
+            return { key: "", name: "" };
     }
 }
 
-const convertToSections = (dataSet: DataSetToSave, categoryCombos: D2ApiCategoryComboType[]) => {
+const convertToSections = (
+    dataSet: DataSetToSave,
+    categoryCombos: D2ApiCategoryComboType[]
+): SectionTemplate[] => {
     const result = _(dataSet.indicators ?? [])
         .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.id}`)
-        .map((indicators, key) => {
+        .mapValues(([key, indicators]) => {
             const [type, _sectionGroupId] = key.split("_");
             const coreCompetency = indicators[0]?.coreCompetency;
             if (!coreCompetency || !type)
-                throw Error(`Cannot find core competency name for ${indicatorType}`);
+                throw Error(`Cannot find core competency name for ${type}`);
 
             const typeLabel = getIndicatorTypeName(type);
-
-            const items = _(indicators)
-                .map(indicator => {
-                    const categoryCombo = categoryCombos.find(
-                        cc => cc.id === indicator.disaggregation?.id
-                    );
-
-                    return {
-                        ...indicator,
-                        displayName: indicator.name,
-                        valueType: indicator.valueType,
-                        categoryCombo,
-                        dataElements:
-                            indicator.type === "outcomes"
-                                ? indicator.relatedDataElements.map(dataElement => {
-                                      const categoryCombo = categoryCombos.find(
-                                          cc => cc.id === dataElement.disaggregation?.id
-                                      );
-                                      return {
-                                          ...dataElement,
-                                          categoryCombo,
-                                          displayName: dataElement.name,
-                                          valueType: dataElement.valueType,
-                                      };
-                                  })
-                                : [],
-                    };
-                })
-                .keyBy(indicator => indicator.id)
-                .value();
 
             return {
                 id: `${coreCompetency.id}-${typeLabel.key}`,
@@ -295,19 +304,58 @@ const convertToSections = (dataSet: DataSetToSave, categoryCombos: D2ApiCategory
                 type: typeLabel.key,
                 showColumnTotals: false,
                 showRowTotals: false,
-                items,
+                items: getItemsForSections(indicators, categoryCombos),
             };
         })
-        .value();
+        .values();
     return result;
 };
 
-const getTemplate = (dataset, categoryCombos, dataSetToSave: DataSet) => {
+function getItemsForSections(
+    indicators: Indicator[],
+    categoryCombos: D2ApiCategoryComboType[]
+): Record<string, ItemsSection> {
+    const items = _(indicators)
+        .map(indicator => {
+            const categoryCombo = categoryCombos.find(cc => cc.id === indicator.disaggregation?.id);
+
+            return {
+                ...indicator,
+                displayName: indicator.name,
+                valueType: indicator.valueType,
+                categoryCombo,
+                dataElements:
+                    indicator.type === "outcomes"
+                        ? indicator.relatedDataElements.map(dataElement => {
+                              const categoryCombo = categoryCombos.find(
+                                  cc => cc.id === dataElement.disaggregation?.id
+                              );
+                              return {
+                                  ...dataElement,
+                                  categoryCombo,
+                                  displayName: dataElement.name,
+                                  valueType: dataElement.valueType,
+                              };
+                          })
+                        : [],
+            };
+        })
+        .keyBy(indicator => indicator.id)
+        .toObject();
+
+    return items;
+}
+
+const getTemplate = (
+    dataset: any,
+    categoryCombos: D2ApiCategoryComboType[],
+    dataSetToSave: DataSet
+) => {
     const templateSections = convertToSections(dataSetToSave, categoryCombos);
     const { disabledFields } = dataSetToSave;
     const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
-    const view = window.Velocity.render(data.template, context, {}, config);
+    const view = velocity.render(data.template, context, {}, config);
     return `
         <style>${data.css}</style>
         <script>
@@ -315,6 +363,77 @@ const getTemplate = (dataset, categoryCombos, dataSetToSave: DataSet) => {
         </script>
         ${view}
     `;
+};
+
+export function groupConsecutiveBy<T, U = T>(xs: T[], mapper: (item: T) => U): T[][] {
+    const reducer = (acc: T[][], x: T): T[][] => {
+        if (acc.length === 0) {
+            return acc.concat([[x]]);
+        } else {
+            const lastGroup = last(acc) as T[];
+            const lastElement = lastGroup[lastGroup.length - 1] as T;
+
+            if (isEqual(mapper(lastElement), mapper(x))) {
+                lastGroup.push(x);
+                return acc;
+            } else {
+                return acc.concat([[x]]);
+            }
+        }
+    };
+    return xs.reduce(reducer, [] as T[][]);
+}
+
+export function at<T>(data: Record<string, T>, ids: string[]): T[] {
+    return _(ids)
+        .filter(key => key in data)
+        .compactMap(key => data[key])
+        .value();
+}
+
+function mapDataElementRefs(
+    dataElements: Ref[],
+    categoryComboByDataElementId: Record<string, Ref>
+): Map {
+    const dataElementsGrouped = _(dataElements)
+        .groupBy(de => categoryComboByDataElementId[de.id]?.id)
+        .toObject();
+    return map(dataElementsGrouped);
+}
+
+type ItemsSection = IndicatorAttrs & {
+    displayName: string;
+    valueType: string;
+    categoryCombo: Maybe<D2ApiCategoryComboType>;
+};
+
+type SectionTemplate = {
+    id: string;
+    name: string;
+    type: string;
+    showColumnTotals: boolean;
+    showRowTotals: boolean;
+    items: Record<string, ItemsSection>;
+};
+
+type DataSetTemplate = {
+    renderAsTabs: boolean;
+    dataElementDecoration: boolean;
+    dataSetElements: Array<{
+        dataElement: { id: string; categoryCombo: CategoryComboTemplate };
+        categoryCombo: CategoryComboTemplate;
+    }>;
+};
+
+type CategoryComboTemplate = { id: string };
+type DataElementViewTemplate = {
+    id: string;
+    displayName: string;
+    href: string;
+    valueType: string;
+    optionSet: string;
+    description: string;
+    optionSetValue: string;
 };
 
 export default getTemplate;
