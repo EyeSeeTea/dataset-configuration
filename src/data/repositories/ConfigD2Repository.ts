@@ -3,13 +3,14 @@ import { apiToFuture } from "$/data/api-futures";
 import { D2ApiConfig, D2Config, metadataCodes } from "$/data/repositories/D2ApiMetadata";
 import { convertToCategories } from "$/data/utils";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
-import { Config, UserGroup } from "$/domain/entities/Config";
+import { Config } from "$/domain/entities/Config";
 import { Project } from "$/domain/entities/Project";
 import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
+import { UserGroup } from "$/domain/entities/UserGroup";
 
 export class ConfigD2Repository implements ConfigRepository {
     private d2ApiConfig: D2ApiConfig;
@@ -33,6 +34,7 @@ export class ConfigD2Repository implements ConfigRepository {
                     periodEndDateDay: apiConfig.periodEndDateDay,
                     periodLastYearEndDate: apiConfig.periodLastYearEndDate,
                     periodLastYearUnits: apiConfig.periodLastYearUnits,
+                    notificationUserGroup: apiConfig.userGroups.adminNotification,
                 };
             });
         });

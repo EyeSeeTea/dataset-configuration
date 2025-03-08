@@ -5,15 +5,31 @@ import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { getErrors } from "$/domain/entities/generic/Error";
 import { DataSetUtils } from "$/domain/usecases/common/DataSetUtils";
 import i18n from "$/utils/i18n";
+import { NotificationRepository } from "$/domain/repositories/NotificationRepository";
+import { DataSetRegisterAction } from "$/webapp/components/dataset-wizard/SummaryDataSet";
+import { User } from "$/domain/entities/User";
+import { Config } from "$/domain/entities/Config";
+import { UserGroupRepository } from "$/domain/repositories/UserGroupRepository";
+import { UserGroup } from "$/domain/entities/UserGroup";
+import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
+import { Stats } from "$/domain/entities/Stats";
+import { Project } from "$/domain/entities/Project";
 
 export class SaveDataSetUseCase {
     private dataSetUtils: DataSetUtils;
 
-    constructor(private dataSetRepository: DataSetRepository) {
+    constructor(
+        private dataSetRepository: DataSetRepository,
+        private notificationRepository: NotificationRepository,
+        private userGroupRepository: UserGroupRepository,
+        private projectRepository: ProjectRepository,
+        private config: Config
+    ) {
         this.dataSetUtils = new DataSetUtils(this.dataSetRepository);
     }
 
-    execute(dataSet: DataSet): FutureData<void> {
+    execute(options: SaveDataSetOptions): FutureData<void> {
+        const { dataSet } = options;
         const result = dataSet.validate();
 
         if (result.length > 0) {
@@ -32,8 +48,107 @@ export class SaveDataSetUseCase {
                     )
                 );
 
-            return this.dataSetRepository.save([dataSet]);
+            return this.dataSetRepository
+                .save([dataSet])
+                .flatMap(() => {
+                    return this.saveProject(dataSet).flatMap(stats => {
+                        return this.sendNotification(options, stats.errorMessage);
+                    });
+                })
+                .flatMapError(error => {
+                    return this.sendNotificationError(options, error.message);
+                });
         });
+    }
+
+    private saveProject(dataSet: DataSet): FutureData<Stats> {
+        if (!dataSet.project) return Future.success(Stats.empty());
+        return this.projectRepository.getById(dataSet.project.id).flatMap(project => {
+            const orgUnitsAreEqual = this.compareOrgUnits(project, dataSet);
+            if (orgUnitsAreEqual) return Future.success(Stats.empty());
+            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits));
+        });
+    }
+
+    private compareOrgUnits(project: Project, dataSet: DataSet): boolean {
+        const projectOrgUnits = _(project.orgsUnits)
+            .map(orgUnit => orgUnit.id)
+            .sort()
+            .value();
+
+        const dataSetOrgUnits = _(dataSet.orgUnits)
+            .map(orgUnit => orgUnit.id)
+            .sort()
+            .value();
+
+        const areEqual = dataSetOrgUnits.every((value, index) => value === projectOrgUnits[index]);
+
+        return areEqual;
+    }
+
+    private getUsersGroups(options: SaveDataSetOptions): FutureData<UserGroup[]> {
+        const { dataSet } = options;
+        const userGroupsCodes = dataSet.getRegionCodesFromAccess();
+        const userGroupsNames = userGroupsCodes.map(code => `${code}_M&EDatasetCompletion`);
+        return this.userGroupRepository.getByNames(userGroupsNames);
+    }
+
+    private sendNotification(
+        options: SaveDataSetOptions,
+        errorMessageProject: string
+    ): FutureData<void> {
+        const { dataSet, action, user } = options;
+
+        return this.getUsersGroups(options).flatMap(userGroups => {
+            const actionDescription = action === "edit" ? "edited" : "created";
+
+            const { warningTitle, warningBody } = this.getWarningMessages(errorMessageProject);
+
+            const title = `Dataset ${actionDescription}: ${dataSet.name} ${warningTitle}`;
+            const body = `Dataset ${actionDescription}: ${dataSet.name} by ${user.name}.${warningBody}`;
+
+            return this.buildUserGroupsAndSendNotification(userGroups, title, body);
+        });
+    }
+
+    private buildUserGroupsAndSendNotification(
+        userGroups: import("/home/eduardo/eyeseetea/projects/dataset-configuration/src/domain/entities/Ref").NamedCodeRef[],
+        title: string,
+        body: string
+    ) {
+        const userGroupIds = userGroups.map(userGroup => userGroup.id);
+        return this.notificationRepository.send({
+            title,
+            body,
+            recipients: userGroupIds.concat([this.config.notificationUserGroup.id]),
+        });
+    }
+
+    private sendNotificationError(
+        options: SaveDataSetOptions,
+        errorMessage: string
+    ): FutureData<void> {
+        const { dataSet, user } = options;
+
+        return this.getUsersGroups(options).flatMap(userGroups => {
+            const title = `There has been an error when dataset '${dataSet.name}' was being saved.`;
+            const currentUserInfo = `User: ${user.username} (${user.id})`;
+            const body = [title, currentUserInfo, errorMessage].join("\n\n");
+
+            return this.buildUserGroupsAndSendNotification(userGroups, title, body);
+        });
+    }
+
+    private getWarningMessages(errorMessage: string): {
+        warningTitle: string;
+        warningBody: string;
+    } {
+        const warningLabel = i18n.t("with warnings");
+        const warningLabelBody = i18n.t("Warnings");
+        const includeWarnings = errorMessage.length > 0;
+        const warningTitle = includeWarnings ? warningLabel : "";
+        const warningBody = includeWarnings ? `\n\n ${warningLabelBody}: \n\n${errorMessage}` : "";
+        return { warningTitle, warningBody };
     }
 
     private validateDataSetName(dataSet: DataSet): FutureData<boolean> {
@@ -43,3 +158,9 @@ export class SaveDataSetUseCase {
         });
     }
 }
+
+type SaveDataSetOptions = {
+    dataSet: DataSet;
+    action: DataSetRegisterAction;
+    user: User;
+};

@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "react-router-dom";
 import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
 import { Button, Grid, Typography } from "@material-ui/core";
 
@@ -107,18 +108,30 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
     );
 });
 
+export const actions = ["edit", "create", "clone"] as const;
+export type DataSetRegisterAction = (typeof actions)[number];
+
+function getActionFromUrl(url: string): DataSetRegisterAction {
+    if (url.includes("edit")) return "edit";
+    if (url.includes("create")) return "create";
+    if (url.includes("clone")) return "clone";
+    throw new Error("Invalid action");
+}
+
 function useSaveDataSet(props: {
     dataSet: DataSet;
     onLoading: () => void;
     onSuccess: () => void;
     onError: (error: string) => void;
 }) {
-    const { compositionRoot } = useAppContext();
+    const location = useLocation();
+    const action = getActionFromUrl(location.pathname);
+    const { compositionRoot, currentUser } = useAppContext();
     const { dataSet, onLoading, onSuccess, onError } = props;
 
     const saveDataSet = React.useCallback(() => {
         onLoading();
-        return compositionRoot.dataSets.save.execute(dataSet).run(
+        return compositionRoot.dataSets.save.execute({ dataSet, user: currentUser, action }).run(
             () => {
                 onSuccess();
             },
@@ -126,7 +139,15 @@ function useSaveDataSet(props: {
                 onError(error.message);
             }
         );
-    }, [compositionRoot.dataSets.save, dataSet, onLoading, onSuccess, onError]);
+    }, [
+        action,
+        currentUser,
+        compositionRoot.dataSets.save,
+        dataSet,
+        onLoading,
+        onSuccess,
+        onError,
+    ]);
 
     return { saveDataSet };
 }

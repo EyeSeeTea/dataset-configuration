@@ -1,9 +1,7 @@
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Indicator } from "$/domain/entities/Indicator";
-import { NamedCodeRef } from "$/domain/entities/Ref";
 import { Region } from "$/domain/entities/Region";
-
-export type UserGroup = NamedCodeRef;
+import { UserGroup } from "$/domain/entities/UserGroup";
 
 export type Config = {
     categoryCombinations: CategoryCombination[];
@@ -14,4 +12,5 @@ export type Config = {
     periodEndDateDay: number;
     periodLastYearEndDate: number;
     periodLastYearUnits: string;
+    notificationUserGroup: UserGroup;
 };

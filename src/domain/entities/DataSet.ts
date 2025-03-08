@@ -8,10 +8,11 @@ import _ from "$/domain/entities/generic/Collection";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
 import { Indicator } from "$/domain/entities/Indicator";
-import { Config, UserGroup } from "$/domain/entities/Config";
+import { Config } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
 import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { UserGroup } from "$/domain/entities/UserGroup";
 
 export type DataSetAttrs = {
     created: ISODateString;

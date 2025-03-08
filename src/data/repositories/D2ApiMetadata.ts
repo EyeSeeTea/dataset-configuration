@@ -48,6 +48,7 @@ const metadataFieldsApp = [
     "indicatorGroups",
     "indicatorGroupSets",
     "organisationUnitLevels",
+    "userGroups",
 ] as const;
 
 type MetadataKeyType = (typeof metadataFieldsApp)[number];
@@ -141,6 +142,9 @@ export class D2ApiConfig {
                 periodEndDateMonth: appSettings.periodEndDateMonth,
                 periodLastYearEndDate: appSettings.periodLastYearEndDate,
                 periodLastYearUnits: appSettings.periodLastYearUnits,
+                userGroups: {
+                    adminNotification: getOrThrowMetadata("userGroups", appSettings.userGroupId),
+                },
             };
         });
     }
@@ -171,6 +175,9 @@ function getOrThrow(modelData: D2NamedCodeRef[], value: Maybe<string>): D2NamedC
 }
 
 export type D2Config = {
+    userGroups: {
+        adminNotification: D2NamedCodeRef;
+    };
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;

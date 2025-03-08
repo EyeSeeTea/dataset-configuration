@@ -16,6 +16,8 @@ import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Maybe } from "$/utils/ts-utils";
 import { Config } from "$/domain/entities/Config";
+import { Stats } from "$/domain/entities/Stats";
+import { getErrorFromResponse } from "$/data/utils";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -24,6 +26,27 @@ export class ProjectD2Repository implements ProjectRepository {
     constructor(private api: D2Api, private config: Config) {
         this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
         this.d2ApiConfig = new D2ApiConfig(this.api);
+    }
+
+    getById(id: Id): FutureData<Project> {
+        return apiToFuture(
+            this.api.models.categoryOptions.get({
+                fields: {
+                    id: true,
+                    code: true,
+                    displayName: true,
+                    lastUpdated: true,
+                    organisationUnits: { id: true, code: true, path: true, displayName: true },
+                },
+                filter: { id: { eq: id } },
+                paging: false,
+            })
+        ).flatMap(response => {
+            const d2CategoryOption = response.objects[0];
+            if (!d2CategoryOption)
+                return Future.error(new Error(`Project with id ${id} not found`));
+            return Future.success(this.buildProject(d2CategoryOption));
+        });
     }
 
     getList(): FutureData<Project[]> {
@@ -41,6 +64,36 @@ export class ProjectD2Repository implements ProjectRepository {
 
     getAll(): FutureData<Project[]> {
         return this.getAllProjects(1, []);
+    }
+
+    save(project: Project): FutureData<Stats> {
+        return apiToFuture(
+            this.api.models.categoryOptions.get({
+                fields: { $owner: true },
+                filter: { id: { eq: project.id } },
+                paging: false,
+            })
+        ).flatMap(response => {
+            const d2CategoryOption = response.objects[0];
+            return apiToFuture(
+                this.api.metadata.post({
+                    categoryOptions: [
+                        {
+                            ...(d2CategoryOption || {}),
+                            organisationUnits: project.orgsUnits.map(orgUnit => ({
+                                id: orgUnit.id,
+                            })),
+                        },
+                    ],
+                })
+            ).map(d2Response => {
+                const errorMessage = getErrorFromResponse(d2Response);
+                return Stats.create({
+                    errorMessage,
+                    ...d2Response.stats,
+                });
+            });
+        });
     }
 
     private getCategoryOptionsByCode(code: string) {
