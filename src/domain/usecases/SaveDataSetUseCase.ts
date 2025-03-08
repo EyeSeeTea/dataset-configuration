@@ -112,7 +112,7 @@ export class SaveDataSetUseCase {
     }
 
     private buildUserGroupsAndSendNotification(
-        userGroups: import("/home/eduardo/eyeseetea/projects/dataset-configuration/src/domain/entities/Ref").NamedCodeRef[],
+        userGroups: UserGroup[],
         title: string,
         body: string
     ) {
