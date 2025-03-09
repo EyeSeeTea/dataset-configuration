@@ -14,51 +14,55 @@ import { UserGroup } from "$/domain/entities/UserGroup";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { Stats } from "$/domain/entities/Stats";
 import { Project } from "$/domain/entities/Project";
+import { UserUtils } from "$/domain/usecases/common/UserUtils";
+import { UserRepository } from "$/domain/repositories/UserRepository";
+import { LogRepository } from "$/domain/repositories/LogRepository";
 
 export class SaveDataSetUseCase {
     private dataSetUtils: DataSetUtils;
+    private userUtils: UserUtils;
 
     constructor(
         private dataSetRepository: DataSetRepository,
         private notificationRepository: NotificationRepository,
         private userGroupRepository: UserGroupRepository,
         private projectRepository: ProjectRepository,
+        private userRepository: UserRepository,
+        private logRepository: LogRepository,
         private config: Config
     ) {
         this.dataSetUtils = new DataSetUtils(this.dataSetRepository);
+        this.userUtils = new UserUtils(this.userRepository, this.logRepository);
     }
 
     execute(options: SaveDataSetOptions): FutureData<void> {
-        const { dataSet } = options;
-        const result = dataSet.validate();
+        return this.userUtils.checkDataSetAccess([options.dataSet]).flatMap(() => {
+            const { dataSet } = options;
+            return this.validateDataSet(dataSet).flatMap(() => {
+                return this.validateDataSetName(dataSet).flatMap(() => {
+                    return this.dataSetRepository
+                        .save([dataSet])
+                        .flatMap(() => {
+                            return this.saveProject(dataSet).flatMap(stats => {
+                                return this.sendNotification(options, stats.errorMessage);
+                            });
+                        })
+                        .flatMapError(error => {
+                            return this.sendNotificationError(options, error.message);
+                        });
+                });
+            });
+        });
+    }
 
+    private validateDataSet(dataSet: DataSet): FutureData<void> {
+        const result = dataSet.validate();
         if (result.length > 0) {
             const errors = getErrors(result);
             return Future.error(new Error(errors.join("\n")));
+        } else {
+            return Future.void();
         }
-
-        return this.validateDataSetName(dataSet).flatMap(dataSetAlreadyExists => {
-            if (dataSetAlreadyExists)
-                return Future.error(
-                    new Error(
-                        i18n.t("Data set name already exists: {{dataSetName}}", {
-                            nsSeparator: false,
-                            dataSetName: dataSet.name,
-                        })
-                    )
-                );
-
-            return this.dataSetRepository
-                .save([dataSet])
-                .flatMap(() => {
-                    return this.saveProject(dataSet).flatMap(stats => {
-                        return this.sendNotification(options, stats.errorMessage);
-                    });
-                })
-                .flatMapError(error => {
-                    return this.sendNotificationError(options, error.message);
-                });
-        });
     }
 
     private saveProject(dataSet: DataSet): FutureData<Stats> {
@@ -153,11 +157,24 @@ export class SaveDataSetUseCase {
         return { warningTitle, warningBody };
     }
 
-    private validateDataSetName(dataSet: DataSet): FutureData<boolean> {
-        return this.dataSetUtils.isDataSetNameDuplicate({
-            name: dataSet.name,
-            dataSetId: dataSet.id,
-        });
+    private validateDataSetName(dataSet: DataSet): FutureData<void> {
+        return this.dataSetUtils
+            .isDataSetNameDuplicate({
+                name: dataSet.name,
+                dataSetId: dataSet.id,
+            })
+            .flatMap(dataSetAlreadyExists => {
+                return dataSetAlreadyExists
+                    ? Future.error(
+                          new Error(
+                              i18n.t("Data set name already exists: {{dataSetName}}", {
+                                  nsSeparator: false,
+                                  dataSetName: dataSet.name,
+                              })
+                          )
+                      )
+                    : Future.success(undefined);
+            });
     }
 }
 

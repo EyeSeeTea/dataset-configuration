@@ -5,7 +5,6 @@ import {
     AccessType,
     CoreCompetency,
     DataSet,
-    DataSetList,
     OrgUnit,
 } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
@@ -25,6 +24,7 @@ import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -44,6 +44,7 @@ export class DataSetD2Api {
                         displayName: true,
                         lastUpdated: true,
                         sharing: { public: true },
+                        access: true,
                     },
                     filter: {
                         id: { in: options.filters.ids },
@@ -57,7 +58,8 @@ export class DataSetD2Api {
                 })
             ).map(d2Response => {
                 const dataSets = d2Response.objects.map((d2DataSet): DataSetList => {
-                    return {
+                    return DataSetList.create({
+                        canBeUpdated: d2DataSet.access.update,
                         id: d2DataSet.id,
                         name: d2DataSet.displayName,
                         lastUpdated: d2DataSet.lastUpdated,
@@ -65,7 +67,7 @@ export class DataSetD2Api {
                             data: this.buildPermission(d2DataSet.sharing.public, "data"),
                             metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
                         },
-                    };
+                    });
                 });
                 return { ...d2Response.pager, data: dataSets };
             });
@@ -223,6 +225,7 @@ export class DataSetD2Api {
         });
 
         return DataSet.create({
+            canBeUpdated: d2DataSet.access.update,
             periodDate: this.buildPeriodDateFromAttributes(d2DataSet, attributes),
             indicators: this.buildIndicatorsFromDataSetElements(d2DataSet),
             orgUnits: d2DataSet.organisationUnits
@@ -465,6 +468,7 @@ export const categoryComboFields = {
 } as const;
 
 export const dataSetFields = {
+    access: true,
     created: true,
     displayDescription: true,
     displayName: true,

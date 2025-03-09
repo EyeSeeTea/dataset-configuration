@@ -20,7 +20,7 @@ function objIsDataSet(project: ProjectColumns): boolean {
 }
 
 export const ProjectTable = React.memo(() => {
-    const { compositionRoot } = useAppContext();
+    const { compositionRoot, currentUser } = useAppContext();
     const snackbar = useSnackbar();
     const navigateTo = useNavigateTo();
     const [refreshTable, setRefreshTable] = React.useState(0);
@@ -44,6 +44,7 @@ export const ProjectTable = React.memo(() => {
                         onAction: setTableAction,
                         navigateTo,
                         isActive: projects => projects.every(project => objIsDataSet(project)),
+                        user: currentUser,
                     }),
                 ],
                 details: [
@@ -101,7 +102,7 @@ export const ProjectTable = React.memo(() => {
                 childrenKeys: ["dataSets"],
                 onActionButtonClick: goToCreateDataSet,
             };
-        }, [goToCreateDataSet, navigateTo]),
+        }, [goToCreateDataSet, navigateTo, currentUser]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);

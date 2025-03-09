@@ -1,5 +1,5 @@
 import React from "react";
-import { DataSet, DataSetAttrs, DataSetList } from "$/domain/entities/DataSet";
+import { DataSet, DataSetAttrs } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import {
     TableAction as DataTableAction,
@@ -21,12 +21,14 @@ import i18n from "$/utils/i18n";
 import { useNavigateTo } from "$/webapp/routes";
 import { parseSortField } from "$/utils/parse-sort-field";
 import { TableAction } from "$/webapp/components/dataset-table/DataSetActions";
+import { User } from "$/domain/entities/User";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 
 export function useTableConfig(props: TableConfigProps) {
     const { onAction, refreshTable } = props;
-    const { compositionRoot } = useAppContext();
+    const { compositionRoot, currentUser } = useAppContext();
     const navigateTo = useNavigateTo();
 
     const tableConfig = useObjectsTable<DataSetList>(
@@ -56,16 +58,18 @@ export function useTableConfig(props: TableConfigProps) {
                         getValue: dataSet => dataSet.lastUpdated,
                     },
                 ],
-                globalActions: [
-                    {
-                        name: "settings",
-                        text: i18n.t("Settings"),
-                        icon: <SettingsIcon />,
-                        onClick: () => {
-                            onAction({ ids: [], action: "app-settings" });
-                        },
-                    },
-                ],
+                globalActions: currentUser.isAdmin()
+                    ? [
+                          {
+                              name: "settings",
+                              text: i18n.t("Settings"),
+                              icon: <SettingsIcon />,
+                              onClick: () => {
+                                  onAction({ ids: [], action: "app-settings" });
+                              },
+                          },
+                      ]
+                    : [],
                 actions: [
                     {
                         name: "show_details",
@@ -76,13 +80,18 @@ export function useTableConfig(props: TableConfigProps) {
                             onAction({ ids: selectedIds, action: "details" });
                         },
                     },
-                    ...getCommonActions({ onAction, navigateTo, isActive: () => true }),
+                    ...getCommonActions({
+                        user: currentUser,
+                        onAction,
+                        navigateTo,
+                        isActive: () => true,
+                    }),
                 ],
                 initialSorting: { field: "name", order: "asc" },
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
             };
-        }, [onAction, navigateTo]),
+        }, [onAction, navigateTo, currentUser]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);
@@ -124,12 +133,13 @@ export type CommonActionsProps<T> = {
     isActive: (data: T[]) => boolean;
     onAction: (action: TableAction) => void;
     navigateTo: ReturnType<typeof useNavigateTo>;
+    user: User;
 };
 
 export function getCommonActions<T extends ReferenceObject>(
     props: CommonActionsProps<T>
 ): DataTableAction<T>[] {
-    const { onAction, navigateTo } = props;
+    const { onAction, navigateTo, user } = props;
     return [
         {
             name: "edit",
@@ -137,7 +147,9 @@ export function getCommonActions<T extends ReferenceObject>(
             icon: <EditIcon />,
             multiple: false,
             primary: true,
-            isActive: props.isActive,
+            isActive: records => {
+                return props.isActive(records) && canDataSetBeUpdated(records, user);
+            },
             onClick(selectedIds) {
                 const dataSetId = _(selectedIds).first();
                 if (!dataSetId) return;
@@ -149,7 +161,9 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Sharing Settings"),
             icon: <SharingIcon />,
             multiple: true,
-            isActive: props.isActive,
+            isActive: records => {
+                return props.isActive(records) && canDataSetBeUpdated(records, user);
+            },
             onClick(selectedIds) {
                 onAction({ ids: selectedIds, action: "sharing" });
             },
@@ -159,7 +173,9 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Assign to Organisation Units"),
             icon: <DomainIcon />,
             multiple: true,
-            isActive: props.isActive,
+            isActive: records => {
+                return props.isActive(records) && canDataSetBeUpdated(records, user);
+            },
             onClick: selectedIds => {
                 onAction({ ids: selectedIds, action: "orgUnits" });
             },
@@ -169,7 +185,9 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Set output/outcome period dates"),
             icon: <DateRangeIcon />,
             multiple: true,
-            isActive: props.isActive,
+            isActive: records => {
+                return props.isActive(records) && canDataSetBeUpdated(records, user);
+            },
             onClick: selectedIds => {
                 onAction({ ids: selectedIds, action: "set_period_dates" });
             },
@@ -179,14 +197,14 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Clone"),
             icon: <CopyIcon />,
             multiple: false,
-            isActive: props.isActive,
+            isActive: records => props.isActive(records) && user.access.canCreateDataSets,
         },
         {
             name: "delete",
             text: i18n.t("Delete"),
             icon: <DeleteIcon />,
             multiple: true,
-            isActive: props.isActive,
+            isActive: records => props.isActive(records) && user.access.canDeleteDataSets,
             onClick(selectedIds) {
                 onAction({ ids: selectedIds, action: "remove" });
             },
@@ -196,10 +214,18 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Logs"),
             icon: <ListIcon />,
             multiple: true,
-            isActive: props.isActive,
+            isActive: records => props.isActive(records) && user.isAdmin(),
             onClick(selectedIds) {
                 onAction({ ids: selectedIds, action: "logs" });
             },
         },
     ];
+}
+
+function canDataSetBeUpdated<T>(records: T[], user: User): boolean {
+    return records.every(dataSet => {
+        if (dataSet instanceof DataSetList) {
+            return dataSet.hasPermissionsToUpdate(user);
+        }
+    });
 }
