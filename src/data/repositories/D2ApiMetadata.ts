@@ -37,6 +37,9 @@ export const metadataCodes = {
     categoryCombination: {
         projectTargetActual: "GL_CATBOMBO_ProjectCCTarAct",
     },
+    userGroups: {
+        adminNotification: "GL_GlobalAdministrator",
+    },
 };
 
 const metadataFieldsApp = [
@@ -67,7 +70,7 @@ export class D2ApiConfig {
         return this.d2ApiAppSettings.getMetadataFromSettings().map(settings => {
             const { appSettings, metadata } = settings;
             const getOrThrowMetadata = (metadataKey: MetadataKeyType, value: Maybe<string>) =>
-                getOrThrow(metadata[metadataKey], value);
+                getOrThrow(metadata[metadataKey], value, metadataKey);
 
             const orgUnitLevel = getOrThrowMetadata(
                 "organisationUnitLevels",
@@ -143,7 +146,9 @@ export class D2ApiConfig {
                 periodLastYearEndDate: appSettings.periodLastYearEndDate,
                 periodLastYearUnits: appSettings.periodLastYearUnits,
                 userGroups: {
-                    adminNotification: getOrThrowMetadata("userGroups", appSettings.userGroupId),
+                    adminNotification: metadata.userGroups.find(
+                        userGroup => userGroup.name === metadataCodes.userGroups.adminNotification
+                    ),
                 },
             };
         });
@@ -154,29 +159,38 @@ export class D2ApiConfig {
         appSettings: AppSettings
     ): D2Config["attributes"] {
         return {
-            group: getOrThrow(attributes, appSettings.groupField),
-            project: getOrThrow(attributes, metadataCodes.attributes.project),
-            createdByApp: getOrThrow(attributes, appSettings.dataSetFilterField),
-            inputDates: getOrThrow(attributes, appSettings.inputDateField),
-            periodDates: getOrThrow(attributes, appSettings.periodDateField),
-            outcomeDates: getOrThrow(attributes, metadataCodes.attributes.outcomeDates),
-            outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates),
+            group: getOrThrow(attributes, appSettings.groupField, "attributes"),
+            project: getOrThrow(attributes, metadataCodes.attributes.project, "attributes"),
+            createdByApp: getOrThrow(attributes, appSettings.dataSetFilterField, "attributes"),
+            inputDates: getOrThrow(attributes, appSettings.inputDateField, "attributes"),
+            periodDates: getOrThrow(attributes, appSettings.periodDateField, "attributes"),
+            outcomeDates: getOrThrow(
+                attributes,
+                metadataCodes.attributes.outcomeDates,
+                "attributes"
+            ),
+            outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates, "attributes"),
         };
     }
 }
 
-function getOrThrow(modelData: D2NamedCodeRef[], value: Maybe<string>): D2NamedCodeRef {
+function getOrThrow(
+    modelData: D2NamedCodeRef[],
+    value: Maybe<string>,
+    metadataKey: MetadataKeyType
+): D2NamedCodeRef {
     const model = modelData.find(
         attribute => attribute.code === value || attribute.name === value || attribute.id === value
     );
-    if (!model) throw new Error(`Metadata object not found: code="${value}"`);
+    if (!model)
+        throw new Error(`Metadata object not found: id/name/code="${metadataKey}-${value}"`);
 
     return model;
 }
 
 export type D2Config = {
     userGroups: {
-        adminNotification: D2NamedCodeRef;
+        adminNotification: Maybe<D2NamedCodeRef>;
     };
     periodEndDateMonth: number;
     periodEndDateDay: number;

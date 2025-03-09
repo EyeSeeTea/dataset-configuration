@@ -117,10 +117,12 @@ export class SaveDataSetUseCase {
         body: string
     ) {
         const userGroupIds = userGroups.map(userGroup => userGroup.id);
+        const allRecipientsIds = [this.config.notificationUserGroup?.id].concat(userGroupIds);
+        const recipientsIds = _(allRecipientsIds).compact().value();
         return this.notificationRepository.send({
             title,
             body,
-            recipients: userGroupIds.concat([this.config.notificationUserGroup.id]),
+            recipients: userGroupIds.concat(recipientsIds),
         });
     }
 

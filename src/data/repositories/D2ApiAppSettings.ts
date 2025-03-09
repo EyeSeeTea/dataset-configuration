@@ -167,7 +167,7 @@ export class D2ApiAppSettings {
                     userGroups: {
                         fields: { id: true, name: true, code: true },
                         filter: {
-                            identifiable: { in: _([appSettings.userGroupId]).compact().value() },
+                            identifiable: { in: [metadataCodes.userGroups.adminNotification] },
                         },
                     },
                 })

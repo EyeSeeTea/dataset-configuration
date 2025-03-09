@@ -130,10 +130,7 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getUserGroups(): FutureData<UserGroup[]> {
         return apiToFuture(
-            this.api.models.userGroups.get({
-                fields: { id: true, name: true },
-                paging: false,
-            })
+            this.api.models.userGroups.get({ fields: { id: true, name: true }, paging: false })
         ).map(d2Response => {
             return d2Response.objects.map(d2UserGroup => ({
                 id: d2UserGroup.id,
