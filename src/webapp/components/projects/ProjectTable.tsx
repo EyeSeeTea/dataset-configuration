@@ -100,7 +100,9 @@ export const ProjectTable = React.memo(() => {
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
-                onActionButtonClick: goToCreateDataSet,
+                onActionButtonClick: currentUser.access.canCreateDataSets
+                    ? goToCreateDataSet
+                    : undefined,
             };
         }, [goToCreateDataSet, navigateTo, currentUser]),
         React.useCallback(
