@@ -329,8 +329,8 @@ export class DataSetD2Repository implements DataSetRepository {
     private buildCategoryCombinations(dataSets: DataSetToSave[]) {
         const allCategoryCombos = dataSets.flatMap(dataSet => {
             return this.buildCategoryCombinationsByDataElements(dataSet)
-                .filter(cc => !cc.existing)
-                .map(cc => cc.categoryCombo);
+                .filter(dataElementCombination => !dataElementCombination.existing)
+                .map(dataElementCombination => dataElementCombination.categoryCombo);
         });
         return _(allCategoryCombos)
             .uniqBy(cc => cc.id)
@@ -428,7 +428,7 @@ export class DataSetD2Repository implements DataSetRepository {
             indicatorId: id,
             existing: Boolean(existingCategoryOptionCombo?.id),
             categoryCombo: {
-                dataDimensionType: "DISAGGREGATION" as const,
+                dataDimensionType: "DISAGGREGATION",
                 publicAccess: "r-------",
                 id: existingCategoryOptionCombo?.id ?? getUid(categoryComboName),
                 name: categoryComboName,
