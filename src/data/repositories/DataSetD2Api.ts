@@ -317,14 +317,21 @@ export class DataSetD2Api {
     }
 
     buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
-        if (permissionType === "metadata") {
-            const { canRead, canWrite } = this.buildPermissionByType(permissions, permissionType);
-            return Permission.create({ read: canRead, write: canWrite });
-        } else if (permissionType === "data") {
-            const { canWrite, canRead } = this.buildPermissionByType(permissions, permissionType);
-            return Permission.create({ read: canRead, write: canWrite });
-        } else {
-            throw new Error("Invalid type");
+        switch (permissionType) {
+            case "metadata": {
+                const { canRead, canWrite } = this.buildPermissionByType(
+                    permissions,
+                    permissionType
+                );
+                return Permission.create({ read: canRead, write: canWrite });
+            }
+            case "data": {
+                const { canWrite, canRead } = this.buildPermissionByType(
+                    permissions,
+                    permissionType
+                );
+                return Permission.create({ read: canRead, write: canWrite });
+            }
         }
     }
 

@@ -1,5 +1,3 @@
-import "lodash.product";
-import { product } from "lodash";
 import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
@@ -156,7 +154,7 @@ export class DataSetD2Repository implements DataSetRepository {
                 categoriesIds.includes(category.id)
             );
             const categoryOptions = categories.map(category => category.options);
-            const optionsCombinations = product(...categoryOptions);
+            const optionsCombinations = _(categoryOptions).cartesian().value();
 
             return optionsCombinations.map(optionCombination => {
                 const categoryOptionsName = optionCombination
@@ -331,8 +329,8 @@ export class DataSetD2Repository implements DataSetRepository {
     private buildCategoryCombinations(dataSets: DataSetToSave[]) {
         const allCategoryCombos = dataSets.flatMap(dataSet => {
             return this.buildCategoryCombinationsByDataElements(dataSet)
-                .filter(cc => !cc.existing)
-                .map(cc => cc.categoryCombo);
+                .filter(dataElementCombination => !dataElementCombination.existing)
+                .map(dataElementCombination => dataElementCombination.categoryCombo);
         });
         return _(allCategoryCombos)
             .uniqBy(cc => cc.id)
@@ -430,7 +428,7 @@ export class DataSetD2Repository implements DataSetRepository {
             indicatorId: id,
             existing: Boolean(existingCategoryOptionCombo?.id),
             categoryCombo: {
-                dataDimensionType: "DISAGGREGATION" as const,
+                dataDimensionType: "DISAGGREGATION",
                 publicAccess: "r-------",
                 id: existingCategoryOptionCombo?.id ?? getUid(categoryComboName),
                 name: categoryComboName,
