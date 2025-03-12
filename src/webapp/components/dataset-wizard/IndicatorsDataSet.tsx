@@ -391,6 +391,8 @@ function useValidateIndicators(props: {
                     );
                     return Indicator.create({
                         ...indicatorInfo,
+                        disaggregation:
+                            updatedIndicator?.disaggregation || indicatorInfo.disaggregation,
                         categories: updatedIndicator?.categories || indicatorInfo.categories,
                         relatedDataElements:
                             updatedIndicator?.relatedDataElements ||

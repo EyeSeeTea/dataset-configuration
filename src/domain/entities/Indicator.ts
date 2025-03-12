@@ -37,43 +37,46 @@ export type IndicatorScope = "core" | "local" | "donor";
 
 export class Indicator extends Struct<IndicatorAttrs>() {
     get combinations() {
-        if (this.type === "outputs") {
-            return [
-                this.generateCombination(this.disaggregation, [
-                    {
-                        categories: this.categories,
-                        code: this.code,
-                        name: this.name,
-                        id: this.id,
-                        isComment: false,
-                        disaggregation: this.disaggregation,
-                        description: this.description,
-                        valueType: this.valueType,
-                    },
-                ]),
-            ];
-        } else {
-            const commentsDataElements = this.relatedDataElements.filter(
-                dataElement => dataElement.isComment
-            );
-            const commentCombination = commentsDataElements.map(dataElement => {
-                return this.generateCombination(dataElement.disaggregation, [dataElement]);
-            });
+        switch (this.type) {
+            case "outputs": {
+                return [
+                    this.generateCombination(this.disaggregation, [
+                        {
+                            categories: this.categories,
+                            code: this.code,
+                            name: this.name,
+                            id: this.id,
+                            isComment: false,
+                            disaggregation: this.disaggregation,
+                            description: this.description,
+                            valueType: this.valueType,
+                        },
+                    ]),
+                ];
+            }
+            case "outcomes": {
+                const commentsDataElements = this.relatedDataElements.filter(
+                    dataElement => dataElement.isComment
+                );
+                const commentCombination = commentsDataElements.map(dataElement => {
+                    return this.generateCombination(dataElement.disaggregation, [dataElement]);
+                });
 
-            // getting the first dataElement because all the no comment
-            // dataElements share the same disaggregation
-            const relatedDataElements = this.relatedDataElements.filter(
-                dataElement => !dataElement.isComment
-            );
-            const firstDataElement = relatedDataElements[0];
+                // getting the first dataElement because all the no comment
+                // dataElements share the same disaggregation
+                const relatedDataElements = this.relatedDataElements.filter(
+                    dataElement => !dataElement.isComment
+                );
+                const firstDataElement = relatedDataElements[0];
 
-            const firstCombination = firstDataElement
-                ? this.generateCombination(firstDataElement.disaggregation, relatedDataElements)
-                : undefined;
+                const firstCombination = firstDataElement
+                    ? this.generateCombination(firstDataElement.disaggregation, relatedDataElements)
+                    : undefined;
 
-            return _([...commentCombination, firstCombination])
-                .compact()
-                .value();
+                return _([...commentCombination, firstCombination])
+                    .compact()
+                    .value();
+            }
         }
     }
 

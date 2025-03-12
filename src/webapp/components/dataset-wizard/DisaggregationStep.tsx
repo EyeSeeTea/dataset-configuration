@@ -106,6 +106,9 @@ function updateIndicatorsDataElements(
         const dataElements = dataElementsByIndicator.filter(de => de.indicatorId === indicator.id);
         return Indicator.create({
             ...indicator,
+            disaggregation: indicator.type
+                ? _(dataElements).first()?.disaggregation
+                : indicator.disaggregation,
             categories:
                 indicator.type === "outcomes"
                     ? []

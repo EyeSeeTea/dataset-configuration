@@ -72,8 +72,9 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
     const orgUnitMessage =
         extraOrgUnits > 0 ? i18n.t("and {{number}} more.", { number: extraOrgUnits }) : "";
 
-    const coreCompetenciesNames = dataSet.indicators
+    const coreCompetenciesNames = _(dataSet.indicators)
         .map(indicator => indicator.coreCompetency?.name || "")
+        .uniq()
         .join(", ");
 
     const regionsCodes = dataSet.getRegionCodesFromAccess();
