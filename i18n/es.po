@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-03-04T20:10:08.873Z\n"
+"POT-Creation-Date: 2025-03-11T22:39:49.153Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -252,13 +252,7 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-msgid "None"
-msgstr ""
-
-msgid "Data Element"
-msgstr ""
-
-msgid "Global graying out (disable combinationsin all the dataSet)"
+msgid "Global graying out (disable combinations in all the dataSet)"
 msgstr ""
 
 msgid "Per indicator graying out"
@@ -344,6 +338,12 @@ msgstr "Proyecto"
 
 msgid "Organisation Units"
 msgstr "Unidades organizativas"
+
+msgid "Data Element"
+msgstr ""
+
+msgid "None"
+msgstr ""
 
 msgid "Setup"
 msgstr ""

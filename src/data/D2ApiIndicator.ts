@@ -92,6 +92,7 @@ export class D2ApiIndicator {
                 fields: {
                     id: true,
                     code: true,
+                    name: true,
                     displayName: true,
                     indicators: {
                         code: true,
@@ -119,7 +120,7 @@ export class D2ApiIndicator {
         config: D2Config
     ): Indicator[] {
         const competency = competencies.find(
-            c => c.name.toLowerCase() === indicatorGroup.displayName.toLowerCase()
+            c => c.name.toLowerCase() === indicatorGroup.name.toLowerCase()
         );
         if (!competency) return [];
 
@@ -270,7 +271,7 @@ export class D2ApiIndicator {
 
 type D2IndicatorGroup = {
     id: Id;
-    code: string;
+    name: string;
     displayName: string;
     indicators: Array<{
         displayDescription: string;

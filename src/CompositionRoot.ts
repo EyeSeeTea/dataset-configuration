@@ -33,7 +33,7 @@ import { GetIndicatorsUseCase } from "$/domain/usecases/GetIndicatorsUseCase";
 import { GetLogsUseCase } from "$/domain/usecases/GetLogsUseCase";
 import { GetOrgUnitsByIdsUseCase } from "$/domain/usecases/GetOrgUnitsByIdsUseCase";
 import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
-import { GetRelatedDataElementsUseCase } from "$/domain/usecases/GetRelatedDataElementsUseCase";
+import { GetRelatedIndicatorsUseCase } from "$/domain/usecases/GetRelatedIndicatorsUseCase";
 import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
 import { MigratePeriodDatesUseCase } from "$/domain/usecases/MigratePeriodDatesUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
@@ -127,7 +127,7 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
         },
         indicators: {
             get: new GetIndicatorsUseCase(repositories.indicatorRepository),
-            getRelated: new GetRelatedDataElementsUseCase(repositories.dataElementRepository),
+            getRelated: new GetRelatedIndicatorsUseCase(repositories.dataElementRepository),
         },
     };
 }

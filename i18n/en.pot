@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-04T20:10:08.873Z\n"
-"PO-Revision-Date: 2025-03-04T20:10:08.873Z\n"
+"POT-Creation-Date: 2025-03-11T22:39:49.153Z\n"
+"PO-Revision-Date: 2025-03-11T22:39:49.153Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -248,13 +248,7 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-msgid "None"
-msgstr ""
-
-msgid "Data Element"
-msgstr ""
-
-msgid "Global graying out (disable combinationsin all the dataSet)"
+msgid "Global graying out (disable combinations in all the dataSet)"
 msgstr ""
 
 msgid "Per indicator graying out"
@@ -339,6 +333,12 @@ msgid "Linked Project"
 msgstr ""
 
 msgid "Organisation Units"
+msgstr ""
+
+msgid "Data Element"
+msgstr ""
+
+msgid "None"
 msgstr ""
 
 msgid "Setup"
