@@ -65,3 +65,13 @@ tr:has(.MuiAlert-message) {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/* 
+  Workaround to change the background color for selected items in dropdowns
+  because d2-ui-components uses its own theme provider.
+  TODO: add a prop to make theme configurable in d2-ui-components
+  https://github.com/EyeSeeTea/d2-ui-components/blob/development/src/dropdown/GenericDropdown.tsx#L26C7-L26C24
+*/
+li.Mui-selected {
+    background-color: rgb(253 90 0 / 50%) !important;
+}
