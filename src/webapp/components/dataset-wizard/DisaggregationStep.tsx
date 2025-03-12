@@ -156,7 +156,7 @@ function DataElementItem(props: {
                 color="primary"
                 onClick={() => onClick(indicatorWithDataElement)}
             >
-                {i18n.t("Add disaggregate")}
+                {i18n.t("Edit disaggregate")}
             </Button>
         </div>
     );
