@@ -153,9 +153,12 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             .join(", ");
     }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedGroup, selectedTheme]);
 
-    const indicatorsPerCompetency = useGetSelectedIndicatorsByCompetency({
-        indicators: dataSet.indicators,
-    });
+    const indicatorsPerCompetency = useBuildTotalByKey(
+        dataSet.indicators,
+        indicator => indicator.coreCompetency.id
+    );
+
+    const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
 
     return (
         <form>
@@ -179,6 +182,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         theme={selectedTheme}
                         onClose={() => setShowFilterModal(false)}
                         indicatorsPerCompetency={indicatorsPerCompetency}
+                        indicatorsPerType={indicatorsPerType}
                     />
                 </FilterWrapper>
 
@@ -344,30 +348,6 @@ export const StatusIndicator = React.memo((props: { status: string }) => {
     );
 });
 
-export function useGetSelectedIndicatorsByCompetency(props: {
-    indicators: Indicator[];
-}): IndicatorPerCompetency[] {
-    const { indicators } = props;
-    return React.useMemo(() => {
-        return _(indicators)
-            .groupBy(c => c.coreCompetency.id)
-            .mapValues(([competencyId, indicators]) => {
-                return { id: competencyId, totalIndicators: indicators.length };
-            })
-            .values();
-    }, [indicators]);
-}
-
-const selectedFilterValues = ["selected", "non-selected"] as const;
-
-export type SelectedFilterValue = (typeof selectedFilterValues)[number];
-
-export type IndicatorPerCompetency = { id: Id; totalIndicators: number };
-
-const ToggleButtonStyled = styled(ToggleButton)`
-    backgroundcolor: none;
-    border: none;
-`;
 function useValidateIndicators(props: {
     indicators: Indicator[];
     onChange: (dataSet: DataSet) => void;
@@ -408,3 +388,26 @@ function useValidateIndicators(props: {
     );
     return validateIndicators;
 }
+
+function useBuildTotalByKey(
+    indicators: Indicator[],
+    getKey: (indicator: Indicator) => string
+): IndicatorPerItem[] {
+    return React.useMemo(() => {
+        return _(indicators)
+            .groupBy(getKey)
+            .mapValues(([key, group]) => ({ id: key, totalIndicators: group.length }))
+            .values();
+    }, [indicators, getKey]);
+}
+
+const selectedFilterValues = ["selected", "non-selected"] as const;
+
+export type SelectedFilterValue = (typeof selectedFilterValues)[number];
+
+export type IndicatorPerItem = { id: Id; totalIndicators: number };
+
+const ToggleButtonStyled = styled(ToggleButton)`
+    backgroundcolor: none;
+    border: none;
+`;

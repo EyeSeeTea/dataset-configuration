@@ -8,12 +8,13 @@ import i18n from "$/utils/i18n";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
-import { IndicatorPerCompetency } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
+import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
 export type FilterType = "scope" | "core" | "outputType" | "theme" | "group";
 
 export type FilterIndicatorsProps = {
-    indicatorsPerCompetency: IndicatorPerCompetency[];
+    indicatorsPerCompetency: IndicatorPerItem[];
+    indicatorsPerType: IndicatorPerItem[];
     coreCompetencies: CoreCompetency[];
     coreValues: string[];
     groups: string[];
@@ -34,6 +35,7 @@ export type FilterWrapperProps = {
     children: React.JSX.Element;
     showDrawer: boolean;
 };
+
 export type FilterMode = "default" | "drawer";
 
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
@@ -68,6 +70,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         types,
         selectedType,
         indicatorsPerCompetency,
+        indicatorsPerType,
     } = props;
 
     const coreCompetenciesItems = generateCoreCompetencies(
@@ -107,7 +110,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             />
 
             <ChipFilter
-                items={types.map(t => ({ text: t, value: t }))}
+                items={generateTypesItems(types, indicatorsPerType)}
                 label={i18n.t("Type")}
                 onChange={value => onFilterChange(value, "outputType")}
                 value={[selectedType]}
@@ -143,20 +146,27 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
 
 function generateCoreCompetencies(
     coreCompetencies: CoreCompetency[],
-    indicatorsPerCompetency: IndicatorPerCompetency[]
+    indicatorsPerCompetency: IndicatorPerItem[]
 ) {
-    return _(coreCompetencies)
-        .map(coreCompetency => {
-            const indicatorPerCompetency = indicatorsPerCompetency.find(
-                competency => competency.id === coreCompetency.id
-            );
-            const totalIndicators = indicatorPerCompetency
-                ? `(${indicatorPerCompetency.totalIndicators})`
-                : "";
-            const text = `${coreCompetency.name} ${totalIndicators}`;
-            return { text, value: coreCompetency.id };
-        })
-        .value();
+    return coreCompetencies.map(coreCompetency =>
+        createItem(coreCompetency.name, coreCompetency.id, indicatorsPerCompetency)
+    );
+}
+
+function generateTypesItems(types: string[], indicatorsPerCompetency: IndicatorPerItem[]) {
+    return types.map(type => createItem(type, type, indicatorsPerCompetency, type.toLowerCase()));
+}
+
+function createItem(
+    label: string,
+    value: string,
+    indicatorsPerCompetency: IndicatorPerItem[],
+    conditionValue?: string
+) {
+    const valueToCompare = conditionValue ?? value;
+    const indicator = indicatorsPerCompetency.find(item => item.id === valueToCompare);
+    const totalIndicators = indicator ? `(${indicator.totalIndicators})` : "";
+    return { text: `${label} ${totalIndicators}`, value };
 }
 
 export type ChipFilterProps = {
