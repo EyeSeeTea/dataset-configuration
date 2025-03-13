@@ -22,6 +22,7 @@ import { DataElement } from "$/domain/entities/DataElement";
 import { Category, defaultLabel } from "$/domain/entities/Category";
 import { Maybe } from "$/utils/ts-utils";
 import { at } from "$/data/entry-form/CustomForm";
+import { Id } from "$/domain/entities/Ref";
 
 type DisaggregationStepProps = {
     dataSet: DataSet;
@@ -35,11 +36,12 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
     const [search, setSearch] = React.useState("");
     const [selectedIndicator, setSelectedIndicator] = React.useState<IndicatorWithDataElement>();
 
-    const { indicatorsDataElements, setIndicatorsDataElements } = useGetRelatedDataElements({
-        dataSet,
-        settings,
-        onChange,
-    });
+    const { dataElementsOutcomes, indicatorsDataElements, setIndicatorsDataElements } =
+        useGetRelatedDataElements({
+            dataSet,
+            settings,
+            onChange,
+        });
 
     const { updateIndicators } = useUpdateIndicators({
         dataSet,
@@ -48,6 +50,8 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
         selectedIndicator,
         setIndicatorsDataElements,
         setSelectedIndicator,
+        settings,
+        dataElementsOutcomes,
     });
 
     const filteredIndicators = Indicator.filterIndicatorDataElements(
@@ -72,6 +76,8 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                         key={`${indicator.id}-${ids}`}
                         indicatorWithDataElement={indicatorWithDataElement}
                         onClick={openDisaggregationModal}
+                        indicators={settings.indicators}
+                        dataElementsOutcomes={dataElementsOutcomes}
                     />
                 );
             })}
@@ -83,6 +89,7 @@ export const DisaggregationStep = React.memo((props: DisaggregationStepProps) =>
                     dataSet={dataSet}
                     onClose={() => setSelectedIndicator(undefined)}
                     onSave={updateIndicators}
+                    originalIndicators={settings.indicators}
                 />
             )}
         </div>
@@ -121,15 +128,20 @@ function updateIndicatorsDataElements(
 function DataElementItem(props: {
     indicatorWithDataElement: IndicatorWithDataElement;
     onClick: (indicatorWithDataElement: IndicatorWithDataElement) => void;
+    indicators: Indicator[];
+    dataElementsOutcomes: DataElement[];
 }) {
-    const { indicatorWithDataElement, onClick } = props;
+    const { dataElementsOutcomes, indicatorWithDataElement, onClick, indicators } = props;
 
-    const { dataElements } = indicatorWithDataElement;
+    const { indicator, dataElements } = indicatorWithDataElement;
 
-    const disaggregationName = _(dataElements)
-        .map(dataElement => dataElement.disaggregation?.name)
-        .uniq()
-        .join("/");
+    const originalDataElement = dataElementsOutcomes.filter(deo => deo.id === dataElements[0]?.id);
+
+    const originalInfo = indicators.find(ind => ind.id === indicator.id);
+    const disaggregation =
+        originalInfo?.type === "outputs"
+            ? originalInfo.disaggregation
+            : originalDataElement[0]?.disaggregation;
 
     const categoriesNames = dataElements
         ? _(dataElements)
@@ -145,10 +157,10 @@ function DataElementItem(props: {
         <div className="indicator-row">
             <div>
                 {dataElements.map(dataElement => {
-                    return <p key={dataElement.id}>{dataElement.name}</p>;
+                    return <p key={dataElement.id}> {dataElement.name}</p>;
                 })}
                 <p>
-                    {disaggregationName} <strong>{categoriesNames}</strong>
+                    {disaggregation?.name} <strong>{categoriesNames}</strong>
                 </p>
             </div>
             <Button
@@ -170,6 +182,7 @@ function useGetRelatedDataElements(props: {
     const { dataSet, onChange, settings } = props;
     const { compositionRoot } = useAppContext();
     const [refresh, setRefresh] = React.useState(0);
+    const [dataElementsOutcomes, setDataElements] = React.useState<DataElement[]>([]);
     const [indicatorsDataElements, setIndicatorsDataElements] = React.useState<
         IndicatorWithDataElement[]
     >([]);
@@ -193,7 +206,19 @@ function useGetRelatedDataElements(props: {
         onChange,
     ]);
 
-    return { indicatorsDataElements, setIndicatorsDataElements };
+    React.useMemo(() => {
+        const dataElementsIds = dataSet.indicators.flatMap(indicator =>
+            indicator.relatedDataElements.map(de => de.id)
+        );
+
+        return compositionRoot.dataElements.getByIds
+            .execute({ dataElementsIds })
+            .run(dataElements => {
+                setDataElements(dataElements);
+            }, console.error);
+    }, [compositionRoot.dataElements.getByIds, dataSet]);
+
+    return { dataElementsOutcomes, indicatorsDataElements, setIndicatorsDataElements };
 }
 
 function useUpdateIndicators(props: {
@@ -203,6 +228,8 @@ function useUpdateIndicators(props: {
     setSelectedIndicator: React.Dispatch<React.SetStateAction<Maybe<IndicatorWithDataElement>>>;
     onChange: (dataSet: DataSet) => void;
     dataSet: DataSet;
+    settings: DataSetSettings;
+    dataElementsOutcomes: DataElement[];
 }) {
     const { config } = useAppContext();
     const {
@@ -212,36 +239,40 @@ function useUpdateIndicators(props: {
         onChange,
         setIndicatorsDataElements,
         setSelectedIndicator,
+        settings,
+        dataElementsOutcomes,
     } = props;
 
     const updateIndicators = (params: { categoriesIds: string[]; mode: AddDisaggregateMode }) => {
         if (!selectedIndicator) return;
         const { categoriesIds, mode } = params;
 
-        const categories = CategoryCombination.buildUniqueCategories(
-            config.categoryCombinations,
-            selectedIndicator
-        );
+        const categories = CategoryCombination.buildUniqueCategories(config.categoryCombinations);
 
         const selectedCategories = categories.filter(category =>
             categoriesIds.includes(category.id)
         );
 
+        const indicatorIdsByMode = getIndicatorsIdByMode(
+            indicatorsDataElements,
+            mode,
+            selectedIndicator
+        );
+
         const updatedIndicator = indicatorsDataElements.map(
             (indicatorDataElement): IndicatorWithDataElement => {
                 const { indicator, originalDisaggregation, dataElements } = indicatorDataElement;
+                const fullIds = joinIndicatorDataElementsId(indicatorDataElement);
+                if (!indicatorIdsByMode.includes(fullIds)) return indicatorDataElement;
 
-                const currentFullId = [
-                    indicator.id,
-                    ...dataElements.map(dataElement => dataElement.id),
-                ].join(".");
-                const selectedFullId = [
-                    selectedIndicator.indicator.id,
-                    ...selectedIndicator.dataElements.map(dataElement => dataElement.id),
-                ].join(".");
+                const initialData =
+                    indicator.type === "outputs"
+                        ? settings.indicators.filter(x => x.id === indicator.id)[0]?.disaggregation
+                        : dataElementsOutcomes.filter(de => de.id === dataElements[0]?.id)[0]
+                              ?.disaggregation;
 
                 const newDisaggregation = getDisaggregationForCategories(
-                    originalDisaggregation,
+                    initialData,
                     config.categoryCombinations,
                     selectedCategories
                 );
@@ -261,6 +292,7 @@ function useUpdateIndicators(props: {
                               })
                             : [],
                 });
+
                 const newDataElements = dataElements.map(dataElement => {
                     return {
                         ...dataElement,
@@ -269,24 +301,11 @@ function useUpdateIndicators(props: {
                     };
                 });
 
-                const record: IndicatorWithDataElement = {
+                return {
                     indicator: newIndicator,
                     originalDisaggregation,
                     dataElements: newDataElements,
                 };
-
-                if (mode === "indicator" && currentFullId === selectedFullId) {
-                    return record;
-                } else if (
-                    mode === "competency" &&
-                    indicator.coreCompetency.id === selectedIndicator.indicator.coreCompetency.id
-                ) {
-                    return record;
-                } else if (mode === "all") {
-                    return record;
-                } else {
-                    return { indicator, originalDisaggregation, dataElements };
-                }
             }
         );
 
@@ -296,6 +315,49 @@ function useUpdateIndicators(props: {
     };
 
     return { updateIndicators };
+}
+
+function getIndicatorsIdByMode(
+    indicators: IndicatorWithDataElement[],
+    mode: AddDisaggregateMode,
+    selectedIndicator: IndicatorWithDataElement
+): Id[] {
+    const generateFullIds = (indicators: IndicatorWithDataElement[]) =>
+        indicators.map(indicator => joinIndicatorDataElementsId(indicator));
+
+    switch (mode) {
+        case "indicator":
+            return generateFullIds(
+                indicators.filter(
+                    indicator =>
+                        joinIndicatorDataElementsId(indicator) ===
+                        joinIndicatorDataElementsId(selectedIndicator)
+                )
+            );
+        case "competency": {
+            return generateFullIds(
+                indicators.filter(
+                    indicator =>
+                        indicator.indicator.coreCompetency.id ===
+                        selectedIndicator.indicator.coreCompetency.id
+                )
+            );
+        }
+        case "individuals":
+            return generateFullIds(
+                indicators.filter(indicator => indicator.indicator.measure === "individuals")
+            );
+        case "households":
+            return generateFullIds(
+                indicators.filter(indicator => indicator.indicator.measure === "households")
+            );
+        case "all":
+            return generateFullIds(indicators);
+    }
+}
+
+function joinIndicatorDataElementsId(indicator: IndicatorWithDataElement): string {
+    return [indicator.indicator.id, ...indicator.dataElements.map(de => de.id)].join(".");
 }
 
 function getDisaggregationForCategories(

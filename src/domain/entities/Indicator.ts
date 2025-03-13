@@ -22,6 +22,7 @@ export type IndicatorAttrs = {
     theme: string;
     status: string;
     type: "outputs" | "outcomes";
+    measure: Maybe<IndicatorMeasure>;
     scope: IndicatorScope;
     group: string;
     disaggregation: Maybe<DisaggregationAttrs>;
@@ -33,7 +34,8 @@ export type IndicatorAttrs = {
     valueType: string;
 };
 
-export type IndicatorScope = "core" | "local" | "donor";
+export type IndicatorScope = "global" | "local" | "donor";
+export type IndicatorMeasure = "individuals" | "households";
 
 export class Indicator extends Struct<IndicatorAttrs>() {
     get combinations() {

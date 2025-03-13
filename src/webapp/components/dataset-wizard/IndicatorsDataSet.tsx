@@ -38,14 +38,14 @@ export type IndicatorsColumns = {
     disaggregation: string;
 };
 
-const scopes = ["Core", "Donor", "Local"];
+const scopes = ["Global", "Donor", "Local"];
 const types = ["Outputs", "Outcomes"];
 
 export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const { dataSet, dataSetSettings, onChange } = props;
     const { coreCompetencies, indicators } = dataSetSettings;
     const [showFilterModal, setShowFilterModal] = React.useState(false);
-    const [scope, setScope] = React.useState("Core");
+    const [scope, setScope] = React.useState("Global");
     const [selectedCompetencies, setCore] = React.useState<string[]>(
         _(dataSet.indicators)
             .map(indicator => indicator.coreCompetency.id)
@@ -123,7 +123,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             case "scope":
                 setScope(singleItemValue);
                 break;
-            case "core":
+            case "coreCompetency":
                 setCore(value.map(v => v.value));
                 break;
             case "outputType":

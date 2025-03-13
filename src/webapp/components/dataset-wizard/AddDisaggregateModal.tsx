@@ -14,10 +14,10 @@ import {
 import { DataSet } from "$/domain/entities/DataSet";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
 import i18n from "$/utils/i18n";
-import { IndicatorWithDataElement } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorWithDataElement } from "$/domain/entities/Indicator";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Id } from "$/domain/entities/Ref";
-import { Maybe, UnionFromValues } from "$/utils/ts-utils";
+import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import IconButton from "@material-ui/core/IconButton";
 import CloseIcon from "@material-ui/icons/CloseRounded";
@@ -27,14 +27,18 @@ type AddDisaggregateModalProps = {
     combinations: CategoryCombination[];
     dataSet: DataSet;
     indicator: IndicatorWithDataElement;
+    originalIndicators: Indicator[];
     onClose: () => void;
     onSave: (response: { categoriesIds: Id[]; mode: AddDisaggregateMode }) => void;
 };
 
+function getInitialIndicatorData(id: Id, indicators: Indicator[]): Maybe<Indicator> {
+    return indicators.find(indicator => indicator.id === id);
+}
+
 function getSelectedCategoriesByIndicator(indicator: IndicatorWithDataElement): Id[] {
     const firstDataElement = indicator.dataElements[0];
-    if (!firstDataElement) return [];
-    return _(firstDataElement.disaggregation?.categories ?? [])
+    return _(firstDataElement?.categories ?? [])
         .map(category => category.id)
         .uniq()
         .sort()
@@ -42,7 +46,11 @@ function getSelectedCategoriesByIndicator(indicator: IndicatorWithDataElement): 
 }
 
 export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps) => {
-    const { combinations, indicator, onClose, onSave } = props;
+    const { combinations, indicator, onClose, originalIndicators, onSave } = props;
+    const initialIndicatorData = getInitialIndicatorData(
+        indicator.indicator.id,
+        originalIndicators
+    );
     const [showButton, setShowButton] = React.useState(false);
     const [categoriesIds, setCategoriesIds] = React.useState<Id[]>(
         getSelectedCategoriesByIndicator(indicator)
@@ -51,18 +59,19 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     const [mode, setMode] = React.useState<AddDisaggregateMode>("indicator");
 
     const updateMode = (value: Maybe<string>) => {
-        const mode = disaggregationModes.find(mode => mode === value);
-        setMode(mode || "indicator");
+        const mode = disaggregationModes.find(mode => mode.value === value);
+        setMode(mode?.value || "indicator");
     };
 
-    const categories = CategoryCombination.buildUniqueCategories(combinations, indicator).map(
-        category => ({
-            text: category.name,
-            value: category.id,
-        })
-    );
+    const categories = CategoryCombination.excludeCombinationFromIndicator(
+        combinations,
+        initialIndicatorData?.disaggregation
+    ).map(category => ({
+        text: category.name,
+        value: category.id,
+    }));
 
-    const modes = disaggregationModes.map(mode => ({ text: mode, value: mode }));
+    const modes = disaggregationModes.map(mode => ({ text: mode.text, value: mode.value }));
 
     const onUpdateCategoriesIds = (categoriesIds: Id[]) => {
         const selectedCategories = categories.filter(category =>
@@ -91,7 +100,7 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
                 <div className="dropdown-disaggregates">
                     <Typography>
                         {i18n.t("Current Disaggregation")}:{" "}
-                        <strong>{indicator.originalDisaggregation?.name}</strong>
+                        <strong>{initialIndicatorData?.disaggregation?.name ?? ""}</strong>
                     </Typography>
 
                     <FormControl>
@@ -144,8 +153,30 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     );
 });
 
-const disaggregationModes = ["indicator", "competency", "all"];
-export type AddDisaggregateMode = UnionFromValues<typeof disaggregationModes>;
+const disaggregationModes = [
+    {
+        value: "indicator",
+        text: "Indicator",
+    },
+    {
+        value: "competency",
+        text: "Competency",
+    },
+    {
+        value: "all",
+        text: "All",
+    },
+    {
+        value: "individuals",
+        text: "All individuals in the data set",
+    },
+    {
+        value: "households",
+        text: "All HHS in the data set",
+    },
+] as const;
+
+export type AddDisaggregateMode = (typeof disaggregationModes)[number]["value"];
 
 const StickyCloseButton = styled.div`
     position: sticky;

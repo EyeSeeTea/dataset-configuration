@@ -26,6 +26,7 @@ import { OrgUnitRepository } from "$/domain/repositories/OrgUnitRepository";
 import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
 import { GetCombinationsByIdsUseCase } from "$/domain/usecases/GetCombinationsByIdsUseCase";
+import { GetDataElementsByIdsUseCase } from "$/domain/usecases/GetDataElementsByIdsUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -67,6 +68,9 @@ type Repositories = {
 
 function getCompositionRoot(repositories: Repositories, config: Config) {
     return {
+        dataElements: {
+            getByIds: new GetDataElementsByIdsUseCase(repositories.dataElementRepository),
+        },
         combination: {
             getByIds: new GetCombinationsByIdsUseCase(repositories.categoryComboRepository),
         },

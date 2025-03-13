@@ -10,7 +10,7 @@ import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
 import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
-export type FilterType = "scope" | "core" | "outputType" | "theme" | "group";
+export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "group";
 
 export type FilterIndicatorsProps = {
     indicatorsPerCompetency: IndicatorPerItem[];
@@ -104,7 +104,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             <ChipFilter
                 items={coreCompetenciesItems}
                 label={i18n.t("Core competencies")}
-                onChange={value => onFilterChange(value, "core")}
+                onChange={value => onFilterChange(value, "coreCompetency")}
                 value={coreValue}
                 mode="multiple"
             />
