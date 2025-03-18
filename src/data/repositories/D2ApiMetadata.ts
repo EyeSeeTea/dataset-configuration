@@ -140,15 +140,9 @@ export class D2ApiConfig {
     }
 
     private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
-        return {
-            group: getOrThrow(attributes, metadataCodes.attributes.group),
-            project: getOrThrow(attributes, metadataCodes.attributes.project),
-            createdByApp: getOrThrow(attributes, metadataCodes.attributes.createdByApp),
-            inputDates: getOrThrow(attributes, metadataCodes.attributes.inputDates),
-            periodDates: getOrThrow(attributes, metadataCodes.attributes.periodDates),
-            outcomeDates: getOrThrow(attributes, metadataCodes.attributes.outcomeDates),
-            outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates),
-        };
+        return rec(metadataCodes.attributes)
+            .mapValues(([_key, code]) => getOrThrow(attributes, code))
+            .value();
     }
 }
 

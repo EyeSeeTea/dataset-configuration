@@ -8,10 +8,12 @@ import { PeriodDate } from "$/domain/entities/PeriodDate";
 import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
 import _ from "$/domain/entities/generic/Collection";
-import { chunkRequest, getErrorFromResponse } from "$/data/utils";
+import { chunkRequest, getStatsFromD2Response } from "$/data/utils";
 import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
 import { Stats } from "$/domain/entities/Stats";
 import { convertAttributeValueToDate } from "$/data/utils";
+import { D2DataSetOwner } from "$/data/repositories/DataSetD2Repository";
+import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
 export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepository {
     private d2ApiConfig: D2ApiConfig;
@@ -30,58 +32,63 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
         if (dataSetPeriodDates.length === 0) return Future.success([]);
         const allIds = dataSetPeriodDates.map(dataSet => dataSet.id);
         return this.d2ApiConfig.get().flatMap(config => {
-            const $requests = chunkRequest<Stats>(
-                allIds,
-                dataSetIds => {
-                    return apiToFuture(
-                        this.api.models.dataSets.get({
-                            fields: { $owner: true },
-                            filter: { id: { in: dataSetIds } },
-                            paging: false,
-                        })
-                    ).flatMap(d2Response => {
-                        const dataSetsToSave = dataSetIds.map(dataSetId => {
-                            const existingDataSet = d2Response.objects.find(
-                                ds => ds.id === dataSetId
-                            );
-                            const dataSet = dataSetPeriodDates.find(
-                                dataSet => dataSet.id === dataSetId
-                            );
-                            if (!dataSet) {
-                                throw Error(`Cannot find dataSet: ${dataSetId}`);
-                            }
+            const $requests = this.getAndSaveDataSets(allIds, dataSetPeriodDates, config);
+            return $requests.map(stats => [Stats.combine(stats)]);
+        });
+    }
 
-                            return {
-                                ...(existingDataSet ?? {}),
-                                id: dataSet.id,
-                                attributeValues: this.buildD2Attributes(
-                                    existingDataSet?.attributeValues,
-                                    dataSet,
-                                    config.attributes
-                                ),
-                            };
-                        });
-                        return apiToFuture(
-                            this.api.metadata.post({ dataSets: dataSetsToSave })
-                        ).map(response => {
-                            const errorMessage = getErrorFromResponse(response);
-                            const stats = Stats.create({
-                                created: response.stats.created,
-                                updated: response.stats.updated,
-                                deleted: response.stats.deleted,
-                                ignored: response.stats.ignored,
-                                total: response.stats.total,
-                                errorMessage: errorMessage,
-                            });
-                            return [stats];
-                        });
-                    });
-                },
-                { chunkSize: 100 }
-            );
-            return $requests.map(stats => {
-                return [Stats.combine(stats)];
-            });
+    private getAndSaveDataSets(
+        allIds: string[],
+        dataSetPeriodDates: DataSetPeriodDate[],
+        config: D2Config
+    ): FutureData<Stats[]> {
+        return chunkRequest<Stats>(
+            allIds,
+            dataSetIds => {
+                return apiToFuture(
+                    this.api.models.dataSets.get({
+                        fields: { $owner: true },
+                        filter: { id: { in: dataSetIds } },
+                        paging: false,
+                    })
+                ).flatMap(d2Response => {
+                    return this.saveDataSets(
+                        dataSetIds,
+                        dataSetPeriodDates,
+                        d2Response.objects,
+                        config
+                    );
+                });
+            },
+            { chunkSize: 100 }
+        );
+    }
+
+    private saveDataSets(
+        dataSetIds: Id[],
+        dataSetPeriodDates: DataSetPeriodDate[],
+        d2DataSets: D2DataSetOwner[],
+        config: D2Config
+    ): FutureData<Stats[]> {
+        const dataSetsToSave = dataSetIds.map(dataSetId => {
+            const existingDataSet = d2DataSets.find(ds => ds.id === dataSetId);
+            const dataSet = dataSetPeriodDates.find(dataSet => dataSet.id === dataSetId);
+            if (!dataSet) {
+                throw Error(`Cannot find dataSet: ${dataSetId}`);
+            }
+
+            return {
+                ...(existingDataSet ?? {}),
+                id: dataSet.id,
+                attributeValues: this.buildD2Attributes(
+                    existingDataSet?.attributeValues,
+                    dataSet,
+                    config.attributes
+                ),
+            };
+        });
+        return apiToFuture(this.api.metadata.post({ dataSets: dataSetsToSave })).map(response => {
+            return [getStatsFromD2Response(response)];
         });
     }
 
@@ -127,24 +134,15 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
     ): FutureData<DataSetPeriodDate[]> {
         return this.getDataSets(initialPage, config).flatMap(response => {
             const entities = response.objects.map(d2Object => {
+                const build = (dateType: keyof D2Config["attributes"]) =>
+                    this.buildPeriodDateFromAttributes(d2Object, config.attributes, dateType);
+
                 return {
                     id: d2Object.id,
                     name: d2Object.name,
-                    outcomeDate: this.buildPeriodDateFromAttributes(
-                        d2Object,
-                        config.attributes,
-                        "outcomeDates"
-                    ),
-                    outputDate: this.buildPeriodDateFromAttributes(
-                        d2Object,
-                        config.attributes,
-                        "outputDates"
-                    ),
-                    periodDate: this.buildPeriodDateFromAttributes(
-                        d2Object,
-                        config.attributes,
-                        "periodDates"
-                    ),
+                    outcomeDate: build("outcomeDates"),
+                    outputDate: build("outputDates"),
+                    periodDate: build("periodDates"),
                 };
             });
             const newDataSets = [...dataSets, ...entities];
@@ -165,7 +163,6 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
                     attributeValues: { attribute: { id: true }, value: true },
                 },
                 filter: {
-                    // id: { in: ["S8Z1Ed9KXf2", "bUagyhGy9rA", "u7LxjTyGV54"] },
                     "attributeValues.attribute.id": { eq: config.attributes.inputDates.id },
                 },
                 page: page,
@@ -186,30 +183,13 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
             attribute => attribute.attribute.id === attributes[propertyName].id
         );
 
-        const [startDate, endDate] = inputDate?.value.split("-") ?? ["", ""];
+        const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
         return PeriodDate.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
-            periods: periodDate ? this.parsePeriodDateAttribute(periodDate?.value) : [],
+            periods: periodDate ? parsePeriodDateAttribute(periodDate?.value) : [],
         });
-    }
-
-    private parsePeriodDateAttribute(periodDate: Maybe<string>): PeriodDate["periods"] {
-        const splitPeriodsDates = periodDate?.split(",") ?? [];
-        return _(splitPeriodsDates)
-            .compactMap(period => {
-                const [year, dates] = period.split("=");
-                if (!year || !dates) return undefined;
-                const [startDate, endDate] = dates.split("-") ?? ["", ""];
-                if (!startDate || !endDate) return undefined;
-                return {
-                    year: Number(year),
-                    startDate: convertAttributeValueToDate(startDate),
-                    endDate: convertAttributeValueToDate(endDate),
-                };
-            })
-            .value();
     }
 }
 

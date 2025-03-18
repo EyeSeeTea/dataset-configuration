@@ -42,8 +42,8 @@ export class PeriodDate extends Struct<PeriodDateAttrs>() {
         return Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index);
     }
 
-    setDates(date: string, fieldName: "startDate" | "endDate"): PeriodDate {
-        return this._update({ [fieldName]: date });
+    setDates<K extends keyof PeriodDate>(value: PeriodDate[K], fieldName: K): PeriodDate {
+        return this._update({ [fieldName]: value });
     }
 
     updatedPeriods(periods: PeriodDetailsAttrs[]): PeriodDate {

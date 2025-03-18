@@ -2,8 +2,6 @@ import { command, run, string, option } from "cmd-ts";
 import path from "path";
 import { D2Api } from "$/types/d2-api";
 import { getWebappCompositionRoot } from "$/CompositionRoot";
-// import { DataSet } from "$/domain/entities/DataSet";
-// import { writeFileSync } from "fs";
 import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
 
 function main() {
@@ -40,6 +38,7 @@ function main() {
                 },
                 error => {
                     console.error(error);
+                    process.exit(1);
                 }
             );
         },

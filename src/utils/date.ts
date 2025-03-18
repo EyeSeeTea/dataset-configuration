@@ -32,7 +32,7 @@ export function addToDate(
             newDate.setDate(newDate.getDate() + unitValue);
             break;
         default:
-            throw new Error("Unidad no válida");
+            throw new Error("Invalid Date Unit");
     }
 
     return newDate.toISOString();

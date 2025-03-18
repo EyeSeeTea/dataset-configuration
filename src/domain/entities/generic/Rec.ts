@@ -56,6 +56,17 @@ export class Rec<T extends BaseObj> {
         const merged = { ...this.obj, ...rec2.obj } as Merge<T, T2>;
         return new Rec(merged);
     }
+
+    mapValues<T2>(
+        mapper: ([key, value]: [keyof T, T[keyof T]]) => T2
+    ): Rec<{ [K in keyof T]: T2 }> {
+        const pairs = Object.entries(this.obj);
+        const pairsMapped = pairs.map(([key, value]) => {
+            return [key, mapper([key as keyof T, value as T[keyof T]])];
+        });
+        const objMapped = Object.fromEntries(pairsMapped) as { [K in keyof T]: T2 };
+        return new Rec(objMapped);
+    }
 }
 
 export default function _r<T extends BaseObj>(obj: T): Rec<T> {

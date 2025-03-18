@@ -27,26 +27,20 @@ export type LogAction =
 export type LogStatus = "success" | "failed";
 export type PartialLog = Pick<Log, "action" | "status">;
 
+const ACTION_DESCRIPTIONS: Record<LogAction, string> = {
+    sharing: i18n.t("change sharing settings"),
+    orgunits: i18n.t("change organisation units"),
+    delete: i18n.t("delete"),
+    edit: i18n.t("edit dataset"),
+    create: i18n.t("create new dataset"),
+    clone: i18n.t("clone dataset"),
+    period_dates: i18n.t("change period dates"),
+    unknown: "",
+};
+
 export class Log extends Struct<LogsAttrs>() {
     get actionDescription(): string {
-        switch (this.action) {
-            case "sharing":
-                return i18n.t("change sharing settings");
-            case "orgunits":
-                return i18n.t("change organisation units");
-            case "delete":
-                return i18n.t("delete");
-            case "edit":
-                return i18n.t("edit dataset");
-            case "create":
-                return i18n.t("create new dataset");
-            case "clone":
-                return i18n.t("clone dataset");
-            case "period_dates":
-                return i18n.t("change period dates");
-            default:
-                return i18n.t("unknown action");
-        }
+        return ACTION_DESCRIPTIONS[this.action] || i18n.t("unknown action");
     }
 
     static buildLogsWithDataSetDetails(dataSets: DataSet[], logs: Log[]): Log[] {
@@ -62,9 +56,7 @@ export class Log extends Struct<LogsAttrs>() {
 
     static generateLogFromDataSets(dataSets: Log["dataSets"], user: User, log: PartialLog): Log {
         return Log.create({
-            dataSets: dataSets.map(dataSet => {
-                return { id: dataSet.id, name: dataSet.name };
-            }),
+            dataSets: dataSets,
             date: new Date().toISOString(),
             type: "dataSets",
             user: { id: user.id, name: user.name, username: user.username },

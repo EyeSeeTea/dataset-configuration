@@ -602,7 +602,7 @@ const indicatorTypeLabel: Record<IndicatorAttrs["type"], string> = {
 };
 
 const ownerFields = { $owner: true };
-type D2DataSetOwner = MetadataPick<{
+export type D2DataSetOwner = MetadataPick<{
     dataSets: { fields: typeof ownerFields };
 }>["dataSets"][number];
 
