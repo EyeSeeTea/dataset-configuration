@@ -6,6 +6,7 @@ import {
     CoreCompetency,
     DataSet,
     DataSetList,
+    DisabledField,
     OrgUnit,
 } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
@@ -20,7 +21,7 @@ import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Pager } from "@eyeseetea/d2-api/api";
 import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, indicatorTypes } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
@@ -213,8 +214,12 @@ export class DataSetD2Api {
         const disabledFields = d2DataSet.sections.flatMap(section => {
             const degCode = this.extractCompetencyCode(section.id, section.code);
             const coreCompetency = coreCompetencies.find(cc => cc.code === degCode);
-            return section.greyedFields.map((greyField): DataSet["disabledFields"][number] => {
+            const [_, type] = this.getSectionNameAndType(section.name);
+            return section.greyedFields.map((greyField): DisabledField => {
+                const indicatorType = indicatorTypes.find(it => it === type);
+                if (!indicatorType) throw new Error(`Invalid indicator type: ${type}`);
                 return {
+                    type: indicatorType,
                     competencyId: coreCompetency?.id ?? "",
                     dataElementId: greyField.dataElement.id,
                     optionComboId: greyField.categoryOptionCombo.id,
@@ -440,7 +445,15 @@ export class DataSetD2Api {
                                           categories: convertToCategories(
                                               dataElement.categoryCombo.categories
                                           ),
-                                          optionsCombos: [],
+                                          optionsCombos:
+                                              dataElement.categoryCombo.categoryOptionCombos.map(
+                                                  optionCombo => ({
+                                                      id: optionCombo.id,
+                                                      name: optionCombo.displayName,
+                                                      categoryCombo: { id: "" },
+                                                      options: [],
+                                                  })
+                                              ),
                                       }
                                     : {
                                           id: dataElement.dataElement.categoryCombo.id,
@@ -448,7 +461,15 @@ export class DataSetD2Api {
                                           categories: convertToCategories(
                                               dataElement.dataElement.categoryCombo.categories
                                           ),
-                                          optionsCombos: [],
+                                          optionsCombos:
+                                              dataElement.dataElement.categoryCombo.categoryOptionCombos.map(
+                                                  optionCombo => ({
+                                                      id: optionCombo.id,
+                                                      name: optionCombo.displayName,
+                                                      categoryCombo: { id: "" },
+                                                      options: [],
+                                                  })
+                                              ),
                                       },
                                 categories: [],
                             };
@@ -456,6 +477,13 @@ export class DataSetD2Api {
                 });
             })
             .value();
+    }
+
+    getSectionNameAndType(sectionName: string) {
+        const lastSpaceIndex = sectionName.lastIndexOf(" ");
+        const name = sectionName.slice(0, lastSpaceIndex);
+        const type = sectionName.slice(lastSpaceIndex + 1).toLowerCase();
+        return [name, type];
     }
 }
 
@@ -484,6 +512,7 @@ export const dataSetFields = {
     displayShortName: true,
     sections: {
         id: true,
+        name: true,
         displayName: true,
         code: true,
         greyedFields: {

@@ -38,6 +38,7 @@ import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
 import { GetAppSettingsDataUseCase } from "$/domain/usecases/GetAppSettingsDataUseCase";
 import { GetAppSettingsUseCase } from "$/domain/usecases/GetAppSettingsUseCase";
 import { GetCombinationsByIdsUseCase } from "$/domain/usecases/GetCombinationsByIdsUseCase";
+import { GetDataElementsByIdsUseCase } from "$/domain/usecases/GetDataElementsByIdsUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -61,6 +62,7 @@ import { UserTestRepository } from "./data/repositories/UserTestRepository";
 import { UserRepository } from "./domain/repositories/UserRepository";
 import { GetCurrentUserUseCase } from "./domain/usecases/GetCurrentUserUseCase";
 import { D2Api } from "./types/d2-api";
+import { AddCoreCompetencyUseCase } from "$/domain/usecases/AddCoreCompetencyUseCase";
 
 export type CompositionRoot = ReturnType<typeof getCompositionRoot>;
 
@@ -86,6 +88,9 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             getData: new GetAppSettingsDataUseCase(repositories.appSettingsDataRepository),
             get: new GetAppSettingsUseCase(repositories.appSettingsRepository),
             save: new SaveAppSettingsUseCase(repositories.appSettingsRepository),
+        },
+        dataElements: {
+            getByIds: new GetDataElementsByIdsUseCase(repositories.dataElementRepository),
         },
         combination: {
             getByIds: new GetCombinationsByIdsUseCase(repositories.categoryComboRepository),
@@ -126,6 +131,10 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             ),
             migratePeriodDates: new MigratePeriodDatesUseCase(
                 repositories.dataSetPeriodDateRepository
+            ),
+            addCoreCompetency: new AddCoreCompetencyUseCase(
+                repositories.dataSetsRepository,
+                config
             ),
         },
         logs: {

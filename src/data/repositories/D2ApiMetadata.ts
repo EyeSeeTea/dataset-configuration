@@ -26,6 +26,8 @@ export const metadataCodes = {
         localIndicator: "GL_Local_DEGROUP",
         donorIndicator: "GL_Donor_DEGROUP",
         outputIndicator: "GL_Output_DEGROUP",
+        householdsIndicator: "de_mes_hhs",
+        individualsIndicator: "de_mes_ind",
     },
     indicatorGroup: {
         coreIndicator: "Global Indicators (Mandatory)",
@@ -115,6 +117,14 @@ export class D2ApiConfig {
                         metadataCodes.dataElementGroups.coreIndicator
                     ),
                     outputIndicator: getOrThrowMetadata("dataElementGroups", appSettings.outputId),
+                    individualIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
+                        metadataCodes.dataElementGroups.individualsIndicator
+                    ),
+                    householdIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
+                        metadataCodes.dataElementGroups.householdsIndicator
+                    ),
                 },
                 indicatorGroups: {
                     coreIndicator: getOrThrowMetadata(
@@ -196,6 +206,8 @@ export type D2Config = {
         localIndicator: D2NamedCodeRef;
         donorIndicator: D2NamedCodeRef;
         outputIndicator: D2NamedCodeRef;
+        individualIndicator: D2NamedCodeRef;
+        householdIndicator: D2NamedCodeRef;
     };
     indicatorGroups: {
         coreIndicator: D2NamedCodeRef;
