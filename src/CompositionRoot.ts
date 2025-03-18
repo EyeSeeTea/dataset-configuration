@@ -49,6 +49,7 @@ import { UserTestRepository } from "./data/repositories/UserTestRepository";
 import { UserRepository } from "./domain/repositories/UserRepository";
 import { GetCurrentUserUseCase } from "./domain/usecases/GetCurrentUserUseCase";
 import { D2Api } from "./types/d2-api";
+import { AddCoreCompetencyUseCase } from "$/domain/usecases/AddCoreCompetencyUseCase";
 
 export type CompositionRoot = ReturnType<typeof getCompositionRoot>;
 
@@ -110,6 +111,10 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             ),
             migratePeriodDates: new MigratePeriodDatesUseCase(
                 repositories.dataSetPeriodDateRepository
+            ),
+            addCoreCompetency: new AddCoreCompetencyUseCase(
+                repositories.dataSetsRepository,
+                config
             ),
         },
         logs: {

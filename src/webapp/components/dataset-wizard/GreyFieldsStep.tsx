@@ -66,7 +66,7 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     const [greyedFields, setGreyedFields] = React.useState<Record<string, boolean>>(() => {
         return HashMap.fromPairs(
             dataSet.disabledFields.map(fieldId => [
-                `${fieldId.dataElementId}.${fieldId.optionComboId}`,
+                `${fieldId.dataElementId}.${fieldId.optionComboId}.${fieldId.type}`,
                 true,
             ])
         ).toObject();
