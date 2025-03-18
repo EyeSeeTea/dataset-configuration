@@ -20,6 +20,7 @@ export const metadataCodes = {
         coreIndicator: "GL_MAND_DEGROUP",
         localIndicator: "GL_Local_DEGROUP",
         donorIndicator: "GL_Donor_DEGROUP",
+        outputIndicator: "GL_Output_DEGROUP",
     },
     indicatorGroup: {
         coreIndicator: "Global Indicators (Mandatory)",
@@ -101,6 +102,10 @@ export class D2ApiConfig {
                         "dataElementGroups",
                         metadataCodes.dataElementGroups.coreIndicator
                     ),
+                    outputIndicator: getOrThrowMetadata(
+                        "dataElementGroups",
+                        metadataCodes.dataElementGroups.outputIndicator
+                    ),
                 },
                 indicatorGroups: {
                     coreIndicator: getOrThrowMetadata(
@@ -158,6 +163,7 @@ export type D2Config = {
         coreIndicator: D2NamedCodeRef;
         localIndicator: D2NamedCodeRef;
         donorIndicator: D2NamedCodeRef;
+        outputIndicator: D2NamedCodeRef;
     };
     indicatorGroups: {
         coreIndicator: D2NamedCodeRef;

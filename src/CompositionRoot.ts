@@ -12,6 +12,7 @@ import { ProjectTestRepository } from "$/data/repositories/ProjectTestRepository
 import { SharingD2Repository } from "$/data/repositories/SharingD2Repository";
 import { SharingRepository } from "$/data/repositories/SharingRepository";
 import { SharingTestRepository } from "$/data/repositories/SharingTestRepository";
+import { Config } from "$/domain/entities/Config";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
@@ -27,6 +28,7 @@ import { GetIndicatorsUseCase } from "$/domain/usecases/GetIndicatorsUseCase";
 import { GetLogsUseCase } from "$/domain/usecases/GetLogsUseCase";
 import { GetOrgUnitsByIdsUseCase } from "$/domain/usecases/GetOrgUnitsByIdsUseCase";
 import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
+import { GetRelatedIndicatorsUseCase } from "$/domain/usecases/GetRelatedIndicatorsUseCase";
 import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
 import { SaveDataSetUseCase } from "$/domain/usecases/SaveDataSetUseCase";
@@ -54,7 +56,7 @@ type Repositories = {
     dataElementRepository: DataElementRepository;
 };
 
-function getCompositionRoot(repositories: Repositories) {
+function getCompositionRoot(repositories: Repositories, config: Config) {
     return {
         dataSets: {
             getByIds: new GetDataSetsByIdsUseCase(repositories.dataSetsRepository),
@@ -67,14 +69,12 @@ function getCompositionRoot(repositories: Repositories) {
                 repositories.projectRepository
             ),
             validateName: new ValidateDataSetNameUseCase(repositories.dataSetsRepository),
-            save: new SaveDataSetUseCase(
-                repositories.dataSetsRepository,
-                repositories.dataElementRepository
-            ),
+            save: new SaveDataSetUseCase(repositories.dataSetsRepository),
             getSettings: new GetDataSetSettingsUseCase(
                 repositories.coreCompetencyRepository,
                 repositories.indicatorRepository,
-                repositories.dataSetsRepository
+                repositories.dataSetsRepository,
+                config
             ),
         },
         logs: {
@@ -96,24 +96,25 @@ function getCompositionRoot(repositories: Repositories) {
         },
         indicators: {
             get: new GetIndicatorsUseCase(repositories.indicatorRepository),
+            getRelated: new GetRelatedIndicatorsUseCase(repositories.dataElementRepository),
         },
     };
 }
 
-export function getWebappCompositionRoot(api: D2Api) {
+export function getWebappCompositionRoot(api: D2Api, config: Config) {
     const repositories: Repositories = {
         usersRepository: new UserD2Repository(api),
-        dataSetsRepository: new DataSetD2Repository(api),
+        dataSetsRepository: new DataSetD2Repository(api, config),
         sharingRepository: new SharingD2Repository(api),
         logRepository: new LogD2Repository(api),
-        projectRepository: new ProjectD2Repository(api),
+        projectRepository: new ProjectD2Repository(api, config),
         orgUnitRepository: new OrgUnitD2Repository(api),
         coreCompetencyRepository: new CoreCompetencyD2Repository(api),
-        indicatorRepository: new IndicatorD2Repository(api),
+        indicatorRepository: new IndicatorD2Repository(api, config),
         dataElementRepository: new DataElementD2Repository(api),
     };
 
-    return getCompositionRoot(repositories);
+    return getCompositionRoot(repositories, config);
 }
 
 export function getTestCompositionRoot() {
@@ -125,9 +126,9 @@ export function getTestCompositionRoot() {
         projectRepository: new ProjectTestRepository(),
         orgUnitRepository: new OrgUnitTestRepository(),
         coreCompetencyRepository: new CoreCompetencyD2Repository({} as D2Api),
-        indicatorRepository: new IndicatorD2Repository({} as D2Api),
+        indicatorRepository: new IndicatorD2Repository({} as D2Api, {} as Config),
         dataElementRepository: new DataElementD2Repository({} as D2Api),
     };
 
-    return getCompositionRoot(repositories);
+    return getCompositionRoot(repositories, {} as Config);
 }

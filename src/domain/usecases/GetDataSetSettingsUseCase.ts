@@ -1,3 +1,4 @@
+import { Config } from "$/domain/entities/Config";
 import { DataSet } from "$/domain/entities/DataSet";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import { Indicator } from "$/domain/entities/Indicator";
@@ -13,21 +14,40 @@ export class GetDataSetSettingsUseCase {
     constructor(
         private coreCompetencyRepository: CoreCompetencyRepository,
         private indicatorRepository: IndicatorRepository,
-        private dataSetRepository: DataSetRepository
+        private dataSetRepository: DataSetRepository,
+        private config: Config
     ) {}
 
     execute(options: { dataSetId: Id }): FutureData<DataSetSettings> {
         return Future.joinObj({
             dataSet: this.getOrCreateDataSet(options.dataSetId),
             coreCompetencies: this.coreCompetencyRepository.getAll(),
-            indicators: this.indicatorRepository.get(),
-            existingIndicators: this.getExistingIndicators(options.dataSetId),
-        }).flatMap(({ coreCompetencies, dataSet, indicators, existingIndicators }) => {
+        }).flatMap(({ coreCompetencies, dataSet }) => {
             return Future.success({
                 coreCompetencies,
-                dataSet: dataSet.setIndicators(existingIndicators),
-                indicators,
+                dataSet,
+                indicators: this.getIndicatorsFromDataSet(dataSet),
+                existingIndicatorIds: dataSet.indicators.map(indicator => indicator.id),
             });
+        });
+    }
+
+    private getIndicatorsFromDataSet(dataSet: DataSet): Indicator[] {
+        return this.config.indicators.map(indicator => {
+            const existingIndicator = dataSet.indicators.find(ind => ind.id === indicator.id);
+            return existingIndicator
+                ? Indicator.create({
+                      ...indicator,
+                      disaggregation:
+                          existingIndicator.type === "outputs"
+                              ? existingIndicator.disaggregation
+                              : undefined,
+                      relatedDataElements:
+                          existingIndicator.type === "outcomes"
+                              ? existingIndicator.relatedDataElements
+                              : [],
+                  })
+                : indicator;
         });
     }
 

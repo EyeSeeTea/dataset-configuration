@@ -65,6 +65,13 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedIndicators,
     });
 
+    const validateIndicators = useValidateIndicators({
+        dataSet,
+        indicators,
+        onChange,
+        setSelectedIndicators,
+    });
+
     const columns: ObjectsTableProps<Indicator>["columns"] = [
         {
             name: "id",
@@ -133,20 +140,6 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             .filter(item => item.length > 0)
             .join(", ");
     }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedGroup, selectedTheme]);
-
-    const validateIndicators = React.useCallback(
-        (state: TableState<Indicator>) => {
-            const ids = state.selection.map(row => row.id);
-            const currentIndicators = _(ids)
-                .compactMap(indicatorId => {
-                    return indicators.find(indicator => indicator.id === indicatorId);
-                })
-                .value();
-            setSelectedIndicators(ids);
-            onChange(dataSet.setIndicators(currentIndicators));
-        },
-        [indicators, dataSet, onChange]
-    );
 
     return (
         <form>
@@ -318,3 +311,40 @@ export const StatusIndicator = React.memo((props: { status: string }) => {
         <span>{status}</span>
     );
 });
+
+function useValidateIndicators(props: {
+    indicators: Indicator[];
+    onChange: (dataSet: DataSet) => void;
+    dataSet: DataSet;
+    setSelectedIndicators: React.Dispatch<React.SetStateAction<Id[]>>;
+}) {
+    const { indicators, onChange, dataSet, setSelectedIndicators } = props;
+
+    const validateIndicators = React.useCallback(
+        (state: TableState<Indicator>) => {
+            const ids = state.selection.map(row => row.id);
+            const currentIndicators = _(ids)
+                .compactMap(indicatorId => {
+                    const indicatorInfo = indicators.find(
+                        indicator => indicator.id === indicatorId
+                    );
+                    if (!indicatorInfo) return undefined;
+                    const updatedIndicator = dataSet.indicators.find(
+                        indicator => indicator.id === indicatorId
+                    );
+                    return Indicator.create({
+                        ...indicatorInfo,
+                        categories: updatedIndicator?.categories || indicatorInfo.categories,
+                        relatedDataElements:
+                            updatedIndicator?.relatedDataElements ||
+                            indicatorInfo.relatedDataElements,
+                    });
+                })
+                .value();
+            setSelectedIndicators(ids);
+            onChange(dataSet.setIndicators(currentIndicators));
+        },
+        [dataSet, indicators, onChange, setSelectedIndicators]
+    );
+    return validateIndicators;
+}

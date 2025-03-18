@@ -18,7 +18,12 @@ function getView() {
     const { compositionRoot } = getTestContext();
     const baseUrl = "http://localhost:8080";
     const api = getD2APiFromInstance({ type: "local", url: baseUrl });
-    const configTests: Config = { regions: [], userGroups: [] };
+    const configTests: Config = {
+        categoryCombinations: [],
+        indicators: [],
+        regions: [],
+        userGroups: [],
+    };
     return render(
         <Provider config={{ baseUrl: "http://localhost:8080", apiVersion: 30 }}>
             <App config={configTests} api={api} compositionRoot={compositionRoot} />

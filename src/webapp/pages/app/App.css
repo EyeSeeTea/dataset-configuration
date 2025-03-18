@@ -27,3 +27,23 @@ tr:has(.MuiAlert-message) {
 .dataset-table div[data-test="search"] {
     padding-inline-start: 0.4em;
 }
+
+.dropdown-disaggregates {
+    display: flex;
+    flex-direction: column;
+    row-gap: 2em;
+    max-width: 600px;
+}
+
+.indicator-row {
+    display: flex;
+    padding-block: 1em;
+
+    p {
+        margin: 0;
+    }
+
+    button {
+        margin-left: auto;
+    }
+}
