@@ -27,20 +27,23 @@ export type LogAction =
 export type LogStatus = "success" | "failed";
 export type PartialLog = Pick<Log, "action" | "status">;
 
-const ACTION_DESCRIPTIONS: Record<LogAction, string> = {
-    sharing: i18n.t("change sharing settings"),
-    orgunits: i18n.t("change organisation units"),
-    delete: i18n.t("delete"),
-    edit: i18n.t("edit dataset"),
-    create: i18n.t("create new dataset"),
-    clone: i18n.t("clone dataset"),
-    period_dates: i18n.t("change period dates"),
-    unknown: "",
+const getActionDescriptions = (action: LogAction): string => {
+    const ACTION_DESCRIPTIONS: Record<LogAction, string> = {
+        sharing: i18n.t("change sharing settings"),
+        orgunits: i18n.t("change organisation units"),
+        delete: i18n.t("delete"),
+        edit: i18n.t("edit dataset"),
+        create: i18n.t("create new dataset"),
+        clone: i18n.t("clone dataset"),
+        period_dates: i18n.t("change period dates"),
+        unknown: "",
+    };
+    return ACTION_DESCRIPTIONS[action] || i18n.t("unknown action");
 };
 
 export class Log extends Struct<LogsAttrs>() {
     get actionDescription(): string {
-        return ACTION_DESCRIPTIONS[this.action] || i18n.t("unknown action");
+        return getActionDescriptions(this.action);
     }
 
     static buildLogsWithDataSetDetails(dataSets: DataSet[], logs: Log[]): Log[] {

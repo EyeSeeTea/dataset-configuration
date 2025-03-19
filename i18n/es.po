@@ -35,9 +35,8 @@ msgstr "Vista/edición pública"
 msgid "Public view"
 msgstr "Acceso público"
 
-#, fuzzy
 msgid "delete"
-msgstr "Eliminar"
+msgstr "eliminar"
 
 msgid "change period dates"
 msgstr ""
@@ -135,9 +134,8 @@ msgstr ""
 msgid "DataSets removed"
 msgstr "DataSets eliminados"
 
-#, fuzzy
 msgid "Period date updated"
-msgstr "Ultima actualización"
+msgstr ""
 
 msgid "Loading details..."
 msgstr "Cargando detalles..."
