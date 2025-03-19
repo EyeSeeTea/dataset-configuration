@@ -10,6 +10,7 @@ import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
+import { DEFAULT_UNIT_DATE, getUnitDateFromString } from "$/domain/entities/UnitDate";
 
 export class ConfigD2Repository implements ConfigRepository {
     private d2ApiConfig: D2ApiConfig;
@@ -32,7 +33,8 @@ export class ConfigD2Repository implements ConfigRepository {
                     periodEndDateMonth: apiConfig.periodEndDateMonth,
                     periodEndDateDay: apiConfig.periodEndDateDay,
                     periodLastYearEndDate: apiConfig.periodLastYearEndDate,
-                    periodLastYearUnits: apiConfig.periodLastYearUnits,
+                    periodLastYearUnits:
+                        getUnitDateFromString(apiConfig.periodLastYearUnits) || DEFAULT_UNIT_DATE,
                 };
             });
         });

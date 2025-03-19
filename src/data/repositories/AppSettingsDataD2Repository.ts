@@ -3,6 +3,7 @@ import { AppSettingsData } from "$/domain/entities/AppSettingsData";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { AppSettingsDataRepository } from "$/domain/repositories/AppSettingsDataRepository";
 import { apiToFuture } from "$/data/api-futures";
+import { D2NamedRef } from "$/data/utils";
 
 export class AppSettingsDataD2Repository implements AppSettingsDataRepository {
     constructor(private api: D2Api) {}
@@ -21,21 +22,26 @@ export class AppSettingsDataD2Repository implements AppSettingsDataRepository {
                 userGroups: { fields: metadataFields },
             })
         ).map(d2Response => {
+            const buildEntities = (entities: D2GenericEntity[]) =>
+                entities.map(entity => this.buildEntity(entity));
+
             return {
-                fields: d2Response.attributes.map(this.buildEntity),
-                countriesLevel: d2Response.organisationUnitLevels.map(this.buildEntity),
-                indicatorsGroups: d2Response.indicatorGroups.map(this.buildEntity),
-                indicatorsGroupSets: d2Response.indicatorGroupSets.map(this.buildEntity),
-                dataElementsGroups: d2Response.dataElementGroups.map(this.buildEntity),
-                dataElementsGroupSets: d2Response.dataElementGroupSets.map(this.buildEntity),
-                combinations: d2Response.categoryCombos.map(this.buildEntity),
-                categories: d2Response.categories.map(this.buildEntity),
-                userGroups: d2Response.userGroups.map(this.buildEntity),
+                fields: buildEntities(d2Response.attributes),
+                countriesLevel: buildEntities(d2Response.organisationUnitLevels),
+                indicatorsGroups: buildEntities(d2Response.indicatorGroups),
+                indicatorsGroupSets: buildEntities(d2Response.indicatorGroupSets),
+                dataElementsGroups: buildEntities(d2Response.dataElementGroups),
+                dataElementsGroupSets: buildEntities(d2Response.dataElementGroupSets),
+                combinations: buildEntities(d2Response.categoryCombos),
+                categories: buildEntities(d2Response.categories),
+                userGroups: buildEntities(d2Response.userGroups),
             };
         });
     }
 
-    private buildEntity(item: { displayName: string; id: string; code: string }) {
+    private buildEntity(item: D2GenericEntity) {
         return { text: item.displayName, value: item.id, code: item.code };
     }
 }
+
+type D2GenericEntity = D2NamedRef & { code: string };

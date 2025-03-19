@@ -7,18 +7,19 @@ import OpenInNewIcon from "@material-ui/icons/OpenInNew";
 import i18n from "$/utils/i18n";
 import { component } from "$/utils/react";
 import { Maybe } from "$/utils/ts-utils";
+import { useBooleanState } from "$/webapp/hooks/useBooleanState";
 
 const _ModalSelector = React.memo((props: ModalSelectorProps) => {
     const { label, onChange, items, value, showEmptyValue } = props;
-    const [openModal, setOpenModal] = React.useState(false);
+    const [openModal, modalActions] = useBooleanState(false);
     const [search, setSearch] = React.useState("");
 
     const onSelectItem = React.useCallback(
         (item: Maybe<ModalSelectorItem>) => {
             onChange(item);
-            setOpenModal(false);
+            modalActions.disable();
         },
-        [onChange]
+        [onChange, modalActions]
     );
 
     const itemsToRender = React.useMemo(() => {
@@ -29,20 +30,20 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
         });
     }, [items, search]);
 
-    const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-        const item = itemsToRender[index];
-        if (!item) return null;
+    // const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    //     const item = itemsToRender[index];
+    //     if (!item) return null;
 
-        return (
-            <div style={{ ...style, width: "initial" }}>
-                <Grid item xs={12}>
-                    <Button onClick={() => onSelectItem(item)} color="primary" disableElevation>
-                        {item.text}
-                    </Button>
-                </Grid>
-            </div>
-        );
-    };
+    //     return (
+    //         <div style={{ ...style, width: "initial" }}>
+    //             <Grid item xs={12}>
+    //                 <Button onClick={() => onSelectItem(item)} color="primary" disableElevation>
+    //                     {item.text}
+    //                 </Button>
+    //             </Grid>
+    //         </div>
+    //     );
+    // };
 
     const selectedValue = items.find(item => item.value === value);
 
@@ -51,11 +52,11 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
             <TextField
                 fullWidth
                 label={label}
-                onClick={() => setOpenModal(true)}
+                onClick={() => modalActions.enable()}
                 InputProps={{
                     readOnly: true,
                     endAdornment: (
-                        <IconButton onClick={() => setOpenModal(true)}>
+                        <IconButton onClick={() => modalActions.enable()}>
                             <OpenInNewIcon />
                         </IconButton>
                     ),
@@ -65,7 +66,7 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
             <ConfirmationDialog
                 open={openModal}
                 cancelText={i18n.t("Cancel")}
-                onCancel={() => setOpenModal(false)}
+                onCancel={() => modalActions.disable()}
                 fullWidth
             >
                 <Grid container>
@@ -82,14 +83,51 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
                             {i18n.t("<No value>")}
                         </Button>
                     )}
-                    <List height={500} itemCount={itemsToRender.length} itemSize={30} width="100%">
-                        {Row}
+                    <List
+                        itemData={itemsToRender}
+                        height={500}
+                        itemCount={itemsToRender.length}
+                        itemSize={30}
+                        width="100%"
+                    >
+                        {rowProps => {
+                            const item = itemsToRender[rowProps.index];
+                            if (!item) return null;
+                            return (
+                                <Row
+                                    item={item}
+                                    onSelectItem={onSelectItem}
+                                    style={rowProps.style}
+                                    key={item.value}
+                                />
+                            );
+                        }}
                     </List>
                 </Grid>
             </ConfirmationDialog>
         </>
     );
 });
+
+const Row = ({
+    item,
+    style,
+    onSelectItem,
+}: {
+    item: ModalSelectorItem;
+    style: React.CSSProperties;
+    onSelectItem: (item: ModalSelectorItem) => void;
+}) => {
+    return (
+        <div style={{ ...style, width: "initial" }}>
+            <Grid item xs={12}>
+                <Button onClick={() => onSelectItem(item)} color="primary" disableElevation>
+                    {item.text}
+                </Button>
+            </Grid>
+        </div>
+    );
+};
 
 export const ModalSelector = component(_ModalSelector);
 

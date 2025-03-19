@@ -1,5 +1,8 @@
 import { Codec, string, number, optional } from "purify-ts";
 
+const optionalPeriod = optional(Codec.interface({ day: number, month: number }));
+const optionalPeriodLastYear = optional(Codec.interface({ units: string, value: number }));
+
 export const D2ApiSettingsCodec = Codec.interface({
     attributeGroupId: string,
     categoryComboId: string,
@@ -22,17 +25,7 @@ export const D2ApiSettingsCodec = Codec.interface({
     indicatorGroupSetStatusId: string,
     indicatorGroupSetThemeId: string,
     organisationUnitLevelForCountriesId: string,
-    periodEndDate: optional(
-        Codec.interface({
-            day: number,
-            month: number,
-        })
-    ),
-    periodLastYearEndDate: optional(
-        Codec.interface({
-            units: string,
-            value: number,
-        })
-    ),
+    periodEndDate: optionalPeriod,
+    periodLastYearEndDate: optionalPeriodLastYear,
     dataSetPeriodDateAttribute: string,
 });

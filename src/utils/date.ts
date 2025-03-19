@@ -1,4 +1,6 @@
 import { ISODateString } from "$/domain/entities/Ref";
+import { UnitDate } from "$/domain/entities/UnitDate";
+import i18n from "$/utils/i18n";
 import { DropdownItem } from "@eyeseetea/d2-ui-components";
 
 export function toLongDateString(isoDate: ISODateString, options?: Intl.DateTimeFormatOptions) {
@@ -47,9 +49,9 @@ export function getMonths() {
 
 export function getUnits() {
     return [
-        { text: "Day", value: "day" },
-        { text: "Month", value: "month" },
-        { text: "Year", value: "year" },
+        { text: i18n.t("Day"), value: "day" },
+        { text: i18n.t("Month"), value: "month" },
+        { text: i18n.t("Year"), value: "year" },
     ];
 }
 
@@ -65,6 +67,3 @@ export function getDaysPerMonthYear(
         value: String(index + 1),
     }));
 }
-
-export const unitDates = ["week", "month", "day"] as const;
-type UnitDate = (typeof unitDates)[number];
