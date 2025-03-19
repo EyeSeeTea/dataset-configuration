@@ -7,7 +7,7 @@ import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
@@ -32,7 +32,7 @@ export type DataSetAttrs = {
     notifyUser: boolean;
     indicators: Indicator[];
     periodDate: Maybe<PeriodDate>;
-    disabledFields: Array<{ dataElementId: Id; optionComboId: Id; competencyId: Id }>;
+    disabledFields: DisabledField[];
     canBeUpdated: boolean;
 };
 
@@ -41,6 +41,12 @@ export type AccessData = { id: Id; permissions: Permissions; name: string; type:
 export type AccessType = "users" | "groups";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
+export type DisabledField = {
+    dataElementId: Id;
+    optionComboId: Id;
+    competencyId: Id;
+    type: IndicatorType;
+};
 
 export class DataSet extends Struct<DataSetAttrs>() {
     validate(): ValidationError<DataSet>[] {

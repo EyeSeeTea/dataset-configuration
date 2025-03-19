@@ -5,7 +5,7 @@ import { CoreCompetency } from "$/domain/entities/DataSet";
 import { Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
-import { Maybe } from "$/utils/ts-utils";
+import { Maybe, UnionFromValues } from "$/utils/ts-utils";
 
 export type DisaggregationAttrs = {
     id: Id;
@@ -21,7 +21,8 @@ export type IndicatorAttrs = {
     code: string;
     theme: string;
     status: string;
-    type: "outputs" | "outcomes";
+    type: IndicatorType;
+    measure: Maybe<IndicatorMeasure>;
     scope: IndicatorScope;
     group: string;
     disaggregation: Maybe<DisaggregationAttrs>;
@@ -33,53 +34,72 @@ export type IndicatorAttrs = {
     valueType: string;
 };
 
-export type IndicatorScope = "core" | "local" | "donor";
+export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
+export type IndicatorMeasure = "individuals" | "households";
+export const indicatorTypes = ["outputs", "outcomes"] as const;
+export type IndicatorType = UnionFromValues<typeof indicatorTypes>;
 
 export class Indicator extends Struct<IndicatorAttrs>() {
     get combinations() {
-        if (this.type === "outputs") {
-            return [
-                this.generateCombination(this.disaggregation, [
-                    {
-                        categories: this.categories,
-                        code: this.code,
-                        name: this.name,
-                        id: this.id,
-                        isComment: false,
-                        disaggregation: this.disaggregation,
-                        description: this.description,
-                        valueType: this.valueType,
-                    },
-                ]),
-            ];
-        } else {
-            const commentsDataElements = this.relatedDataElements.filter(
-                dataElement => dataElement.isComment
-            );
-            const commentCombination = commentsDataElements.map(dataElement => {
-                return this.generateCombination(dataElement.disaggregation, [dataElement]);
-            });
+        switch (this.type) {
+            case "outputs": {
+                return [
+                    this.generateCombination(
+                        this.disaggregation,
+                        [
+                            {
+                                categories: this.categories,
+                                code: this.code,
+                                name: this.name,
+                                id: this.id,
+                                isComment: false,
+                                disaggregation: this.disaggregation,
+                                description: this.description,
+                                valueType: this.valueType,
+                            },
+                        ],
+                        this.type
+                    ),
+                ];
+            }
+            case "outcomes": {
+                const commentsDataElements = this.relatedDataElements.filter(
+                    dataElement => dataElement.isComment
+                );
+                const commentCombination = commentsDataElements.map(dataElement => {
+                    return this.generateCombination(
+                        dataElement.disaggregation,
+                        [dataElement],
+                        this.type
+                    );
+                });
 
-            // getting the first dataElement because all the no comment
-            // dataElements share the same disaggregation
-            const relatedDataElements = this.relatedDataElements.filter(
-                dataElement => !dataElement.isComment
-            );
-            const firstDataElement = relatedDataElements[0];
+                // getting the first dataElement because all the no comment
+                // dataElements share the same disaggregation
+                const relatedDataElements = this.relatedDataElements.filter(
+                    dataElement => !dataElement.isComment
+                );
+                const firstDataElement = relatedDataElements[0];
 
-            const firstCombination = firstDataElement
-                ? this.generateCombination(firstDataElement.disaggregation, relatedDataElements)
-                : undefined;
+                const firstCombination = firstDataElement
+                    ? this.generateCombination(
+                          firstDataElement.disaggregation,
+                          relatedDataElements,
+                          this.type
+                      )
+                    : undefined;
 
-            return _([...commentCombination, firstCombination])
-                .compact()
-                .value();
+                return _([...commentCombination, firstCombination])
+                    .compact()
+                    .value();
+            }
         }
     }
 
     private generateCombination(
         disaggregation: DataElement["disaggregation"],
-        dataElements: DataElement[]
+        dataElements: DataElement[],
+        type: IndicatorType
     ): IndicatorCombination {
         return {
             dataElements: dataElements.map(dataElement => {
@@ -88,12 +108,14 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                     disaggregation: dataElement.disaggregation,
                     categories: dataElement.categories,
                     coreCompetency: this.coreCompetency,
+                    type,
                 };
             }),
             coreCompetency: this.coreCompetency,
             id: disaggregation?.id ?? "",
             name: disaggregation?.name ?? "",
             categories: disaggregation?.categories ?? [],
+            type,
         };
     }
 
@@ -208,6 +230,12 @@ export type IndicatorCombination = {
     id: Id;
     name: string;
     categories: Category[];
-    dataElements: Array<DataElement & { coreCompetency: CoreCompetency }>;
+    dataElements: DataElementWithCompetency[];
     coreCompetency: CoreCompetency;
+    type: "outputs" | "outcomes";
+};
+
+export type DataElementWithCompetency = DataElement & {
+    coreCompetency: CoreCompetency;
+    type: IndicatorType;
 };

@@ -1,4 +1,5 @@
 import { Id } from "$/domain/entities/Ref";
+import { DEFAULT_UNIT_DATE } from "$/domain/entities/UnitDate";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe } from "$/utils/ts-utils";
 
@@ -40,7 +41,7 @@ export class AppSettings extends Struct<AppSettingsAttr>() {
             periodEndDateDay: this.DEFAULT_PERIOD_END_DATE_DAY,
             periodEndDateMonth: this.DEFAULT_PERIOD_END_DATE_MONTH,
             periodLastYearEndDate: 0,
-            periodLastYearUnits: "month",
+            periodLastYearUnits: DEFAULT_UNIT_DATE,
             countryLevelId: undefined,
             dataSetFilterField: undefined,
             periodDateField: undefined,

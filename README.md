@@ -76,6 +76,12 @@ Migrate output dates to period dates
  npx ts-node src/scripts/migrate-dataset-period-dates.ts -u 'http://localhost:8080' --username 'username' --password 'password'
 ```
 
+Add core competency to dataSets
+
+```bash
+ npx ts-node src/scripts/add-core-compentency-to-datasets.ts -u 'http://localhost:8080' --username 'username' --password 'password' --data-set-ids="id1,id2,id3" --core-competency-code="MPC"
+```
+
 ### Misc Notes
 
 -   Requests to DHIS2 will be transparently proxied (see `vite.config.ts` -> `server.proxy`) from `http://localhost:8081/dhis2/xyz` to `${VITE_DHIS2_BASE_URL}/xyz`. This prevents CORS and cross-domain problems.

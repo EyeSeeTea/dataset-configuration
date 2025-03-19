@@ -42,6 +42,7 @@ import { GetAllProjectsUseCase } from "$/domain/usecases/GetAllProjectsUseCase";
 import { GetAppSettingsDataUseCase } from "$/domain/usecases/GetAppSettingsDataUseCase";
 import { GetAppSettingsUseCase } from "$/domain/usecases/GetAppSettingsUseCase";
 import { GetCombinationsByIdsUseCase } from "$/domain/usecases/GetCombinationsByIdsUseCase";
+import { GetDataElementsByIdsUseCase } from "$/domain/usecases/GetDataElementsByIdsUseCase";
 import { GetDataSetSettingsUseCase } from "$/domain/usecases/GetDataSetSettingsUseCase";
 import { GetDataSetsByIdsUseCase } from "$/domain/usecases/GetDataSetsByIdsUseCase";
 import { GetDataSetsUseCase } from "$/domain/usecases/GetDataSetsUseCase";
@@ -49,7 +50,7 @@ import { GetIndicatorsUseCase } from "$/domain/usecases/GetIndicatorsUseCase";
 import { GetLogsUseCase } from "$/domain/usecases/GetLogsUseCase";
 import { GetOrgUnitsByIdsUseCase } from "$/domain/usecases/GetOrgUnitsByIdsUseCase";
 import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
-import { GetRelatedDataElementsUseCase } from "$/domain/usecases/GetRelatedDataElementsUseCase";
+import { GetRelatedIndicatorsUseCase } from "$/domain/usecases/GetRelatedIndicatorsUseCase";
 import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
 import { MigratePeriodDatesUseCase } from "$/domain/usecases/MigratePeriodDatesUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
@@ -65,6 +66,7 @@ import { UserTestRepository } from "./data/repositories/UserTestRepository";
 import { UserRepository } from "./domain/repositories/UserRepository";
 import { GetCurrentUserUseCase } from "./domain/usecases/GetCurrentUserUseCase";
 import { D2Api } from "./types/d2-api";
+import { AddCoreCompetencyUseCase } from "$/domain/usecases/AddCoreCompetencyUseCase";
 
 export type CompositionRoot = ReturnType<typeof getCompositionRoot>;
 
@@ -92,6 +94,9 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             getData: new GetAppSettingsDataUseCase(repositories.appSettingsDataRepository),
             get: new GetAppSettingsUseCase(repositories.appSettingsRepository),
             save: new SaveAppSettingsUseCase(repositories.appSettingsRepository),
+        },
+        dataElements: {
+            getByIds: new GetDataElementsByIdsUseCase(repositories.dataElementRepository),
         },
         combination: {
             getByIds: new GetCombinationsByIdsUseCase(repositories.categoryComboRepository),
@@ -141,6 +146,10 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             migratePeriodDates: new MigratePeriodDatesUseCase(
                 repositories.dataSetPeriodDateRepository
             ),
+            addCoreCompetency: new AddCoreCompetencyUseCase(
+                repositories.dataSetsRepository,
+                config
+            ),
         },
         logs: {
             getByDataSets: new GetLogsUseCase(
@@ -161,7 +170,7 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
         },
         indicators: {
             get: new GetIndicatorsUseCase(repositories.indicatorRepository),
-            getRelated: new GetRelatedDataElementsUseCase(repositories.dataElementRepository),
+            getRelated: new GetRelatedIndicatorsUseCase(repositories.dataElementRepository),
         },
     };
 }

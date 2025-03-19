@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-03-04T20:10:08.873Z\n"
+"POT-Creation-Date: 2025-03-19T04:07:38.678Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -92,8 +92,29 @@ msgstr ""
 msgid "DataSet not found"
 msgstr "DataSet no encontrado"
 
+msgid "with warnings"
+msgstr ""
+
+msgid "Warnings"
+msgstr ""
+
 msgid "Data set name already exists: {{dataSetName}}"
 msgstr "Ya existe un dataset con el nombre: {{dataSetName}}"
+
+msgid "User does not have access to update the data sets"
+msgstr ""
+
+msgid "User is not an admin"
+msgstr ""
+
+msgid "Day"
+msgstr ""
+
+msgid "Month"
+msgstr ""
+
+msgid "Year"
+msgstr ""
 
 msgid "Add"
 msgstr "Añadir"
@@ -195,6 +216,9 @@ msgstr "Permisos"
 msgid "Access"
 msgstr ""
 
+msgid "Settings"
+msgstr ""
+
 msgid "Details"
 msgstr "Detalles"
 
@@ -216,7 +240,7 @@ msgstr ""
 msgid "Clone"
 msgstr "Clonar"
 
-msgid "Add disaggregate"
+msgid "Edit disaggregate"
 msgstr ""
 
 msgid "Current Disaggregation"
@@ -252,13 +276,7 @@ msgstr ""
 msgid "Group"
 msgstr ""
 
-msgid "None"
-msgstr ""
-
-msgid "Data Element"
-msgstr ""
-
-msgid "Global graying out (disable combinationsin all the dataSet)"
+msgid "Global graying out (disable combinations in all the dataSet)"
 msgstr ""
 
 msgid "Per indicator graying out"
@@ -324,12 +342,6 @@ msgstr "Validando"
 msgid "Please select the regions you want to share this dataSet with"
 msgstr ""
 
-msgid "Saving..."
-msgstr "Guardando..."
-
-msgid "Data set saved successfully"
-msgstr ""
-
 msgid "The dataSet is finished. Press the button Save to save the data"
 msgstr ""
 
@@ -344,6 +356,12 @@ msgstr "Proyecto"
 
 msgid "Organisation Units"
 msgstr "Unidades organizativas"
+
+msgid "Data Element"
+msgstr ""
+
+msgid "None"
+msgstr ""
 
 msgid "Setup"
 msgstr ""
@@ -381,6 +399,10 @@ msgstr ""
 msgid "Projects"
 msgstr "Proyectos"
 
+#, fuzzy
+msgid "Filter list"
+msgstr "Filtros"
+
 msgid "Back"
 msgstr "Volver"
 
@@ -391,6 +413,88 @@ msgid "Org. Units"
 msgstr ""
 
 msgid "Core Competencies"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+#, fuzzy
+msgid "Sections"
+msgstr "Acción"
+
+msgid "Settings saved"
+msgstr ""
+
+#, fuzzy
+msgid "Configuration settings"
+msgstr "cambio de permisos"
+
+#, fuzzy
+msgid "Projects Category"
+msgstr "Proyectos"
+
+msgid "Category combination"
+msgstr ""
+
+msgid "Core competency data element group set"
+msgstr ""
+
+msgid "Default Period End Date - Month"
+msgstr ""
+
+msgid "Default Time Period End Date (Last year) - Value"
+msgstr ""
+
+msgid "Units"
+msgstr ""
+
+#, fuzzy
+msgid "Country organisation unit level"
+msgstr "cambio de unidades organizativas"
+
+msgid "Created by dataSet Configuration attribute"
+msgstr ""
+
+msgid "Attribute for Period Dates"
+msgstr ""
+
+msgid "Attribute for interval dates"
+msgstr ""
+
+msgid "Data element theme group set"
+msgstr ""
+
+msgid "Indicator theme group set"
+msgstr ""
+
+msgid "Group attribute"
+msgstr ""
+
+msgid "Output data element group"
+msgstr ""
+
+msgid "Global indicators mandatory data element group set"
+msgstr ""
+
+msgid "Global indicators mandatory indicator group set"
+msgstr ""
+
+msgid "Data Element origin group set"
+msgstr ""
+
+msgid "Indicator origin group set"
+msgstr ""
+
+msgid "Data Element status group set"
+msgstr ""
+
+msgid "Indicator status group set"
+msgstr ""
+
+msgid "Hide in dataset attribute"
+msgstr ""
+
+msgid "User group excluded of selecting core items"
 msgstr ""
 
 msgid "Public Access"
@@ -414,25 +518,8 @@ msgstr ""
 msgid "Loading..."
 msgstr "Cargando..."
 
-#, fuzzy
-#~ msgid "Filter list"
-#~ msgstr "Filtros"
-
-#, fuzzy
-#~ msgid "Configuration settings"
-#~ msgstr "cambio de permisos"
-
-#, fuzzy
-#~ msgid "Sections"
-#~ msgstr "Acción"
-
-#, fuzzy
-#~ msgid "Projects Category"
-#~ msgstr "Proyectos"
-
-#, fuzzy
-#~ msgid "Country organisation unit level"
-#~ msgstr "cambio de unidades organizativas"
+#~ msgid "Saving..."
+#~ msgstr "Guardando..."
 
 #~ msgid "Loading projects..."
 #~ msgstr "Cargando proyectos..."

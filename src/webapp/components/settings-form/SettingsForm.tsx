@@ -1,5 +1,6 @@
 import React from "react";
 import {
+    Box,
     Button,
     Dialog,
     DialogActions,
@@ -21,15 +22,28 @@ import { getDaysPerMonthYear, getMonths, getUnits } from "$/utils/date";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { AppSettings } from "$/domain/entities/AppSettings";
 import { AppSettingsData } from "$/domain/entities/AppSettingsData";
+import { useCallbackEffect } from "$/webapp/hooks/useCallbackEffect";
 
 type SettingsFormProps = { onClose: () => void };
+
+const tabsValues = [
+    {
+        value: "general",
+        label: i18n.t("General"),
+    },
+    {
+        value: "sections",
+        label: i18n.t("Sections"),
+    },
+] as const;
+type SelectedTab = (typeof tabsValues)[number]["value"];
 
 export const SettingsForm = React.memo((props: SettingsFormProps) => {
     const { onClose } = props;
     const { compositionRoot, currentUser } = useAppContext();
     const [settingsData, setSettingsData] = React.useState<AppSettingsData>();
     const [appSettings, setAppSettings] = React.useState<AppSettings>();
-    const [selectedTab, setSelectedTab] = React.useState(0);
+    const [selectedTab, setSelectedTab] = React.useState<SelectedTab>("general");
     const [loading, setLoading] = React.useState(false);
     const snackbar = useSnackbar();
 
@@ -45,7 +59,7 @@ export const SettingsForm = React.memo((props: SettingsFormProps) => {
             .run(setSettingsData, console.error);
     }, [compositionRoot.appSettings.getData, currentUser]);
 
-    const changeTab = (value: number) => {
+    const changeTab = (value: SelectedTab) => {
         setSelectedTab(value);
     };
 
@@ -53,60 +67,60 @@ export const SettingsForm = React.memo((props: SettingsFormProps) => {
         setAppSettings(settings);
     };
 
-    const saveSettings = () => {
-        if (!appSettings) return;
-        setLoading(true);
-        compositionRoot.appSettings.save.execute(appSettings, currentUser).run(
-            () => {
-                snackbar.success(i18n.t("Settings saved"));
-                onClose();
-                setLoading(false);
-            },
-            () => {
-                setLoading(false);
-            }
-        );
-    };
+    const saveSettings = useCallbackEffect(
+        React.useCallback(() => {
+            if (!appSettings) return;
+            setLoading(true);
+            return compositionRoot.appSettings.save.execute(appSettings, currentUser).run(
+                () => {
+                    snackbar.success(i18n.t("Settings saved"));
+                    onClose();
+                    setLoading(false);
+                },
+                () => {
+                    setLoading(false);
+                }
+            );
+        }, [appSettings, compositionRoot.appSettings.save, currentUser, onClose, snackbar])
+    );
+
+    const TabsComponents = { general: GeneralForm, sections: SectionForm };
+    const CurrentTab = TabsComponents[selectedTab];
 
     return (
         <Dialog open maxWidth="md" fullWidth>
             <DialogTitle>{i18n.t("Configuration settings")}</DialogTitle>
+
             <DialogContent>
                 <Tabs
                     value={selectedTab}
                     onChange={(_event, value) => changeTab(value)}
                     className="settings-tabs"
                 >
-                    <Tab value={0} label={i18n.t("General")} fullWidth />
-                    <Tab value={1} label={i18n.t("Sections")} fullWidth />
+                    {tabsValues.map(tab => (
+                        <Tab key={tab.value} value={tab.value} label={tab.label} fullWidth />
+                    ))}
                 </Tabs>
                 {appSettings && settingsData ? (
                     <form>
-                        {selectedTab === 0 && (
-                            <GeneralForm
-                                onChange={updateSettings}
-                                appSettings={appSettings}
-                                settingsData={settingsData}
-                            />
-                        )}
-                        {selectedTab === 1 && (
-                            <SectionForm
-                                onChange={updateSettings}
-                                appSettings={appSettings}
-                                settingsData={settingsData}
-                            />
-                        )}
+                        <CurrentTab
+                            onChange={updateSettings}
+                            appSettings={appSettings}
+                            settingsData={settingsData}
+                        />
                     </form>
                 ) : (
-                    <div style={{ paddingBlock: "1em" }}>
+                    <LoadingContainer>
                         <LinearProgress />
-                    </div>
+                    </LoadingContainer>
                 )}
             </DialogContent>
+
             <DialogActions>
                 <Button type="submit" variant="contained" onClick={() => onClose()}>
                     {i18n.t("Cancel")}
                 </Button>
+
                 <Button
                     disabled={loading}
                     color="primary"
@@ -164,8 +178,8 @@ const GeneralForm = (props: GeneralFormProps) => {
                 label={i18n.t("Core competency data element group set")}
             />
 
-            <div style={{ display: "flex" }}>
-                <div style={{ flex: "1" }}>
+            <Box display="flex">
+                <Box flex="1">
                     <Dropdown
                         className="dropdown dropdown-resetmargins"
                         hideEmpty
@@ -174,7 +188,7 @@ const GeneralForm = (props: GeneralFormProps) => {
                         onChange={value => updateProject(Number(value), "periodEndDateMonth")}
                         value={String(appSettings.periodEndDateMonth)}
                     />
-                </div>
+                </Box>
                 <Dropdown
                     hideEmpty
                     items={daysPerMonthYear}
@@ -182,9 +196,9 @@ const GeneralForm = (props: GeneralFormProps) => {
                     label={i18n.t("Day")}
                     value={String(appSettings.periodEndDateDay)}
                 />
-            </div>
-            <div style={{ display: "flex" }}>
-                <div style={{ flex: "1" }}>
+            </Box>
+            <Box display="flex">
+                <Box flex="1">
                     <TextField
                         fullWidth
                         label={i18n.t("Default Time Period End Date (Last year) - Value")}
@@ -194,7 +208,7 @@ const GeneralForm = (props: GeneralFormProps) => {
                             updateProject(Number(event.target.value), "periodLastYearEndDate")
                         }
                     />
-                </div>
+                </Box>
                 <Dropdown
                     hideEmpty
                     items={unitsItems}
@@ -202,7 +216,7 @@ const GeneralForm = (props: GeneralFormProps) => {
                     label={i18n.t("Units")}
                     value={appSettings.periodLastYearUnits}
                 />
-            </div>
+            </Box>
             <Dropdown
                 items={settingsData.countriesLevel}
                 onChange={value => updateProject(value, "countryLevelId")}
@@ -353,5 +367,9 @@ const GeneralFormContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 1em;
+    padding-block: 1em;
+`;
+
+const LoadingContainer = styled.div`
     padding-block: 1em;
 `;

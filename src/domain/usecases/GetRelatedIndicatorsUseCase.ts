@@ -6,7 +6,7 @@ import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 
-export class GetRelatedDataElementsUseCase {
+export class GetRelatedIndicatorsUseCase {
     constructor(private dataElementRepository: DataElementRepository) {}
 
     execute(options: Options): FutureData<Indicator[]> {

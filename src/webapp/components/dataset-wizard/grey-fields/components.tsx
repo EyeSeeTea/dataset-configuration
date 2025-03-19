@@ -1,19 +1,19 @@
 import React from "react";
 import { Checkbox, FormControlLabel } from "@material-ui/core";
 
-import { DataSet } from "$/domain/entities/DataSet";
+import { DataSet, DisabledField } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
 import { Category, defaultLabel } from "$/domain/entities/Category";
 import { NamedRef, Ref } from "$/domain/entities/Ref";
-import { IndicatorCombination } from "$/domain/entities/Indicator";
-import { DataElement } from "$/domain/entities/DataElement";
+import { DataElementWithCompetency, IndicatorCombination } from "$/domain/entities/Indicator";
 import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import _, { Collection } from "$/domain/entities/generic/Collection";
+import { Maybe } from "$/utils/ts-utils";
 
 type HeaderCheckBoxProps = {
     label: string;
-    dataElements: DataElement[];
+    dataElements: DataElementWithCompetency[];
     categoryOptionCombos: Category["options"];
     greyedFields: Record<string, boolean>;
     setGreyedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -60,7 +60,7 @@ const HeaderCheckBox = ({
 };
 
 type TableHeaderProps = {
-    dataSetElements: DataElement[];
+    dataSetElements: DataElementWithCompetency[];
     categoryCombo: Ref;
     categoryOptionCombos: Category["options"][];
     combinationById: Record<string, NamedRef>;
@@ -141,7 +141,7 @@ const TableHeader = ({
 };
 
 type DataElementCheckboxProps = {
-    dataElement: DataElement;
+    dataElement: DataElementWithCompetency;
     categoryOptions: Category["options"];
     greyedFields: Record<string, boolean>;
     setGreyedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -165,7 +165,7 @@ const DataElementCheckbox = ({
     const key = getKey(dataElement.disaggregation, categoryOptions);
     const categoryOptionCombo = combinationById[key];
     if (!dataElement || !categoryOptionCombo) return null;
-    const fieldId = [dataElement.id, categoryOptionCombo.id].join(".");
+    const fieldId = [dataElement.id, categoryOptionCombo.id, dataElement.type].join(".");
     const isGreyed = !!greyedFields[fieldId];
 
     const toggleGreyedFields = () => {
@@ -186,7 +186,7 @@ const DataElementCheckbox = ({
 };
 
 type DataElementRowsProps = {
-    dataElements: DataElement[];
+    dataElements: DataElementWithCompetency[];
     categoryOptionCombos: Category["options"][];
     greyedFields: Record<string, boolean>;
     setGreyedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -388,12 +388,16 @@ export const CombinationTables = ({
     );
 };
 
-export function generateGreyFieldsFromDataElements(dataElements: DataElement[], cocs: Ref[]) {
+export function generateGreyFieldsFromDataElements(
+    dataElements: DataElementWithCompetency[],
+    cocs: Ref[]
+) {
     const dataElementIds = dataElements.map(dataElement => ({ id: dataElement.id }));
     const dataElementsCocsProduct = _([dataElementIds, cocs]).cartesian().value();
-    const fieldIds = dataElementsCocsProduct.flatMap(([dataElement, coc]) =>
-        [dataElement?.id ?? "", coc?.id ?? ""].join(".")
-    );
+    const fieldIds = dataElementsCocsProduct.flatMap(([dataElement, coc]) => {
+        const deDetails = dataElements.find(de => de.id === dataElement?.id);
+        return [dataElement?.id ?? "", coc?.id ?? "", deDetails?.type].join(".");
+    });
     return fieldIds;
 }
 
@@ -405,7 +409,7 @@ export function buildDisableFieldsFromGreyFields(props: {
 }) {
     const { combinations, greyedFields, onChange, dataSet } = props;
     const greyedFieldsCompetency = HashMap.fromObject(greyedFields)
-        .mapValues(([key, value]) => {
+        .mapValues(([key, value]): Maybe<DisabledField> => {
             if (!value) return undefined;
             const [dataElementId, optionComboId] = key.split(".");
             if (!dataElementId || !optionComboId) throw new Error("Invalid key");
@@ -413,8 +417,14 @@ export function buildDisableFieldsFromGreyFields(props: {
             const currentDataElement = allDataElements.find(
                 dataElement => dataElement.id === dataElementId
             );
+            if (!currentDataElement) {
+                console.warn(`Data element ${dataElementId} not found`);
+                return undefined;
+            }
+
             return {
-                competencyId: currentDataElement?.coreCompetency.id ?? "",
+                type: currentDataElement.type,
+                competencyId: currentDataElement.coreCompetency.id,
                 dataElementId,
                 optionComboId,
             };
