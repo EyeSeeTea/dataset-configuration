@@ -1,7 +1,7 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorMeasure, IndicatorScope } from "$/domain/entities/Indicator";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
 import { Id, Ref } from "$/domain/entities/Ref";
@@ -66,19 +66,19 @@ export class D2ApiIndicator {
         d2Groups: Ref[],
         config: D2Config,
         groupType: "dataElementGroups" | "indicatorGroups"
-    ): Maybe<Indicator["scope"]> {
-        const isCore = d2Groups.some(deg => deg.id === config[groupType].coreIndicator.id);
+    ): Maybe<IndicatorScope> {
+        const isMandatory = d2Groups.some(deg => deg.id === config[groupType].coreIndicator.id);
         const isLocal = d2Groups.some(deg => deg.id === config[groupType].localIndicator.id);
         const isDonor = d2Groups.some(deg => deg.id === config[groupType].donorIndicator.id);
 
-        if (isCore) {
-            return "core";
+        if (isMandatory) {
+            return "mandatory";
         } else if (isLocal) {
             return "local";
         } else if (isDonor) {
             return "donor";
         } else {
-            return undefined;
+            return "suggested";
         }
     }
 
@@ -92,6 +92,7 @@ export class D2ApiIndicator {
                 fields: {
                     id: true,
                     code: true,
+                    name: true,
                     displayName: true,
                     indicators: {
                         code: true,
@@ -119,7 +120,7 @@ export class D2ApiIndicator {
         config: D2Config
     ): Indicator[] {
         const competency = competencies.find(
-            c => c.name.toLowerCase() === indicatorGroup.displayName.toLowerCase()
+            c => c.name.toLowerCase() === indicatorGroup.name.toLowerCase()
         );
         if (!competency) return [];
 
@@ -139,6 +140,7 @@ export class D2ApiIndicator {
                 );
 
                 return Indicator.create({
+                    measure: undefined,
                     valueType: "",
                     description: indicator.displayDescription,
                     relatedDataElements: [],
@@ -152,7 +154,7 @@ export class D2ApiIndicator {
                     status: this.getValueOrEmpty(status?.displayName),
                     type: "outcomes",
                     scope: scope,
-                    group: this.getValueOrEmpty(group?.value),
+                    group: group?.value ?? indicator.displayName,
                     disaggregation: undefined,
                     categories: [],
                 });
@@ -236,9 +238,12 @@ export class D2ApiIndicator {
             attribute => attribute.attribute.id === config.attributes.group.id
         );
 
+        const measure = this.getMeasure(dataElement, config);
+
         return Indicator.create({
+            measure: measure,
             valueType: dataElement.valueType,
-            description: "",
+            description: dataElement.displayDescription,
             denominator: "",
             numerator: "",
             coreCompetency: {
@@ -266,11 +271,30 @@ export class D2ApiIndicator {
             categories: [],
         });
     }
+
+    private getMeasure(
+        dataElement: D2DataElementFromGroup,
+        config: D2Config
+    ): Maybe<IndicatorMeasure> {
+        const isIndividual = dataElement.dataElementGroups.some(
+            deg => deg.id === config.dataElementGroups.individualIndicator.id
+        );
+        const isHouseholds = dataElement.dataElementGroups.some(
+            deg => deg.id === config.dataElementGroups.householdIndicator.id
+        );
+        if (isIndividual) {
+            return "individuals";
+        } else if (isHouseholds) {
+            return "households";
+        } else {
+            return undefined;
+        }
+    }
 }
 
 type D2IndicatorGroup = {
     id: Id;
-    code: string;
+    name: string;
     displayName: string;
     indicators: Array<{
         displayDescription: string;

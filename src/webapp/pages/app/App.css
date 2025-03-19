@@ -66,15 +66,15 @@ tr:has(.MuiAlert-message) {
 }
 
 .dataelement-header {
-    border: 1px solid rgb(224, 224, 224); 
+    border: 1px solid rgb(224, 224, 224);
     padding: 0.5em;
 }
 
-.dataelement-row {    
+.dataelement-row {
     border: 1px solid rgb(224, 224, 224);
     max-width: 33vw;
     overflow: hidden;
-    padding: 0.5em;    
+    padding: 0.5em;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -100,4 +100,14 @@ tr:has(.MuiAlert-message) {
 .settings-tabs button[role="tab"] {
     flex-basis: 50% !important;
     max-width: none;
+}
+
+/* 
+  Workaround to change the background color for selected items in dropdowns
+  because d2-ui-components uses its own theme provider.
+  TODO: add a prop to make theme configurable in d2-ui-components
+  https://github.com/EyeSeeTea/d2-ui-components/blob/development/src/dropdown/GenericDropdown.tsx#L26C7-L26C24
+*/
+li.Mui-selected {
+    background-color: rgb(253 90 0 / 50%) !important;
 }

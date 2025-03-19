@@ -59,6 +59,8 @@ export class D2ApiAppSettings {
     }
 
     getMetadataFromSettings() {
+        const compactValues = (values: Maybe<string>[]) => _(values).compact().value();
+
         return this.get().flatMap(appSettings => {
             return apiToFuture(
                 this.api.metadata.get({
@@ -66,7 +68,7 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([
+                                in: compactValues([
                                     appSettings.dataSetFilterField,
                                     appSettings.groupField,
                                     appSettings.inputDateField,
@@ -77,9 +79,7 @@ export class D2ApiAppSettings {
                                     metadataCodes.attributes.outcomeDates,
                                     metadataCodes.attributes.outputDates,
                                     metadataCodes.attributes.project,
-                                ])
-                                    .compact()
-                                    .value(),
+                                ]),
                             },
                         },
                     },
@@ -87,21 +87,21 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([appSettings.categoryComboId]).compact().value(),
+                                in: compactValues([appSettings.categoryComboId]),
                             },
                         },
                     },
                     organisationUnitLevels: {
                         fields: { id: true, name: true, code: true, level: true },
                         filter: {
-                            identifiable: { in: _([appSettings.countryLevelId]).compact().value() },
+                            identifiable: { in: compactValues([appSettings.countryLevelId]) },
                         },
                     },
                     categories: {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([appSettings.defaultProjectId]).compact().value(),
+                                in: compactValues([appSettings.defaultProjectId]),
                             },
                         },
                     },
@@ -109,14 +109,12 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([
+                                in: compactValues([
                                     appSettings.coreCompetencyId,
                                     appSettings.dataElementThemeId,
                                     appSettings.originDataElementId,
                                     appSettings.statusDataElementId,
-                                ])
-                                    .compact()
-                                    .value(),
+                                ]),
                             },
                         },
                     },
@@ -124,15 +122,15 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([
+                                in: compactValues([
                                     appSettings.mandatoryDataElementId,
                                     appSettings.outputId,
                                     appSettings.dataElementThemeId,
                                     metadataCodes.dataElementGroups.localIndicator,
                                     metadataCodes.dataElementGroups.donorIndicator,
-                                ])
-                                    .compact()
-                                    .value(),
+                                    metadataCodes.dataElementGroups.individualsIndicator,
+                                    metadataCodes.dataElementGroups.householdsIndicator,
+                                ]),
                             },
                         },
                     },
@@ -140,13 +138,11 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([
+                                in: compactValues([
                                     appSettings.indicatorThemeId,
                                     appSettings.originIndicatorId,
                                     appSettings.statusIndicatorId,
-                                ])
-                                    .compact()
-                                    .value(),
+                                ]),
                             },
                         },
                     },
@@ -154,13 +150,11 @@ export class D2ApiAppSettings {
                         fields: { id: true, name: true, code: true },
                         filter: {
                             identifiable: {
-                                in: _([
+                                in: compactValues([
                                     appSettings.mandatoryIndicatorId,
                                     metadataCodes.indicatorGroup.donorIndicator,
                                     metadataCodes.indicatorGroup.localIndicator,
-                                ])
-                                    .compact()
-                                    .value(),
+                                ]),
                             },
                         },
                     },

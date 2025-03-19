@@ -3,6 +3,7 @@ import { Indicator } from "$/domain/entities/Indicator";
 import { Region } from "$/domain/entities/Region";
 import { UserGroup } from "$/domain/entities/UserGroup";
 import { Maybe } from "$/utils/ts-utils";
+import { UnitDate } from "$/domain/entities/UnitDate";
 
 export type Config = {
     categoryCombinations: CategoryCombination[];
@@ -12,6 +13,6 @@ export type Config = {
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;
-    periodLastYearUnits: string;
     notificationUserGroup: Maybe<UserGroup>;
+    periodLastYearUnits: UnitDate;
 };

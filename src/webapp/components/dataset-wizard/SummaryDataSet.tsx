@@ -1,50 +1,19 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
-import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
-import { Button, Grid, Typography } from "@material-ui/core";
+import { Grid, Typography } from "@material-ui/core";
 
-import { DataSet, OrgUnit } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import _ from "$/domain/entities/generic/Collection";
 import { component } from "$/utils/react";
-import { useNavigateTo } from "$/webapp/routes";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
 const MAX_ORG_UNITS_TO_SHOW = 3;
 
 const SummaryDataSet_ = React.memo((props: SummaryDataSetProps) => {
-    const { compositionRoot } = useAppContext();
     const { dataSet } = props;
-    const [orgUnits, setOrgUnits] = React.useState<OrgUnit[]>([]);
-    const snackbar = useSnackbar();
-    const navigateTo = useNavigateTo();
-    const loading = useLoading();
-    const { saveDataSet } = useSaveDataSet({
-        dataSet,
-        onLoading: () => loading.show(true, i18n.t("Saving...")),
-        onSuccess: () => {
-            loading.hide();
-            snackbar.success(i18n.t("Data set saved successfully"));
-            navigateTo("dataSets");
-        },
-        onError: error => {
-            loading.hide();
-            snackbar.error(error);
-        },
-    });
-
-    React.useEffect(() => {
-        const firstThreeOrgUnits = _(dataSet.orgUnits)
-            .take(MAX_ORG_UNITS_TO_SHOW)
-            .map(ou => ou.id)
-            .value();
-
-        return compositionRoot.orgUnits.getByIds
-            .execute(firstThreeOrgUnits)
-            .run(setOrgUnits, error => snackbar.error(error.message));
-    }, [compositionRoot.orgUnits.getByIds, dataSet.orgUnits, snackbar]);
 
     return (
         <Grid container>
@@ -53,28 +22,24 @@ const SummaryDataSet_ = React.memo((props: SummaryDataSetProps) => {
                     {i18n.t("The dataSet is finished. Press the button Save to save the data")}
                 </Typography>
             </Grid>
-            <SummaryList dataSet={dataSet} orgUnits={orgUnits} />
-            <Grid item xs={12}>
-                <Button onClick={saveDataSet} color="primary" variant="contained">
-                    {i18n.t("Save")}
-                </Button>
-            </Grid>
+            <SummaryList dataSet={dataSet} />
         </Grid>
     );
 });
 
 export const SummaryDataSet = component(SummaryDataSet_);
 
-export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgUnit[] }) => {
+export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
     const { config } = useAppContext();
-    const { dataSet, orgUnits } = props;
+    const { dataSet } = props;
 
     const extraOrgUnits = dataSet.orgUnits.length - MAX_ORG_UNITS_TO_SHOW;
     const orgUnitMessage =
         extraOrgUnits > 0 ? i18n.t("and {{number}} more.", { number: extraOrgUnits }) : "";
 
-    const coreCompetenciesNames = dataSet.indicators
+    const coreCompetenciesNames = _(dataSet.indicators)
         .map(indicator => indicator.coreCompetency?.name || "")
+        .uniq()
         .join(", ");
 
     const regionsCodes = dataSet.getRegionCodesFromAccess();
@@ -89,7 +54,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet; orgUnits: OrgU
                 <SummaryItem label={i18n.t("Linked Project")} value={dataSet.project?.name || ""} />
                 <SummaryItem
                     label={i18n.t("Organisation Units")}
-                    value={`${orgUnits.map(ou => ou.name).join(", ")} ${orgUnitMessage}`}
+                    value={`${dataSet.orgUnits.map(ou => ou.name).join(", ")} ${orgUnitMessage}`}
                 />
                 <SummaryItem
                     label="Countries"
@@ -118,7 +83,7 @@ function getActionFromUrl(url: string): DataSetRegisterAction {
     throw new Error("Invalid action");
 }
 
-function useSaveDataSet(props: {
+export function useSaveDataSet(props: {
     dataSet: DataSet;
     onLoading: () => void;
     onSuccess: () => void;

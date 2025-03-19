@@ -20,7 +20,7 @@ import { D2Config } from "$/data/repositories/D2ApiMetadata";
 
 import getTemplate from "$/data/entry-form/CustomForm";
 import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
-import { IndicatorAttrs } from "$/domain/entities/Indicator";
+import { IndicatorAttrs, indicatorTypes } from "$/domain/entities/Indicator";
 import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
@@ -122,30 +122,41 @@ export class DataSetD2Repository implements DataSetRepository {
                         paging: false,
                     })
                 ).flatMap(d2Response => {
-                    return this.getCategoryCombosByDataSets(dataSets).flatMap(ccByDataSet => {
-                        const dataSetsToSave = this.getD2DataSetsToSave(
-                            dataSetIds,
-                            d2Response.objects,
-                            dataSets,
-                            config,
-                            ccByDataSet
-                        );
+                    return this.getSectionsByIds(dataSetIds).flatMap(existingSections => {
+                        return this.getCategoryCombosByDataSets(dataSets).flatMap(ccByDataSet => {
+                            const dataSetsToSave = this.getD2DataSetsToSave(
+                                dataSetIds,
+                                d2Response.objects,
+                                dataSets,
+                                config,
+                                ccByDataSet,
+                                existingSections
+                            );
 
-                        const { categoryCombos, categoryOptionCombos } =
-                            this.buildCategoryCombinations(dataSets, this.config);
+                            const { categoryCombos, categoryOptionCombos } =
+                                this.buildCategoryCombinations(dataSets, this.config);
 
-                        const metadataToPost = {
-                            categoryCombos,
-                            categoryOptionCombos,
-                            dataSets: dataSetsToSave.map(ds => ({
-                                ...ds,
-                                dataEntryForm: { id: ds.dataEntryForm.id },
-                            })),
-                            dataEntryForms: dataSetsToSave.map(dataSet => dataSet.dataEntryForm),
-                        };
+                            const metadataToPost = {
+                                categoryCombos,
+                                categoryOptionCombos,
+                                dataSets: dataSetsToSave.map(ds => ({
+                                    ...ds,
+                                    dataEntryForm: { id: ds.dataEntryForm.id },
+                                })),
+                                dataEntryForms: dataSetsToSave.map(
+                                    dataSet => dataSet.dataEntryForm
+                                ),
+                            };
 
-                        return runMetadata(this.api.metadata.post(metadataToPost)).flatMap(() => {
-                            return this.saveAllSections(dataSetsToSave, dataSets).map(() => []);
+                            return runMetadata(this.api.metadata.post(metadataToPost)).flatMap(
+                                () => {
+                                    return this.saveAllSections(
+                                        dataSetsToSave,
+                                        dataSets,
+                                        existingSections
+                                    ).map(() => []);
+                                }
+                            );
                         });
                     });
                 });
@@ -223,11 +234,19 @@ export class DataSetD2Repository implements DataSetRepository {
             dataEntryForm?: D2DataSetOwner["dataEntryForm"];
         },
         dataSetToSave: DataSetToSave,
-        ccByDataSet: D2CategoryComboDataSet[]
+        ccByDataSet: D2CategoryComboDataSet[],
+        config: D2Config,
+        existingDataSetSections: D2Section[]
     ) {
         const allCategoryCombos =
             ccByDataSet.find(cc => cc.dataSetId === dataSet.id)?.categoryCombos ?? [];
-        const html = getTemplate(dataSet, allCategoryCombos, dataSetToSave);
+        const html = getTemplate(
+            dataSet,
+            allCategoryCombos,
+            dataSetToSave,
+            config,
+            existingDataSetSections
+        );
         const id = dataSet.dataEntryForm?.id || generateUid();
         return {
             id,
@@ -242,7 +261,8 @@ export class DataSetD2Repository implements DataSetRepository {
         d2DataSets: D2DataSetOwner[],
         dataSets: DataSetToSave[],
         config: D2Config,
-        ccByDataSet: D2CategoryComboDataSet[]
+        ccByDataSet: D2CategoryComboDataSet[],
+        existingSections: D2Section[]
     ) {
         return dataSetIds.map(dataSetId => {
             const existingDataSet = d2DataSets.find(ds => ds.id === dataSetId);
@@ -258,7 +278,17 @@ export class DataSetD2Repository implements DataSetRepository {
                 ...this.buildD2DataSet(dataSet, existingAttributes, config),
             };
 
-            const customForm = this.buildDataEntryForm(result, dataSet, ccByDataSet);
+            const existingDataSetSections = existingSections.filter(
+                section => section.dataSet.id === dataSet.id
+            );
+
+            const customForm = this.buildDataEntryForm(
+                result,
+                dataSet,
+                ccByDataSet,
+                config,
+                existingDataSetSections
+            );
 
             const { sharing: _, ...rest } = result;
             return { ...rest, dataEntryForm: customForm };
@@ -284,41 +314,45 @@ export class DataSetD2Repository implements DataSetRepository {
         return $requests.toVoid();
     }
 
-    private saveAllSections(dataSetsToSave: Ref[], dataSets: DataSetToSave[]): FutureData<void> {
-        const dataSetsIds = dataSetsToSave.map(dataSet => dataSet.id);
-
-        return this.getSectionsByIds(dataSetsIds).flatMap(existingSections => {
-            const sectionsActions = dataSetsToSave.flatMap(dataSetSaved => {
-                const dataSet = dataSets.find(dataSet => dataSet.id === dataSetSaved.id);
-                const sectionsToSave = this.buildDataSetSections(dataSet, dataSetSaved.id);
-                const existingSectionByDataSet = existingSections.filter(
-                    section => section.dataSet.id === dataSetSaved.id
-                );
-                const sectionsIdsToSave = new Set(sectionsToSave.map(section => section.id));
-                const idsToDelete = existingSectionByDataSet.filter(
-                    item => !sectionsIdsToSave.has(item.id)
-                );
-
-                return { toSave: sectionsToSave, toDelete: idsToDelete };
-            });
-
-            const sectionsToDelete = sectionsActions.flatMap(sectionAction =>
-                sectionAction.toDelete.map(item => ({ id: item.id }))
+    private saveAllSections(
+        dataSetsToSave: Ref[],
+        dataSets: DataSetToSave[],
+        existingSections: D2Section[]
+    ): FutureData<void> {
+        const sectionsActions = dataSetsToSave.flatMap(dataSetSaved => {
+            const dataSet = dataSets.find(dataSet => dataSet.id === dataSetSaved.id);
+            const existingSectionByDataSet = existingSections.filter(
+                section => section.dataSet.id === dataSetSaved.id
             );
 
-            return this.deleteSections(sectionsToDelete).flatMap(() => {
-                const sectionsToSave = sectionsActions.flatMap(
-                    sectionAction => sectionAction.toSave
-                );
-                return apiToFuture(this.api.metadata.post({ sections: sectionsToSave })).flatMap(
-                    sectionResponse => {
-                        const allErrors = this.extractErrorsFromResponse(sectionResponse);
-                        if (allErrors.length > 0)
-                            return Future.error(new Error(allErrors.join("\n")));
-                        return Future.success(undefined);
-                    }
-                );
-            });
+            const sectionsToSave = this.buildDataSetSections(
+                dataSet,
+                dataSetSaved.id,
+                existingSectionByDataSet
+            );
+
+            const sectionsIdsToSave = new Set(sectionsToSave.map(section => section.id));
+
+            const idsToDelete = existingSectionByDataSet.filter(
+                item => !sectionsIdsToSave.has(item.id)
+            );
+
+            return { toSave: sectionsToSave, toDelete: idsToDelete };
+        });
+
+        const sectionsToDelete = sectionsActions.flatMap(sectionAction =>
+            sectionAction.toDelete.map(item => ({ id: item.id }))
+        );
+
+        return this.deleteSections(sectionsToDelete).flatMap(() => {
+            const sectionsToSave = sectionsActions.flatMap(sectionAction => sectionAction.toSave);
+            return apiToFuture(this.api.metadata.post({ sections: sectionsToSave })).flatMap(
+                sectionResponse => {
+                    const allErrors = this.extractErrorsFromResponse(sectionResponse);
+                    if (allErrors.length > 0) return Future.error(new Error(allErrors.join("\n")));
+                    return Future.success(undefined);
+                }
+            );
         });
     }
 
@@ -350,8 +384,12 @@ export class DataSetD2Repository implements DataSetRepository {
         );
     }
 
-    private buildDataSetSections(dataSet: Maybe<DataSet>, id: string): D2DataSetSection[] {
-        return _(dataSet?.indicators ?? [])
+    private buildDataSetSections(
+        dataSet: Maybe<DataSet>,
+        id: string,
+        dataSetSections: D2Section[]
+    ): D2DataSetSection[] {
+        const d2Sections = _(dataSet?.indicators ?? [])
             .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.id}`)
             .mapValues(([indicatorType, indicators]): D2DataSetSection => {
                 const [type, sectionGroupId] = indicatorType.split("_");
@@ -361,6 +399,9 @@ export class DataSetD2Repository implements DataSetRepository {
 
                 const typeLabel = this.getIndicatorTypeName(type);
                 const code = `${id}_${typeLabel.toUpperCase()}_${coreCompetency.code}`;
+                const existingSectionInfo = dataSetSections.find(
+                    section => section.code.toLowerCase() === code.toLowerCase()
+                );
 
                 const indicatorOutComes = indicators.filter(
                     indicator => indicator.type === "outcomes"
@@ -374,11 +415,21 @@ export class DataSetD2Repository implements DataSetRepository {
                     id: dataElement.id,
                 }));
 
+                const indicatorTypeValue = indicatorTypes.find(
+                    it => it === typeLabel.toLowerCase()
+                );
+                if (!indicatorTypeValue) {
+                    throw Error(`Cannot find indicator type value for ${typeLabel}`);
+                }
+
                 const disabledFieldsForSection =
-                    dataSet?.disabledFields.filter(df => df.competencyId === sectionGroupId) ?? [];
+                    dataSet?.disabledFields.filter(
+                        df => df.competencyId === sectionGroupId && indicatorTypeValue === df.type
+                    ) ?? [];
 
                 return {
-                    id: getUid(code),
+                    ...(existingSectionInfo || {}),
+                    id: existingSectionInfo?.id ?? getUid(code),
                     code,
                     dataSet: { id: id },
                     name: `${coreCompetency.name} ${typeLabel}`,
@@ -396,6 +447,20 @@ export class DataSetD2Repository implements DataSetRepository {
                 };
             })
             .values();
+
+        const sectionsOrderedByName = d2Sections.sort((a, b) => {
+            const [competencyName, sectionType] = this.d2DataSetApi.getSectionNameAndType(a.name);
+            const [competencyNameB, sectionTypeB] = this.d2DataSetApi.getSectionNameAndType(b.name);
+            if (!sectionType || !sectionTypeB) return -1;
+            if (!competencyName || !competencyNameB) return -1;
+
+            const baseCompare = competencyName.localeCompare(competencyNameB);
+            if (baseCompare !== 0) return baseCompare ?? -1;
+
+            return sectionTypeB.localeCompare(sectionType);
+        });
+
+        return sectionsOrderedByName.map((section, index) => ({ ...section, sortOrder: index }));
     }
 
     private buildCategoryCombinations(
@@ -664,3 +729,7 @@ type D2CategoryOptionCombo = {
 
 type D2Attribute = { attribute: { id: Id }; value: string };
 type D2CategoryComboDataSet = { dataSetId: Id; categoryCombos: D2ApiCategoryComboType[] };
+
+export type D2Section = MetadataPick<{
+    sections: { fields: typeof ownerFields };
+}>["sections"][number];

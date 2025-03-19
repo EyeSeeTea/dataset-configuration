@@ -6,7 +6,7 @@ import last from "lodash/last";
 
 import _ from "$/domain/entities/generic/Collection";
 import velocity from "./velocity";
-import { DataSet } from "$/domain/entities/DataSet";
+import { DataSet, DisabledField } from "$/domain/entities/DataSet";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import i18n from "$/utils/i18n";
@@ -16,6 +16,9 @@ import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
 import { Maybe } from "$/utils/ts-utils";
 import { NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
+import { D2Config } from "$/data/repositories/D2ApiMetadata";
+import { D2Section } from "$/data/repositories/DataSetD2Repository";
+import { convertAttributeValueToDate } from "$/data/utils";
 
 const data = {
     template: atob(template),
@@ -107,7 +110,12 @@ const getGroupedItems = (sections: SectionTemplate[]) =>
     _(sections)
         .toHashMap(section => {
             const groupedValues = HashMap.fromObject(section.items).values();
-            const groupedItemsForSection = groupByKeys(groupedValues, ["theme", "group"]);
+            const groupedItemsForSection = groupByKeys(
+                _(groupedValues)
+                    .sortBy(x => x.displayName)
+                    .value(),
+                ["theme", "group"]
+            );
             return [section.id, groupedItemsForSection];
         })
         .toObject();
@@ -183,7 +191,7 @@ const getContext = (
     dataset: DataSetTemplate,
     sections: SectionTemplate[],
     allCategoryCombos: D2ApiCategoryComboType[],
-    disabledFields: DataSet["disabledFields"]
+    disabledFields: DisabledField[]
 ) => {
     const categoryComboByDataElementId = _(dataset.dataSetElements)
         .toHashMap(dse => [dse.dataElement.id, getCategoryCombo(dse)])
@@ -211,10 +219,13 @@ const getContext = (
         mapDataElementRefs(dataElements, categoryComboByDataElementId);
 
     const getDataElementsByCategoryComboForIndicators = (
-        indicators: Array<{ dataElements: Ref[] }>
+        indicators: Array<{ dataElements: NamedRef[] }>
     ) => {
         const allDataElements = indicators.flatMap(indicator => indicator.dataElements);
-        return mapDataElementRefs(allDataElements, categoryComboByDataElementId);
+        const sortedDataElements = _(allDataElements)
+            .orderBy([[dataElement => dataElement.name, "desc"]])
+            .value();
+        return mapDataElementRefs(sortedDataElements, categoryComboByDataElementId);
     };
 
     const greyedFields = _(disabledFields)
@@ -284,9 +295,15 @@ function getIndicatorTypeName(type: string): { key: string; name: string } {
     }
 }
 
+function getSectionName(item: { name: string }): string {
+    const lastSpace = item.name.lastIndexOf(" ");
+    return lastSpace !== -1 ? item.name.substring(0, lastSpace) : item.name;
+}
+
 const convertToSections = (
     dataSet: DataSetToSave,
-    categoryCombos: D2ApiCategoryComboType[]
+    categoryCombos: D2ApiCategoryComboType[],
+    existingSections: D2Section[]
 ): SectionTemplate[] => {
     const result = _(dataSet.indicators ?? [])
         .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.id}`)
@@ -296,19 +313,32 @@ const convertToSections = (
             if (!coreCompetency || !type)
                 throw Error(`Cannot find core competency name for ${type}`);
 
+            const currentSectionCode = `${dataSet.id}_${type}_${coreCompetency.code}`;
+            const currentSection = existingSections.find(
+                section => section.code.toLowerCase() === currentSectionCode.toLowerCase()
+            );
+
             const typeLabel = getIndicatorTypeName(type);
 
             return {
                 id: `${coreCompetency.id}-${typeLabel.key}`,
                 name: `${coreCompetency.name} ${typeLabel.name}`,
                 type: typeLabel.key,
-                showColumnTotals: false,
-                showRowTotals: false,
+                showColumnTotals: currentSection?.showColumnTotals ?? false,
+                showRowTotals: currentSection?.showRowTotals ?? false,
                 items: getItemsForSections(indicators, categoryCombos),
             };
         })
         .values();
-    return result;
+    return result.sort((a, b) => {
+        const sectionA = getSectionName(a);
+        const sectionB = getSectionName(b);
+
+        const baseCompare = sectionA.localeCompare(sectionB);
+        if (baseCompare !== 0) return baseCompare;
+
+        return b.type.localeCompare(a.type);
+    });
 };
 
 function getItemsForSections(
@@ -324,22 +354,29 @@ function getItemsForSections(
                 displayName: indicator.name,
                 valueType: indicator.valueType,
                 categoryCombo,
+                // inside the template we compare against null to check if it is empty
+                // so we need to convert empty strings to null
+                theme: indicator.theme.length > 0 ? indicator.theme : null,
+                group: indicator.group.length > 0 ? indicator.group : null,
                 dataElements:
                     indicator.type === "outcomes"
-                        ? indicator.relatedDataElements.map(dataElement => {
-                              const categoryCombo = categoryCombos.find(
-                                  cc => cc.id === dataElement.disaggregation?.id
-                              );
-                              return {
-                                  ...dataElement,
-                                  categoryCombo,
-                                  displayName: dataElement.name,
-                                  valueType: dataElement.valueType,
-                              };
-                          })
+                        ? _(indicator.relatedDataElements)
+                              .map(dataElement => {
+                                  const categoryCombo = categoryCombos.find(
+                                      cc => cc.id === dataElement.disaggregation?.id
+                                  );
+                                  return {
+                                      ...dataElement,
+                                      categoryCombo,
+                                      displayName: dataElement.name,
+                                      valueType: dataElement.valueType,
+                                  };
+                              })
+                              .value()
                         : [],
             };
         })
+        .sortBy(indicator => indicator.displayName)
         .keyBy(indicator => indicator.id)
         .toObject();
 
@@ -347,19 +384,23 @@ function getItemsForSections(
 }
 
 const getTemplate = (
-    dataset: any,
+    dataSet: any,
     categoryCombos: D2ApiCategoryComboType[],
-    dataSetToSave: DataSet
+    dataSetToSave: DataSet,
+    d2Config: D2Config,
+    existingSections: D2Section[]
 ) => {
-    const templateSections = convertToSections(dataSetToSave, categoryCombos);
+    const templateSections = convertToSections(dataSetToSave, categoryCombos, existingSections);
     const { disabledFields } = dataSetToSave;
-    const context = getContext(dataset, templateSections, categoryCombos, disabledFields);
+    const periods = generatePeriods(dataSet, d2Config) ?? {};
+    const context = getContext(dataSet, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
     const view = velocity.render(data.template, context, {}, config);
     return `
         <style>${data.css}</style>
         <script>
             ${data.js}
+            setPeriodDates(${JSON.stringify(periods)});
         </script>
         ${view}
     `;
@@ -401,10 +442,53 @@ function mapDataElementRefs(
     return map(dataElementsGrouped);
 }
 
-type ItemsSection = IndicatorAttrs & {
+function generatePeriods(dataSet: DataSetTemplate, d2Config: D2Config): Maybe<TemplatePeriodDate> {
+    const outComeAttribute = dataSet.attributeValues.find(
+        attr => attr.attribute.id === d2Config.attributes.outcomeDates.id
+    );
+    const outPutAttribute = dataSet.attributeValues.find(
+        attr => attr.attribute.id === d2Config.attributes.outputDates.id
+    );
+    if (!outComeAttribute || !outPutAttribute) return undefined;
+
+    const outComeValidYears = generatePeriodsFromAttributeValues(outComeAttribute);
+    const outPutValidYears = generatePeriodsFromAttributeValues(outPutAttribute);
+
+    return { output: outPutValidYears, outcome: outComeValidYears };
+}
+
+function generatePeriodsFromAttributeValues(
+    attribute: DataSetTemplate["attributeValues"][number]
+): Record<string, TemplateDate> {
+    return _(attribute?.value?.split(",") ?? [])
+        .compactMap(period => {
+            const [year, dates] = period.split("=");
+            const [startDate, endDate] = dates?.split("-") ?? [];
+            if (!year || !startDate || !endDate) return undefined;
+            return [
+                year,
+                {
+                    start: convertAttributeValueToDate(startDate),
+                    end: convertAttributeValueToDate(endDate),
+                },
+            ] as [string, TemplateDate];
+        })
+        .toHashMap(([year, dates]) => [year, dates])
+        .toObject();
+}
+
+type TemplatePeriodDate = {
+    output: Record<string, TemplateDate>;
+    outcome: Record<string, TemplateDate>;
+};
+type TemplateDate = { start: string; end: string };
+
+type ItemsSection = Omit<IndicatorAttrs, "theme" | "group"> & {
     displayName: string;
     valueType: string;
     categoryCombo: Maybe<D2ApiCategoryComboType>;
+    theme: string | null;
+    group: string | null;
 };
 
 type SectionTemplate = {
@@ -416,7 +500,8 @@ type SectionTemplate = {
     items: Record<string, ItemsSection>;
 };
 
-type DataSetTemplate = {
+export type DataSetTemplate = {
+    attributeValues: Array<{ attribute: { id: string }; value: string | undefined }>;
     renderAsTabs: boolean;
     dataElementDecoration: boolean;
     dataSetElements: Array<{
