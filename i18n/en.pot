@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-20T00:48:41.118Z\n"
-"PO-Revision-Date: 2025-03-20T00:48:41.118Z\n"
+"POT-Creation-Date: 2025-03-20T16:15:17.488Z\n"
+"PO-Revision-Date: 2025-03-20T16:15:17.488Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -227,6 +227,18 @@ msgstr ""
 msgid "{{action}} dataSet"
 msgstr ""
 
+msgid "Saving..."
+msgstr ""
+
+msgid "Data set saved successfully"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
 msgid "Data set name already exists"
 msgstr ""
 
@@ -318,12 +330,6 @@ msgid "Validating..."
 msgstr ""
 
 msgid "Please select the regions you want to share this dataSet with"
-msgstr ""
-
-msgid "Saving..."
-msgstr ""
-
-msgid "Data set saved successfully"
 msgstr ""
 
 msgid "The dataSet is finished. Press the button Save to save the data"
