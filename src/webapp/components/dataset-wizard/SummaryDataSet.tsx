@@ -1,11 +1,13 @@
 import React from "react";
-import { Grid, Typography } from "@material-ui/core";
+import { Button, Grid, Typography } from "@material-ui/core";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import _ from "$/domain/entities/generic/Collection";
 import { component } from "$/utils/react";
+import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
+import { useNavigateTo } from "$/webapp/routes";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
@@ -13,6 +15,22 @@ const MAX_ORG_UNITS_TO_SHOW = 3;
 
 const SummaryDataSet_ = React.memo((props: SummaryDataSetProps) => {
     const { dataSet } = props;
+    const snackbar = useSnackbar();
+    const navigateTo = useNavigateTo();
+    const loading = useLoading();
+    const { saveDataSet } = useSaveDataSet({
+        dataSet,
+        onLoading: () => loading.show(true, i18n.t("Saving...")),
+        onSuccess: () => {
+            loading.hide();
+            snackbar.success(i18n.t("Data set saved successfully"));
+            navigateTo("dataSets");
+        },
+        onError: error => {
+            loading.hide();
+            snackbar.error(error);
+        },
+    });
 
     return (
         <Grid container>
@@ -22,6 +40,11 @@ const SummaryDataSet_ = React.memo((props: SummaryDataSetProps) => {
                 </Typography>
             </Grid>
             <SummaryList dataSet={dataSet} />
+            <Grid item xs={12}>
+                <Button onClick={saveDataSet} color="primary" variant="contained">
+                    {i18n.t("Save")}
+                </Button>
+            </Grid>
         </Grid>
     );
 });

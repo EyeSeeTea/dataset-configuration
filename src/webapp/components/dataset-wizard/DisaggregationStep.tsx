@@ -345,12 +345,10 @@ function getIndicatorsIdByMode(
         }
         case "individuals":
             return generateFullIds(
-                indicators.filter(indicator => indicator.indicator.measure === "individuals")
+                indicators.filter(indicator => indicator.indicator.isIndividual)
             );
         case "households":
-            return generateFullIds(
-                indicators.filter(indicator => indicator.indicator.measure === "households")
-            );
+            return generateFullIds(indicators.filter(indicator => indicator.indicator.isHousehold));
         case "all":
             return generateFullIds(indicators);
     }

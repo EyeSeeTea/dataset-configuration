@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-18T00:47:07.605Z\n"
-"PO-Revision-Date: 2025-03-18T00:47:07.605Z\n"
+"POT-Creation-Date: 2025-03-20T00:48:41.118Z\n"
+"PO-Revision-Date: 2025-03-20T00:48:41.118Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -236,16 +236,22 @@ msgstr ""
 msgid "Filters"
 msgstr ""
 
-msgid "Scope"
+msgid "Origin"
 msgstr ""
 
 msgid "Type"
+msgstr ""
+
+msgid "Additional"
 msgstr ""
 
 msgid "Theme"
 msgstr ""
 
 msgid "Group"
+msgstr ""
+
+msgid "Measure"
 msgstr ""
 
 msgid "Global graying out (disable combinations in all the dataSet)"
@@ -312,6 +318,12 @@ msgid "Validating..."
 msgstr ""
 
 msgid "Please select the regions you want to share this dataSet with"
+msgstr ""
+
+msgid "Saving..."
+msgstr ""
+
+msgid "Data set saved successfully"
 msgstr ""
 
 msgid "The dataSet is finished. Press the button Save to save the data"

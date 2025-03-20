@@ -22,7 +22,7 @@ export type IndicatorAttrs = {
     theme: string;
     status: string;
     type: IndicatorType;
-    measure: Maybe<IndicatorMeasure>;
+    measure: string;
     scope: IndicatorScope;
     group: string;
     disaggregation: Maybe<DisaggregationAttrs>;
@@ -35,7 +35,6 @@ export type IndicatorAttrs = {
 };
 
 export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
-export type IndicatorMeasure = "individuals" | "households";
 export const indicatorTypes = ["outputs", "outcomes"] as const;
 export type IndicatorType = UnionFromValues<typeof indicatorTypes>;
 
@@ -94,6 +93,14 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                     .value();
             }
         }
+    }
+
+    get isIndividual() {
+        return this.measure?.toLowerCase() === "individuals";
+    }
+
+    get isHousehold() {
+        return this.measure?.toLocaleLowerCase() === "households";
     }
 
     private generateCombination(

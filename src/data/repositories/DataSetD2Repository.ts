@@ -114,53 +114,59 @@ export class DataSetD2Repository implements DataSetRepository {
         const ids = dataSets.map(dataSet => dataSet.id);
 
         return this.d2DataSetApi.getConfig().flatMap(config => {
-            const $requests = chunkRequest<string[]>(ids, dataSetIds => {
-                return apiToFuture(
-                    this.api.models.dataSets.get({
-                        fields: ownerFields,
-                        filter: { id: { in: dataSetIds } },
-                        paging: false,
-                    })
-                ).flatMap(d2Response => {
-                    return this.getSectionsByIds(dataSetIds).flatMap(existingSections => {
-                        return this.getCategoryCombosByDataSets(dataSets).flatMap(ccByDataSet => {
-                            const dataSetsToSave = this.getD2DataSetsToSave(
-                                dataSetIds,
-                                d2Response.objects,
-                                dataSets,
-                                config,
-                                ccByDataSet,
-                                existingSections
-                            );
-
-                            const { categoryCombos, categoryOptionCombos } =
-                                this.buildCategoryCombinations(dataSets, this.config);
-
-                            const metadataToPost = {
-                                categoryCombos,
-                                categoryOptionCombos,
-                                dataSets: dataSetsToSave.map(ds => ({
-                                    ...ds,
-                                    dataEntryForm: { id: ds.dataEntryForm.id },
-                                })),
-                                dataEntryForms: dataSetsToSave.map(
-                                    dataSet => dataSet.dataEntryForm
-                                ),
-                            };
-
-                            return runMetadata(this.api.metadata.post(metadataToPost)).flatMap(
-                                () => {
-                                    return this.saveAllSections(
-                                        dataSetsToSave,
+            const $requests = chunkRequest<string[]>(
+                ids,
+                dataSetIds => {
+                    return apiToFuture(
+                        this.api.models.dataSets.get({
+                            fields: ownerFields,
+                            filter: { id: { in: dataSetIds } },
+                            paging: false,
+                        })
+                    ).flatMap(d2Response => {
+                        return this.getSectionsByIds(dataSetIds).flatMap(existingSections => {
+                            return this.getCategoryCombosByDataSets(dataSets).flatMap(
+                                ccByDataSet => {
+                                    const dataSetsToSave = this.getD2DataSetsToSave(
+                                        dataSetIds,
+                                        d2Response.objects,
                                         dataSets,
+                                        config,
+                                        ccByDataSet,
                                         existingSections
-                                    ).map(() => []);
+                                    );
+
+                                    const { categoryCombos, categoryOptionCombos } =
+                                        this.buildCategoryCombinations(dataSets, this.config);
+
+                                    const metadataToPost = {
+                                        categoryCombos,
+                                        categoryOptionCombos,
+                                        dataSets: dataSetsToSave.map(ds => ({
+                                            ...ds,
+                                            dataEntryForm: { id: ds.dataEntryForm.id },
+                                        })),
+                                        dataEntryForms: dataSetsToSave.map(
+                                            dataSet => dataSet.dataEntryForm
+                                        ),
+                                    };
+
+                                    return runMetadata(
+                                        this.api.metadata.post(metadataToPost)
+                                    ).flatMap(() => {
+                                        return this.saveAllSections(
+                                            dataSetsToSave,
+                                            dataSets,
+                                            existingSections
+                                        ).map(() => []);
+                                    });
                                 }
                             );
                         });
                     });
-                });
-            });
+                },
+                { chunkSize: 10 }
+            );
 
             return $requests.toVoid();
         });
@@ -386,7 +392,7 @@ export class DataSetD2Repository implements DataSetRepository {
 
     private buildDataSetSections(
         dataSet: Maybe<DataSet>,
-        id: string,
+        id: Id,
         dataSetSections: D2Section[]
     ): D2DataSetSection[] {
         const d2Sections = _(dataSet?.indicators ?? [])
@@ -427,6 +433,11 @@ export class DataSetD2Repository implements DataSetRepository {
                         df => df.competencyId === sectionGroupId && indicatorTypeValue === df.type
                     ) ?? [];
 
+                const dataElementsInSection = indicators
+                    .filter(x => x.type === "outputs")
+                    .map(indicator => ({ id: indicator.id }))
+                    .concat(refDataElements);
+
                 return {
                     ...(existingSectionInfo || {}),
                     id: existingSectionInfo?.id ?? getUid(code),
@@ -439,11 +450,13 @@ export class DataSetD2Repository implements DataSetRepository {
                             categoryOptionCombo: { id: disabledField.optionComboId },
                         };
                     }),
-                    dataElements: indicators
-                        .filter(x => x.type === "outputs")
+                    dataElements: _(dataElementsInSection)
+                        .uniqBy(dataElement => dataElement.id)
+                        .value(),
+                    indicators: _(indicatorOutComes)
                         .map(indicator => ({ id: indicator.id }))
-                        .concat(refDataElements),
-                    indicators: indicatorOutComes.map(indicator => ({ id: indicator.id })),
+                        .uniq()
+                        .value(),
                 };
             })
             .values();
@@ -573,9 +586,11 @@ export class DataSetD2Repository implements DataSetRepository {
             description: dataSet.description,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
             dataSetElements: this.buildDataSetElements(dataSet),
-            indicators: dataSet.indicators
+            indicators: _(dataSet.indicators)
                 .filter(indicator => indicator.type === "outcomes")
-                .map(indicator => ({ id: indicator.id })),
+                .map(indicator => ({ id: indicator.id }))
+                .uniqBy(indicator => indicator.id)
+                .value(),
             userAccesses: dataSet.access
                 .filter(access => access.type === "users")
                 .map(access => {
@@ -625,7 +640,9 @@ export class DataSetD2Repository implements DataSetRepository {
                 };
             });
 
-        return relatedDataElements.concat(selectedIndicators);
+        return _(relatedDataElements.concat(selectedIndicators))
+            .uniqBy(de => de.dataElement.id)
+            .value();
     }
 
     private buildD2Attributes(

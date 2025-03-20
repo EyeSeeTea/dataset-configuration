@@ -40,3 +40,6 @@ cypress/fixtures/
 .idea/*
 
 docs/
+vpn/
+vpn_updated/
+nrcdev/
