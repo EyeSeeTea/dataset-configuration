@@ -32,9 +32,8 @@ msgstr ""
 msgid "Total"
 msgstr ""
 
-#, fuzzy
 msgid "No value"
-msgstr "Ninguno"
+msgstr ""
 
 msgid "Yes"
 msgstr ""
@@ -42,9 +41,8 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#, fuzzy
 msgid "Section"
-msgstr "Acción"
+msgstr ""
 
 msgid "Current date out of accepted period"
 msgstr ""
@@ -58,9 +56,8 @@ msgstr "Vista/edición pública"
 msgid "Public view"
 msgstr "Acceso público"
 
-#, fuzzy
 msgid "delete"
-msgstr "Eliminar"
+msgstr ""
 
 msgid "change period dates"
 msgstr ""
@@ -158,9 +155,8 @@ msgstr ""
 msgid "DataSets removed"
 msgstr "DataSets eliminados"
 
-#, fuzzy
 msgid "Period date updated"
-msgstr "Ultima actualización"
+msgstr ""
 
 msgid "Loading details..."
 msgstr "Cargando detalles..."
@@ -258,9 +254,8 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#, fuzzy
 msgid "Additional"
-msgstr "Acción"
+msgstr ""
 
 msgid "Theme"
 msgstr ""
@@ -426,26 +421,3 @@ msgstr ""
 
 msgid "Loading..."
 msgstr "Cargando..."
-
-#, fuzzy
-#~ msgid "Filter list"
-#~ msgstr "Filtros"
-
-#, fuzzy
-#~ msgid "Configuration settings"
-#~ msgstr "cambio de permisos"
-
-#, fuzzy
-#~ msgid "Sections"
-#~ msgstr "Acción"
-
-#, fuzzy
-#~ msgid "Projects Category"
-#~ msgstr "Proyectos"
-
-#, fuzzy
-#~ msgid "Country organisation unit level"
-#~ msgstr "cambio de unidades organizativas"
-
-#~ msgid "Loading projects..."
-#~ msgstr "Cargando proyectos..."
