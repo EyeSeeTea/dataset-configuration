@@ -1,7 +1,12 @@
-import { Codec, string, number, optional } from "purify-ts";
+import { Codec, string, number, optional, oneOf, exactly } from "purify-ts";
 
 const optionalPeriod = optional(Codec.interface({ day: number, month: number }));
-const optionalPeriodLastYear = optional(Codec.interface({ units: string, value: number }));
+const optionalPeriodLastYear = optional(
+    Codec.interface({
+        units: oneOf([exactly("week"), exactly("month"), exactly("day")]),
+        value: number,
+    })
+);
 
 export const D2ApiSettingsCodec = Codec.interface({
     attributeGroupId: string,

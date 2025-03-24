@@ -4,6 +4,7 @@ import { D2Api } from "$/types/d2-api";
 import { D2ApiAppSettings } from "$/data/repositories/D2ApiAppSettings";
 import { AppSettings } from "$/domain/entities/AppSettings";
 import { Maybe } from "$/utils/ts-utils";
+import { UnitDate } from "$/domain/entities/UnitDate";
 
 export const metadataCodes = {
     attributes: {
@@ -20,6 +21,7 @@ export const metadataCodes = {
         coreCompetency: "GL_CoreComp_DEGROUPSET",
         theme: "GL_DETHEME_DEGROUPSET",
         status: "GL_DESTATUS_DEGROUPSET",
+        measure: "GL_DEGROUP_Measure",
     },
     dataElementGroups: {
         coreIndicator: "GL_MAND_DEGROUP",
@@ -105,6 +107,10 @@ export class D2ApiConfig {
                     status: getOrThrowMetadata(
                         "dataElementGroupSets",
                         appSettings.statusDataElementId
+                    ),
+                    measure: getOrThrowMetadata(
+                        "dataElementGroupSets",
+                        metadataCodes.dataElementGroupSets.measure
                     ),
                 },
                 dataElementGroups: {
@@ -205,7 +211,7 @@ export type D2Config = {
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;
-    periodLastYearUnits: string;
+    periodLastYearUnits: UnitDate;
     attributes: {
         project: D2NamedCodeRef;
         createdByApp: D2NamedCodeRef;
@@ -221,6 +227,7 @@ export type D2Config = {
         coreCompetency: D2NamedCodeRef;
         status: D2NamedCodeRef;
         theme: D2NamedCodeRef;
+        measure: D2NamedCodeRef;
     };
     dataElementGroups: {
         coreIndicator: D2NamedCodeRef;

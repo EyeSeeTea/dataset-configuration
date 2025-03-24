@@ -1,9 +1,13 @@
+import _ from "$/domain/entities/generic/Collection";
 import { command, run, string, option } from "cmd-ts";
 import path from "path";
 import { D2Api } from "$/types/d2-api";
 import { getWebappCompositionRoot } from "$/CompositionRoot";
 import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
 import { writeFileSync } from "fs";
+import { DataSet } from "$/domain/entities/DataSet";
+import { escapeCSVField } from "$/scripts/utils";
+import { Indicator } from "$/domain/entities/Indicator";
 
 function main() {
     const cmd = command({
@@ -55,12 +59,10 @@ function main() {
                 .execute({ dataSetIds, coreCompetencyCode: args.coreCompetencyCode })
                 .run(
                     result => {
-                        console.debug("Finished");
-                        writeFileSync("dataSets.json", JSON.stringify(result, null, 2));
-                        process.exit(0);
+                        generateCsv(result);
                     },
                     error => {
-                        console.error(error.message);
+                        console.error("Error", error);
                         process.exit(1);
                     }
                 );
@@ -68,6 +70,99 @@ function main() {
     });
 
     run(cmd, process.argv.slice(2));
+}
+
+export const generateCsv = (dataSets: DataSet[]) => {
+    const header = "id,name,project";
+
+    const allRows = dataSets.map(dataSet => {
+        const dsRow = `${escapeCSVField(dataSet.id)},${escapeCSVField(
+            dataSet.name
+        )},${escapeCSVField(dataSet.project?.name ?? "")}`;
+
+        const indicatorHeader = ",core_competency_name,core_competency_code,indicator,type";
+
+        const indicatorRowsUnsorted = _(dataSet.indicators)
+            .groupBy(ind => `${ind.coreCompetency.id}_${ind.type}`)
+            .values()
+            .flat();
+
+        const allIndicatorRowsUnsorted = indicatorRowsUnsorted.flatMap(indicator =>
+            generateIndicatorsRows(indicator)
+        );
+
+        const sortedIndicatorRows = _(allIndicatorRowsUnsorted)
+            .orderBy([
+                [
+                    row => {
+                        const parts = row.coreCompetencyName.split(" ");
+                        parts.pop();
+                        return parts.join(" ").toLowerCase();
+                    },
+                    "asc",
+                ],
+                [
+                    row => {
+                        const typeToken =
+                            row.coreCompetencyName.split(" ").pop()?.toLowerCase() || "";
+                        return typeToken.startsWith("output")
+                            ? 0
+                            : typeToken.startsWith("outcome")
+                            ? 1
+                            : 2;
+                    },
+                    "asc",
+                ],
+            ])
+            .value();
+
+        const indicatorRows = sortedIndicatorRows.map(
+            row =>
+                `,${escapeCSVField(row.coreCompetencyName)},${escapeCSVField(
+                    row.coreCompetencyCode
+                )},${escapeCSVField(row.indicator)},${escapeCSVField(row.type)}`
+        );
+
+        return [dsRow, "", indicatorHeader, ...indicatorRows, ""].join("\n");
+    });
+
+    const csvContent = [header, ...allRows].join("\n");
+    const currentTime = new Date().toISOString().replace(/:/g, "-");
+    const csvFileName = `dataSets_${currentTime}.csv`;
+    writeFileSync(csvFileName, csvContent);
+    console.debug(`Finished. CSV file generated: ${csvFileName}`);
+};
+
+function generateIndicatorsRows(indicator: Indicator) {
+    const baseCoreCompetencyName = `${indicator.coreCompetency.name} ${indicator.type}`;
+    const baseCoreCompetencyCode = `${indicator.coreCompetency.id}_${indicator.type}_${indicator.coreCompetency.code}`;
+    switch (indicator.type) {
+        case "outputs": {
+            return [
+                {
+                    coreCompetencyName: baseCoreCompetencyName,
+                    coreCompetencyCode: baseCoreCompetencyCode,
+                    indicator: escapeCSVField(indicator.name),
+                    type: "dataElement",
+                },
+            ];
+        }
+        case "outcomes": {
+            const mainRow = {
+                coreCompetencyName: baseCoreCompetencyName,
+                coreCompetencyCode: baseCoreCompetencyCode,
+                indicator: escapeCSVField(indicator.name),
+                type: "indicator",
+            };
+            const additionalRows = indicator.relatedDataElements.map(rde => ({
+                coreCompetencyName: baseCoreCompetencyName,
+                coreCompetencyCode: baseCoreCompetencyCode,
+                indicator: escapeCSVField(rde.name),
+                type: "dataElement-from-indicator",
+            }));
+            return [mainRow, ...additionalRows];
+        }
+    }
 }
 
 function parseDataSetIds(dataSetsIds: string): string[] {

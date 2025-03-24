@@ -6,6 +6,7 @@ import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import { metadataCodes } from "$/data/repositories/D2ApiMetadata";
 import { D2ApiSettingsCodec } from "$/data/ApiSettingsCodec";
+import { UnitDate } from "$/domain/entities/UnitDate";
 
 export const APP_NAMESPACE = "dataset-configuration";
 
@@ -114,6 +115,7 @@ export class D2ApiAppSettings {
                                     appSettings.dataElementThemeId,
                                     appSettings.originDataElementId,
                                     appSettings.statusDataElementId,
+                                    metadataCodes.dataElementGroupSets.measure,
                                 ]),
                             },
                         },
@@ -243,6 +245,6 @@ type D2ApiSettingsAttrs = {
     indicatorGroupSetThemeId: string;
     organisationUnitLevelForCountriesId: string;
     periodEndDate: Maybe<{ day: number; month: number }>;
-    periodLastYearEndDate: Maybe<{ units: string; value: number }>;
+    periodLastYearEndDate: Maybe<{ units: UnitDate; value: number }>;
     dataSetPeriodDateAttribute: string;
 };

@@ -9,7 +9,6 @@ import { addToDate } from "$/utils/date";
 import { PeriodDate, PeriodDetailsAttrs } from "$/domain/entities/PeriodDate";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { getUnitDateFromString } from "$/domain/entities/UnitDate";
 
 export type DataSetPeriodDatesProps = {
     dataSetIds: Id[];
@@ -30,7 +29,7 @@ function useGetYears(props: { period: PeriodDate }) {
         return years.map((year): PeriodDate["periods"][number] => {
             const month = config.periodEndDateMonth;
             const day = config.periodEndDateDay;
-            const units = getUnitDateFromString(config.periodLastYearUnits);
+            const units = config.periodLastYearUnits;
             const unitValue = config.periodLastYearEndDate;
             const currentPeriod = periods.find(period => period.year === year);
 
@@ -126,7 +125,7 @@ export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) =>
                     value={periodDate.endDate || null}
                     onChange={value => onUpdatePeriodDate(value, "endDate")}
                     label={i18n.t("End date of data input")}
-                    minDate={periodDate.startDate || ""}
+                    minDate={periodDate.startDate || undefined}
                     format="yyyy-MM-DD"
                 />
             </DatesContainer>

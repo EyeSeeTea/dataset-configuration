@@ -1,7 +1,7 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { Indicator, IndicatorMeasure, IndicatorScope } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope } from "$/domain/entities/Indicator";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
 import { Id, Ref } from "$/domain/entities/Ref";
@@ -140,7 +140,7 @@ export class D2ApiIndicator {
                 );
 
                 return Indicator.create({
-                    measure: undefined,
+                    measure: "",
                     valueType: "",
                     description: indicator.displayDescription,
                     relatedDataElements: [],
@@ -156,6 +156,7 @@ export class D2ApiIndicator {
                     scope: scope,
                     group: group?.value ?? indicator.displayName,
                     disaggregation: undefined,
+                    initialDisaggregation: undefined,
                     categories: [],
                 });
             })
@@ -238,10 +239,21 @@ export class D2ApiIndicator {
             attribute => attribute.attribute.id === config.attributes.group.id
         );
 
-        const measure = this.getMeasure(dataElement, config);
+        const measure = dataElement.dataElementGroups.find(deg =>
+            deg.groupSets.find(gs => gs.id === config.dataElementGroupSets.measure.id)
+        );
+
+        const disaggregation = dataElement.categoryCombo
+            ? {
+                  id: dataElement.categoryCombo.id,
+                  name: dataElement.categoryCombo.displayName,
+                  categories: convertToCategories(dataElement.categoryCombo.categories),
+                  optionsCombos: [],
+              }
+            : undefined;
 
         return Indicator.create({
-            measure: measure,
+            measure: this.getValueOrEmpty(measure?.displayName),
             valueType: dataElement.valueType,
             description: dataElement.displayDescription,
             denominator: "",
@@ -259,36 +271,11 @@ export class D2ApiIndicator {
             type: "outputs",
             scope: scope,
             group: this.getValueOrEmpty(group?.value),
-            disaggregation: dataElement.categoryCombo
-                ? {
-                      id: dataElement.categoryCombo.id,
-                      name: dataElement.categoryCombo.displayName,
-                      categories: convertToCategories(dataElement.categoryCombo.categories),
-                      optionsCombos: [],
-                  }
-                : undefined,
+            disaggregation: disaggregation,
+            initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
         });
-    }
-
-    private getMeasure(
-        dataElement: D2DataElementFromGroup,
-        config: D2Config
-    ): Maybe<IndicatorMeasure> {
-        const isIndividual = dataElement.dataElementGroups.some(
-            deg => deg.id === config.dataElementGroups.individualIndicator.id
-        );
-        const isHouseholds = dataElement.dataElementGroups.some(
-            deg => deg.id === config.dataElementGroups.householdIndicator.id
-        );
-        if (isIndividual) {
-            return "individuals";
-        } else if (isHouseholds) {
-            return "households";
-        } else {
-            return undefined;
-        }
     }
 }
 

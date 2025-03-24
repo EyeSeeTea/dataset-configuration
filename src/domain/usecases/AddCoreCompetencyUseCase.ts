@@ -23,7 +23,6 @@ export class AddCoreCompetencyUseCase {
                 );
 
                 console.debug(`Saving ${dataSetsCompetenciesModified.length} dataSets...`);
-
                 return this.dataSetRepository
                     .save(dataSetsCompetenciesModified)
                     .map(() => dataSetsCompetenciesModified);
@@ -47,44 +46,51 @@ export class AddCoreCompetencyUseCase {
     ): DataSet[] {
         const competencyLowerCase = options.coreCompetencyCode.toLowerCase();
         const indicatorsById = _(competencyIndicators).groupBy(indicator => indicator.id);
-        return dataSets.map(dataSet => {
-            const isCompetencyInDataSet = dataSet.indicators.some(indicator =>
-                this.compareCompetencyCode(options, indicator.coreCompetency.code)
-            );
+        return _(dataSets)
+            .compactMap(dataSet => {
+                const isCompetencyInDataSet = dataSet.indicators.some(
+                    indicator => competencyLowerCase === indicator.coreCompetency.code.toLowerCase()
+                );
 
-            const indicatorsByCompetency = _(dataSet.indicators).groupBy(indicator =>
-                indicator.coreCompetency.code.toLowerCase()
-            );
+                if (!isCompetencyInDataSet) {
+                    console.debug(
+                        `Ignoring dataSet ${dataSet.id}-${dataSet.name}. No indicators found for competency ${options.coreCompetencyCode}`
+                    );
+                    return undefined;
+                }
 
-            const indicatorsUpdated = indicatorsByCompetency
-                .mapValues(([competencyCode, indicators]) => {
-                    if (competencyCode === competencyLowerCase) return indicators;
-                    return indicators.filter(indicator => !indicatorsById.hasKey(indicator.id));
-                })
-                .values()
-                .flat();
+                const indicatorsByCompetency = _(dataSet.indicators).groupBy(indicator =>
+                    indicator.coreCompetency.code.toLowerCase()
+                );
 
-            const indicatorsToAdd = isCompetencyInDataSet
-                ? []
-                : this.config.indicators.filter(indicator =>
-                      this.compareCompetencyCode(options, indicator.coreCompetency.code)
-                  );
+                const indicatorsUpdated = indicatorsByCompetency
+                    .mapValues(([competencyCode, indicators]) => {
+                        if (competencyCode === competencyLowerCase) return indicators;
+                        return indicators.filter(indicator => !indicatorsById.hasKey(indicator.id));
+                    })
+                    .values()
+                    .flat();
 
-            const disabledFields = _(dataSet.disabledFields)
-                .compactMap(field => {
-                    return this.replaceCompetency(dataSet.id, indicatorsUpdated, field);
-                })
-                .value();
+                const disabledFields = _(dataSet.disabledFields)
+                    .compactMap(field => {
+                        return this.replaceCompetencyForDisabledFields(
+                            dataSet.id,
+                            indicatorsUpdated,
+                            field
+                        );
+                    })
+                    .value();
 
-            return DataSet.create({
-                ...dataSet,
-                indicators: indicatorsUpdated.concat(indicatorsToAdd),
-                disabledFields,
-            });
-        });
+                return DataSet.create({
+                    ...dataSet,
+                    indicators: indicatorsUpdated,
+                    disabledFields,
+                });
+            })
+            .value();
     }
 
-    private replaceCompetency(
+    private replaceCompetencyForDisabledFields(
         dataSetId: Id,
         indicators: Indicator[],
         disabledField: DisabledField
@@ -96,7 +102,8 @@ export class AddCoreCompetencyUseCase {
                         indicator.id === disabledField.dataElementId &&
                         indicator.disaggregation?.optionsCombos.find(
                             optionCombo => optionCombo.id === disabledField.optionComboId
-                        )
+                        ) &&
+                        indicator.type === disabledField.type
                 );
 
                 if (!disabledFieldOutput) {
@@ -117,7 +124,8 @@ export class AddCoreCompetencyUseCase {
                             de.id === disabledField.dataElementId &&
                             de.disaggregation?.optionsCombos.find(
                                 oc => oc.id === disabledField.optionComboId
-                            )
+                            ) &&
+                            indicator.type === disabledField.type
                     );
                     return Boolean(dataElementFromDisabledField);
                 });
@@ -155,10 +163,6 @@ export class AddCoreCompetencyUseCase {
                   )
               )
             : Future.success(indicators);
-    }
-
-    private compareCompetencyCode(options: Options, coreCompetencyCode: string): boolean {
-        return coreCompetencyCode.toLowerCase() === options.coreCompetencyCode.toLowerCase();
     }
 }
 
