@@ -1,3 +1,4 @@
+import isEqual from "lodash/isEqual";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
@@ -73,16 +74,15 @@ export class SaveDataSetUseCase {
     private compareOrgUnits(project: Project, dataSet: DataSet): boolean {
         const projectOrgUnits = _(project.orgsUnits)
             .map(orgUnit => orgUnit.id)
+            .sort()
             .value();
 
         const dataSetOrgUnits = _(dataSet.orgUnits)
             .map(orgUnit => orgUnit.id)
+            .sort()
             .value();
 
-        return (
-            _(projectOrgUnits).difference(dataSetOrgUnits).size === 0 &&
-            _(dataSetOrgUnits).difference(projectOrgUnits).size === 0
-        );
+        return isEqual(projectOrgUnits, dataSetOrgUnits);
     }
 
     private getUsersGroups(options: SaveDataSetOptions): FutureData<UserGroup[]> {
