@@ -71,7 +71,7 @@ export class D2ApiConfig {
     }
 
     private getMetadata(): FutureData<D2Config> {
-        return this.d2ApiAppSettings.getMetadataFromSettings().map(settings => {
+        return this.d2ApiAppSettings.getMetadataFromSettings().map((settings): D2Config => {
             const { appSettings, metadata } = settings;
             const getOrThrowMetadata = (metadataKey: MetadataKeyType, value: Maybe<string>) =>
                 getOrThrow(metadata[metadataKey], value, metadataKey);

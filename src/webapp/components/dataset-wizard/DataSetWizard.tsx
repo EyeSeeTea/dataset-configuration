@@ -3,6 +3,7 @@ import { Wizard, WizardStep, useLoading, useSnackbar } from "@eyeseetea/d2-ui-co
 import { Button, Grid, IconButton, Theme, Typography, createStyles } from "@material-ui/core";
 import { makeStyles } from "@material-ui/styles";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
+import { useLocation } from "react-router-dom";
 
 import i18n from "$/utils/i18n";
 import { STEP_SUMMARY_KEY, getDataSetSteps } from "$/webapp/components/dataset-wizard/utils";
@@ -12,7 +13,6 @@ import { useAppContext } from "$/webapp/contexts/app-context";
 import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
 import { Project } from "$/domain/entities/Project";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { useSaveDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
 import styled from "styled-components";
 import { NavigationProps } from "@eyeseetea/d2-ui-components/wizard/Navigation";
 
@@ -201,6 +201,50 @@ export function useValidateDataSetWizard(props: {
     );
 
     return { validateSteps };
+}
+
+export function useSaveDataSet(props: {
+    dataSet: DataSet;
+    onLoading: () => void;
+    onSuccess: () => void;
+    onError: (error: string) => void;
+}) {
+    const location = useLocation();
+    const action = getActionFromUrl(location.pathname);
+    const { compositionRoot, currentUser } = useAppContext();
+    const { dataSet, onLoading, onSuccess, onError } = props;
+
+    const saveDataSet = React.useCallback(() => {
+        onLoading();
+        return compositionRoot.dataSets.save.execute({ dataSet, user: currentUser, action }).run(
+            () => {
+                onSuccess();
+            },
+            error => {
+                onError(error.message);
+            }
+        );
+    }, [
+        action,
+        currentUser,
+        compositionRoot.dataSets.save,
+        dataSet,
+        onLoading,
+        onSuccess,
+        onError,
+    ]);
+
+    return { saveDataSet };
+}
+
+export const actions = ["edit", "create", "clone"] as const;
+export type DataSetRegisterAction = (typeof actions)[number];
+
+function getActionFromUrl(url: string): DataSetRegisterAction {
+    if (url.includes("edit")) return "edit";
+    if (url.includes("create")) return "create";
+    if (url.includes("clone")) return "clone";
+    throw new Error("Invalid action");
 }
 
 function getErrorByValidationStatus(status: ValidationStatusType): string {

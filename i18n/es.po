@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-03-20T16:15:17.488Z\n"
+"POT-Creation-Date: 2025-03-24T18:02:21.035Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -91,6 +91,18 @@ msgstr "DataSet no encontrado"
 
 msgid "Data set name already exists: {{dataSetName}}"
 msgstr "Ya existe un dataset con el nombre: {{dataSetName}}"
+
+msgid "There has been an error when dataset '{{dataSetName}}' was being saved."
+msgstr ""
+
+msgid "User: {{username}} ({{userId}})"
+msgstr ""
+
+msgid "with warnings"
+msgstr ""
+
+msgid "Warnings"
+msgstr ""
 
 msgid "User is not an admin"
 msgstr ""
