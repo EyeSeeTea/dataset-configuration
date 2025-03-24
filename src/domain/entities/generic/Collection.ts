@@ -331,6 +331,3 @@ type OrderItem<T> = [(obj: T) => unknown, "asc" | "desc"];
 export default function _c<T>(xs: T[]): Collection<T> {
     return Collection.from(xs);
 }
-
-// @ts-ignore
-window._ = _c;
