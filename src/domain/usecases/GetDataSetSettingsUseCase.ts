@@ -33,19 +33,20 @@ export class GetDataSetSettingsUseCase {
     private getIndicatorsFromDataSet(dataSet: DataSet): Indicator[] {
         return this.config.indicators.map(indicator => {
             const existingIndicator = dataSet.indicators.find(ind => ind.id === indicator.id);
-            return existingIndicator
-                ? Indicator.create({
-                      ...indicator,
-                      disaggregation:
-                          existingIndicator.type === "outputs"
-                              ? existingIndicator.disaggregation
-                              : undefined,
-                      relatedDataElements:
-                          existingIndicator.type === "outcomes"
-                              ? existingIndicator.relatedDataElements
-                              : [],
-                  })
-                : indicator;
+            if (!existingIndicator) return indicator;
+
+            const disaggregation =
+                existingIndicator.type === "outputs" ? existingIndicator.disaggregation : undefined;
+
+            const relatedDataElements =
+                existingIndicator.type === "outcomes" ? existingIndicator.relatedDataElements : [];
+
+            return Indicator.create({
+                ...indicator,
+                initialDisaggregation: disaggregation,
+                disaggregation: disaggregation,
+                relatedDataElements: relatedDataElements,
+            });
         });
     }
 

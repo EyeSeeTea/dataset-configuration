@@ -156,6 +156,7 @@ export class D2ApiIndicator {
                     scope: scope,
                     group: group?.value ?? indicator.displayName,
                     disaggregation: undefined,
+                    initialDisaggregation: undefined,
                     categories: [],
                 });
             })
@@ -242,6 +243,15 @@ export class D2ApiIndicator {
             deg.groupSets.find(gs => gs.id === config.dataElementGroupSets.measure.id)
         );
 
+        const disaggregation = dataElement.categoryCombo
+            ? {
+                  id: dataElement.categoryCombo.id,
+                  name: dataElement.categoryCombo.displayName,
+                  categories: convertToCategories(dataElement.categoryCombo.categories),
+                  optionsCombos: [],
+              }
+            : undefined;
+
         return Indicator.create({
             measure: this.getValueOrEmpty(measure?.displayName),
             valueType: dataElement.valueType,
@@ -261,14 +271,8 @@ export class D2ApiIndicator {
             type: "outputs",
             scope: scope,
             group: this.getValueOrEmpty(group?.value),
-            disaggregation: dataElement.categoryCombo
-                ? {
-                      id: dataElement.categoryCombo.id,
-                      name: dataElement.categoryCombo.displayName,
-                      categories: convertToCategories(dataElement.categoryCombo.categories),
-                      optionsCombos: [],
-                  }
-                : undefined,
+            disaggregation: disaggregation,
+            initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
         });
