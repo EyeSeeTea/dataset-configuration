@@ -10,7 +10,7 @@ import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
 import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
-export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "group";
+export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "group" | "measure";
 
 export type FilterIndicatorsProps = {
     indicatorsPerCompetency: IndicatorPerItem[];
@@ -19,6 +19,8 @@ export type FilterIndicatorsProps = {
     coreValues: string[];
     groups: string[];
     group: string;
+    measure: string;
+    measures: string[];
     onClose: () => void;
     onFilterChange: (scope: ChipItem[], type: FilterType) => void;
     scopes: string[];
@@ -60,6 +62,8 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         coreValues: coreValue,
         groups,
         group,
+        measure,
+        measures,
         onClose,
         onFilterChange,
         scopes,
@@ -96,7 +100,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
 
             <ChipFilter
                 items={scopes.map(scope => ({ text: scope, value: scope }))}
-                label={i18n.t("Scope")}
+                label={i18n.t("Origin")}
                 onChange={value => onFilterChange(value, "scope")}
                 value={scopeValue}
             />
@@ -116,6 +120,12 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                 value={[selectedType]}
                 mode="single"
             />
+
+            <BodyFilterContainer>
+                <Typography variant="body1">
+                    <strong>{i18n.t("Additional")}</strong>
+                </Typography>
+            </BodyFilterContainer>
 
             <BodyFilterContainer>
                 <Dropdown
@@ -138,6 +148,18 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                     }
                     label={i18n.t("Group")}
                     value={group}
+                />
+            </BodyFilterContainer>
+
+            <BodyFilterContainer>
+                <Dropdown
+                    className="dropdown"
+                    items={measures.map(g => ({ text: g, value: g }))}
+                    onChange={value =>
+                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "measure")
+                    }
+                    label={i18n.t("Measure")}
+                    value={measure}
                 />
             </BodyFilterContainer>
         </FilterIndicatorContainer>

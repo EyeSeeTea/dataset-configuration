@@ -1,3 +1,4 @@
+import isEqual from "lodash/isEqual";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
@@ -6,7 +7,6 @@ import { getErrors } from "$/domain/entities/generic/Error";
 import { DataSetUtils } from "$/domain/usecases/common/DataSetUtils";
 import i18n from "$/utils/i18n";
 import { NotificationRepository } from "$/domain/repositories/NotificationRepository";
-import { DataSetRegisterAction } from "$/webapp/components/dataset-wizard/SummaryDataSet";
 import { User } from "$/domain/entities/User";
 import { Config } from "$/domain/entities/Config";
 import { UserGroupRepository } from "$/domain/repositories/UserGroupRepository";
@@ -17,6 +17,7 @@ import { Project } from "$/domain/entities/Project";
 import { UserUtils } from "$/domain/usecases/common/UserUtils";
 import { UserRepository } from "$/domain/repositories/UserRepository";
 import { LogRepository } from "$/domain/repositories/LogRepository";
+import { DataSetRegisterAction } from "$/webapp/components/dataset-wizard/DataSetWizard";
 
 export class SaveDataSetUseCase {
     private dataSetUtils: DataSetUtils;
@@ -85,9 +86,7 @@ export class SaveDataSetUseCase {
             .sort()
             .value();
 
-        const areEqual = dataSetOrgUnits.every((value, index) => value === projectOrgUnits[index]);
-
-        return areEqual;
+        return isEqual(projectOrgUnits, dataSetOrgUnits);
     }
 
     private getUsersGroups(options: SaveDataSetOptions): FutureData<UserGroup[]> {
@@ -136,13 +135,26 @@ export class SaveDataSetUseCase {
     ): FutureData<void> {
         const { dataSet, user } = options;
 
-        return this.getUsersGroups(options).flatMap(userGroups => {
-            const title = `There has been an error when dataset '${dataSet.name}' was being saved.`;
-            const currentUserInfo = `User: ${user.username} (${user.id})`;
-            const body = [title, currentUserInfo, errorMessage].join("\n\n");
+        return this.getUsersGroups(options)
+            .flatMap(userGroups => {
+                const title = i18n.t(
+                    "There has been an error when dataset '{{dataSetName}}' was being saved.",
+                    {
+                        dataSetName: dataSet.name,
+                    }
+                );
+                const currentUserInfo = i18n.t("User: {{username}} ({{userId}})", {
+                    username: user.name,
+                    userId: user.id,
+                    nsSeparator: false,
+                });
+                const body = [title, currentUserInfo, errorMessage].join("\n\n");
 
-            return this.buildUserGroupsAndSendNotification(userGroups, title, body);
-        });
+                return this.buildUserGroupsAndSendNotification(userGroups, title, body);
+            })
+            .flatMap(() => {
+                return Future.error(new Error(errorMessage));
+            });
     }
 
     private getWarningMessages(errorMessage: string): {

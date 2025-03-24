@@ -434,6 +434,10 @@ export class DataSetD2Api {
                     relatedDataElements: relatedDataElements
                         .concat(commentsDataElements)
                         .map(dataElement => {
+                            const disaggregation = dataElement.categoryCombo
+                                ? this.buildDisaggregation(dataElement.categoryCombo)
+                                : this.buildDisaggregation(dataElement.dataElement.categoryCombo);
+
                             return {
                                 valueType: dataElement.dataElement.valueType,
                                 description: dataElement.dataElement.displayDescription,
@@ -441,45 +445,30 @@ export class DataSetD2Api {
                                 name: dataElement.dataElement.displayName,
                                 code: dataElement.dataElement.code,
                                 isComment: dataElement.dataElement.code.endsWith(COMMENT_SUFIX),
-                                disaggregation: dataElement.categoryCombo
-                                    ? {
-                                          id: dataElement.categoryCombo.id,
-                                          name: dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.categoryCombo.categories
-                                          ),
-                                          optionsCombos:
-                                              dataElement.categoryCombo.categoryOptionCombos.map(
-                                                  optionCombo => ({
-                                                      id: optionCombo.id,
-                                                      name: optionCombo.displayName,
-                                                      categoryCombo: { id: "" },
-                                                      options: [],
-                                                  })
-                                              ),
-                                      }
-                                    : {
-                                          id: dataElement.dataElement.categoryCombo.id,
-                                          name: dataElement.dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.dataElement.categoryCombo.categories
-                                          ),
-                                          optionsCombos:
-                                              dataElement.dataElement.categoryCombo.categoryOptionCombos.map(
-                                                  optionCombo => ({
-                                                      id: optionCombo.id,
-                                                      name: optionCombo.displayName,
-                                                      categoryCombo: { id: "" },
-                                                      options: [],
-                                                  })
-                                              ),
-                                      },
+                                disaggregation: disaggregation,
+                                initialDisaggregation: disaggregation,
                                 categories: [],
                             };
                         }),
                 });
             })
             .value();
+    }
+
+    private buildDisaggregation(
+        categoryCombo: D2DataSet["dataSetElements"][number]["categoryCombo"]
+    ) {
+        return {
+            id: categoryCombo.id,
+            name: categoryCombo.displayName,
+            categories: convertToCategories(categoryCombo.categories),
+            optionsCombos: categoryCombo.categoryOptionCombos.map(optionCombo => ({
+                id: optionCombo.id,
+                name: optionCombo.displayName,
+                categoryCombo: { id: "" },
+                options: [],
+            })),
+        };
     }
 
     getSectionNameAndType(sectionName: string) {

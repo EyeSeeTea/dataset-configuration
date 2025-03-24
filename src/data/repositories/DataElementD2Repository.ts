@@ -21,6 +21,19 @@ export class DataElementD2Repository implements DataElementRepository {
     }
 
     private buildDataElement(d2DataElement: D2ApiDataElement): DataElement {
+        const disaggregation = d2DataElement.categoryCombo
+            ? {
+                  id: d2DataElement.categoryCombo.id,
+                  name: d2DataElement.categoryCombo.displayName,
+                  categories: convertToCategories(d2DataElement.categoryCombo.categories),
+                  optionsCombos: d2DataElement.categoryCombo.categoryOptionCombos.map(coc => ({
+                      id: coc.id,
+                      name: coc.displayName,
+                      categoryCombo: { id: "" },
+                      options: [],
+                  })),
+              }
+            : undefined;
         return {
             valueType: d2DataElement.valueType,
             description: d2DataElement.displayDescription,
@@ -29,19 +42,8 @@ export class DataElementD2Repository implements DataElementRepository {
             name: d2DataElement.displayName,
             isComment: d2DataElement.code.endsWith(COMMENT_SUFIX),
             categories: [],
-            disaggregation: d2DataElement.categoryCombo
-                ? {
-                      id: d2DataElement.categoryCombo.id,
-                      name: d2DataElement.categoryCombo.displayName,
-                      categories: convertToCategories(d2DataElement.categoryCombo.categories),
-                      optionsCombos: d2DataElement.categoryCombo.categoryOptionCombos.map(coc => ({
-                          id: coc.id,
-                          name: coc.displayName,
-                          categoryCombo: { id: "" },
-                          options: [],
-                      })),
-                  }
-                : undefined,
+            disaggregation: disaggregation,
+            initialDisaggregation: disaggregation,
         };
     }
 

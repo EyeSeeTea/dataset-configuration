@@ -22,10 +22,11 @@ export type IndicatorAttrs = {
     theme: string;
     status: string;
     type: IndicatorType;
-    measure: Maybe<IndicatorMeasure>;
+    measure: string;
     scope: IndicatorScope;
     group: string;
     disaggregation: Maybe<DisaggregationAttrs>;
+    initialDisaggregation: Maybe<DisaggregationAttrs>;
     coreCompetency: CoreCompetency;
     denominator: string;
     numerator: string;
@@ -35,7 +36,6 @@ export type IndicatorAttrs = {
 };
 
 export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
-export type IndicatorMeasure = "individuals" | "households";
 export const indicatorTypes = ["outputs", "outcomes"] as const;
 export type IndicatorType = UnionFromValues<typeof indicatorTypes>;
 
@@ -56,6 +56,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                                 disaggregation: this.disaggregation,
                                 description: this.description,
                                 valueType: this.valueType,
+                                initialDisaggregation: this.initialDisaggregation,
                             },
                         ],
                         this.type
@@ -96,6 +97,14 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         }
     }
 
+    get isIndividual() {
+        return this.measure?.toLowerCase() === "individuals";
+    }
+
+    get isHousehold() {
+        return this.measure?.toLocaleLowerCase() === "households";
+    }
+
     private generateCombination(
         disaggregation: DataElement["disaggregation"],
         dataElements: DataElement[],
@@ -132,31 +141,31 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     }
 
     static buildAllIndicators(indicators: Indicator[]): IndicatorWithDataElement[] {
+        const dataElementByIndicator = _(this.buildListDataElements(indicators)).groupBy(
+            dataElement => dataElement.indicator.id
+        );
+
         return indicators.flatMap((indicator): IndicatorWithDataElement[] => {
             switch (indicator.type) {
                 case "outcomes": {
-                    const commentDataElement = indicator.relatedDataElements.find(
+                    const dataElements = dataElementByIndicator.get(indicator.id) ?? [];
+                    const commentDataElement = dataElements.find(
                         dataElement => dataElement.isComment
                     );
-                    const commentDisaggregation = commentDataElement?.disaggregation;
 
-                    const relatedDataElements = indicator.relatedDataElements.filter(
+                    const relatedDataElements = dataElements.filter(
                         dataElement => !dataElement.isComment
                     );
-
-                    const relatedDisaggregation = relatedDataElements[0]?.disaggregation;
 
                     const indicatorComment = commentDataElement
                         ? {
                               indicator: indicator,
-                              originalDisaggregation: commentDisaggregation,
                               dataElements: commentDataElement ? [commentDataElement] : [],
                           }
                         : undefined;
 
                     const indicatorRelatedDataElements: Maybe<IndicatorWithDataElement> = {
                         indicator,
-                        originalDisaggregation: relatedDisaggregation,
                         dataElements: relatedDataElements,
                     };
 
@@ -166,7 +175,6 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                     return [
                         {
                             indicator,
-                            originalDisaggregation: indicator.disaggregation,
                             dataElements: [
                                 {
                                     id: indicator.id,
@@ -177,6 +185,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                                     categories: indicator.categories,
                                     description: indicator.description,
                                     valueType: indicator.valueType,
+                                    initialDisaggregation: indicator.initialDisaggregation,
                                 },
                             ],
                         },
@@ -184,6 +193,50 @@ export class Indicator extends Struct<IndicatorAttrs>() {
                 }
             }
         });
+    }
+
+    static buildListDataElements(indicators: Indicator[]): DataElementIndicator[] {
+        const allDataElements = indicators
+            .filter(indicator => indicator.type === "outcomes")
+            .flatMap((indicator): DataElementIndicator[] => {
+                return indicator.relatedDataElements.map(dataElement => {
+                    return {
+                        id: dataElement.id,
+                        name: dataElement.name,
+                        code: dataElement.code,
+                        isComment: dataElement.isComment,
+                        categories: dataElement.categories,
+                        description: dataElement.description,
+                        valueType: dataElement.valueType,
+                        initialDisaggregation: dataElement.initialDisaggregation,
+                        disaggregation: dataElement.disaggregation,
+                        indicator: indicator,
+                    };
+                });
+            });
+
+        const outputDataElements = indicators
+            .filter(indicator => indicator.type === "outputs")
+            .map((indicator): DataElementIndicator => {
+                return {
+                    id: indicator.id,
+                    name: indicator.name,
+                    code: indicator.code,
+                    isComment: false,
+                    categories: indicator.categories,
+                    description: indicator.description,
+                    valueType: indicator.valueType,
+                    initialDisaggregation: indicator.initialDisaggregation,
+                    disaggregation: indicator.disaggregation,
+                    indicator: indicator,
+                };
+            });
+
+        const outcomeDataElements = _(allDataElements)
+            .uniqBy(dataElement => dataElement.id)
+            .value();
+
+        return outputDataElements.concat(outcomeDataElements);
     }
 
     static filterIndicatorDataElements(
@@ -220,11 +273,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     }
 }
 
-export type IndicatorWithDataElement = {
-    originalDisaggregation: Maybe<DisaggregationAttrs>;
-    indicator: Indicator;
-    dataElements: DataElement[];
-};
+export type IndicatorWithDataElement = { indicator: Indicator; dataElements: DataElement[] };
 
 export type IndicatorCombination = {
     id: Id;
@@ -239,3 +288,5 @@ export type DataElementWithCompetency = DataElement & {
     coreCompetency: CoreCompetency;
     type: IndicatorType;
 };
+
+type DataElementIndicator = DataElement & { indicator: Indicator };
