@@ -269,9 +269,8 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
-#, fuzzy
 msgid "Additional"
-msgstr "Acción"
+msgstr ""
 
 msgid "Theme"
 msgstr ""
