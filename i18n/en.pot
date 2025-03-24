@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-18T00:47:07.605Z\n"
-"PO-Revision-Date: 2025-03-18T00:47:07.605Z\n"
+"POT-Creation-Date: 2025-03-24T15:48:45.713Z\n"
+"PO-Revision-Date: 2025-03-24T15:48:45.713Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -90,6 +90,18 @@ msgid "DataSet not found"
 msgstr ""
 
 msgid "Data set name already exists: {{dataSetName}}"
+msgstr ""
+
+msgid "User is not an admin"
+msgstr ""
+
+msgid "Day"
+msgstr ""
+
+msgid "Month"
+msgstr ""
+
+msgid "Year"
 msgstr ""
 
 msgid "Add"
@@ -189,6 +201,9 @@ msgid "Sharing"
 msgstr ""
 
 msgid "Access"
+msgstr ""
+
+msgid "Settings"
 msgstr ""
 
 msgid "Details"
@@ -371,6 +386,9 @@ msgstr ""
 msgid "Projects"
 msgstr ""
 
+msgid "Filter list"
+msgstr ""
+
 msgid "Back"
 msgstr ""
 
@@ -381,6 +399,84 @@ msgid "Org. Units"
 msgstr ""
 
 msgid "Core Competencies"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Sections"
+msgstr ""
+
+msgid "Settings saved"
+msgstr ""
+
+msgid "Configuration settings"
+msgstr ""
+
+msgid "Projects Category"
+msgstr ""
+
+msgid "Category combination"
+msgstr ""
+
+msgid "Core competency data element group set"
+msgstr ""
+
+msgid "Default Period End Date - Month"
+msgstr ""
+
+msgid "Default Time Period End Date (Last year) - Value"
+msgstr ""
+
+msgid "Units"
+msgstr ""
+
+msgid "Country organisation unit level"
+msgstr ""
+
+msgid "Created by dataSet Configuration attribute"
+msgstr ""
+
+msgid "Attribute for Period Dates"
+msgstr ""
+
+msgid "Attribute for interval dates"
+msgstr ""
+
+msgid "Data element theme group set"
+msgstr ""
+
+msgid "Indicator theme group set"
+msgstr ""
+
+msgid "Group attribute"
+msgstr ""
+
+msgid "Output data element group"
+msgstr ""
+
+msgid "Global indicators mandatory data element group set"
+msgstr ""
+
+msgid "Global indicators mandatory indicator group set"
+msgstr ""
+
+msgid "Data Element origin group set"
+msgstr ""
+
+msgid "Indicator origin group set"
+msgstr ""
+
+msgid "Data Element status group set"
+msgstr ""
+
+msgid "Indicator status group set"
+msgstr ""
+
+msgid "Hide in dataset attribute"
+msgstr ""
+
+msgid "User group excluded of selecting core items"
 msgstr ""
 
 msgid "Public Access"

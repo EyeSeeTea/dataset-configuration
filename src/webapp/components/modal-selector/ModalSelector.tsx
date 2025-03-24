@@ -30,21 +30,6 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
         });
     }, [items, search]);
 
-    // const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-    //     const item = itemsToRender[index];
-    //     if (!item) return null;
-
-    //     return (
-    //         <div style={{ ...style, width: "initial" }}>
-    //             <Grid item xs={12}>
-    //                 <Button onClick={() => onSelectItem(item)} color="primary" disableElevation>
-    //                     {item.text}
-    //                 </Button>
-    //             </Grid>
-    //         </div>
-    //     );
-    // };
-
     const selectedValue = items.find(item => item.value === value);
 
     return (
@@ -52,11 +37,11 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
             <TextField
                 fullWidth
                 label={label}
-                onClick={() => modalActions.enable()}
+                onClick={modalActions.enable}
                 InputProps={{
                     readOnly: true,
                     endAdornment: (
-                        <IconButton onClick={() => modalActions.enable()}>
+                        <IconButton onClick={modalActions.enable}>
                             <OpenInNewIcon />
                         </IconButton>
                     ),
@@ -66,7 +51,7 @@ const _ModalSelector = React.memo((props: ModalSelectorProps) => {
             <ConfirmationDialog
                 open={openModal}
                 cancelText={i18n.t("Cancel")}
-                onCancel={() => modalActions.disable()}
+                onCancel={modalActions.disable}
                 fullWidth
             >
                 <Grid container>

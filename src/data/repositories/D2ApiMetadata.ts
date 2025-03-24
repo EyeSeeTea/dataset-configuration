@@ -4,6 +4,7 @@ import { D2Api } from "$/types/d2-api";
 import { D2ApiAppSettings } from "$/data/repositories/D2ApiAppSettings";
 import { AppSettings } from "$/domain/entities/AppSettings";
 import { Maybe } from "$/utils/ts-utils";
+import { UnitDate } from "$/domain/entities/UnitDate";
 
 export const metadataCodes = {
     attributes: {
@@ -184,7 +185,7 @@ export type D2Config = {
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;
-    periodLastYearUnits: string;
+    periodLastYearUnits: UnitDate;
     attributes: {
         project: D2NamedCodeRef;
         createdByApp: D2NamedCodeRef;

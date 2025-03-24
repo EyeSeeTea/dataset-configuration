@@ -1,5 +1,5 @@
 import { Id } from "$/domain/entities/Ref";
-import { DEFAULT_UNIT_DATE } from "$/domain/entities/UnitDate";
+import { DEFAULT_UNIT_DATE, UnitDate } from "$/domain/entities/UnitDate";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe } from "$/utils/ts-utils";
 
@@ -10,7 +10,7 @@ export type AppSettingsAttr = {
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;
-    periodLastYearUnits: string;
+    periodLastYearUnits: UnitDate;
     countryLevelId: Maybe<Id>;
     dataSetFilterField: Maybe<string>;
     periodDateField: Maybe<string>;
