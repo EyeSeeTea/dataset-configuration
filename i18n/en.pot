@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-24T15:48:45.713Z\n"
-"PO-Revision-Date: 2025-03-24T15:48:45.713Z\n"
+"POT-Creation-Date: 2025-03-20T16:15:17.488Z\n"
+"PO-Revision-Date: 2025-03-20T16:15:17.488Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -242,6 +242,18 @@ msgstr ""
 msgid "{{action}} dataSet"
 msgstr ""
 
+msgid "Saving..."
+msgstr ""
+
+msgid "Data set saved successfully"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
 msgid "Data set name already exists"
 msgstr ""
 
@@ -251,16 +263,22 @@ msgstr ""
 msgid "Filters"
 msgstr ""
 
-msgid "Scope"
+msgid "Origin"
 msgstr ""
 
 msgid "Type"
+msgstr ""
+
+msgid "Additional"
 msgstr ""
 
 msgid "Theme"
 msgstr ""
 
 msgid "Group"
+msgstr ""
+
+msgid "Measure"
 msgstr ""
 
 msgid "Global graying out (disable combinations in all the dataSet)"

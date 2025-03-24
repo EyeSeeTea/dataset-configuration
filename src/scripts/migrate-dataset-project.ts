@@ -5,6 +5,7 @@ import { getWebappCompositionRoot } from "$/CompositionRoot";
 import { DataSet } from "$/domain/entities/DataSet";
 import { writeFileSync } from "fs";
 import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
+import { escapeCSVField } from "$/scripts/utils";
 
 function main() {
     const cmd = command({
@@ -70,10 +71,6 @@ function generateCSV(data: DataSet[]): string {
     );
     const csvContent = [headers.join(","), ...rows].join("\n");
     return csvContent;
-}
-
-function escapeCSVField(field: string): string {
-    return field.includes(",") ? `"${field.replace(/"/g, '""')}"` : field;
 }
 
 main();

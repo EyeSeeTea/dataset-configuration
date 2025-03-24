@@ -21,6 +21,7 @@ export const metadataCodes = {
         coreCompetency: "GL_CoreComp_DEGROUPSET",
         theme: "GL_DETHEME_DEGROUPSET",
         status: "GL_DESTATUS_DEGROUPSET",
+        measure: "GL_DEGROUP_Measure",
     },
     dataElementGroups: {
         coreIndicator: "GL_MAND_DEGROUP",
@@ -102,6 +103,10 @@ export class D2ApiConfig {
                     status: getOrThrowMetadata(
                         "dataElementGroupSets",
                         appSettings.statusDataElementId
+                    ),
+                    measure: getOrThrowMetadata(
+                        "dataElementGroupSets",
+                        metadataCodes.dataElementGroupSets.measure
                     ),
                 },
                 dataElementGroups: {
@@ -201,6 +206,7 @@ export type D2Config = {
         coreCompetency: D2NamedCodeRef;
         status: D2NamedCodeRef;
         theme: D2NamedCodeRef;
+        measure: D2NamedCodeRef;
     };
     dataElementGroups: {
         coreIndicator: D2NamedCodeRef;

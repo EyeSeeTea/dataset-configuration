@@ -6,6 +6,8 @@ import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
 import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
 import { SummaryDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
 
+export const STEP_SUMMARY_KEY = "summary";
+
 export function getDataSetSteps() {
     const steps = [
         {
@@ -36,7 +38,7 @@ export function getDataSetSteps() {
         {
             component: SummaryDataSet,
             label: i18n.t("Summary and Save"),
-            key: "summary",
+            key: STEP_SUMMARY_KEY,
         },
     ];
 

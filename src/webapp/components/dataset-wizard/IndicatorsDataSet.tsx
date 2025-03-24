@@ -55,6 +55,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [selectedType, setType] = React.useState("Outputs");
     const [selectedGroup, setGroup] = React.useState("");
     const [selectedTheme, setTheme] = React.useState("");
+    const [selectedMeasure, setMeasure] = React.useState("");
     const [selectedFilterValue, setSelectedFilterValue] = React.useState<SelectedFilterValue>();
     const [selectedIndicators, setSelectedIndicators] = React.useState<Id[]>(
         dataSet.indicators.map(indicator => indicator.id)
@@ -65,7 +66,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         order: "asc",
     });
 
-    const { allGroups, allThemes, filteredRows } = useFilterIndicators({
+    const { allMeasures, allGroups, allThemes, filteredRows } = useFilterIndicators({
         indicators,
         scope,
         selectedType,
@@ -74,6 +75,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedTheme,
         selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     });
 
     const validateIndicators = useValidateIndicators({
@@ -135,6 +137,9 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             case "group":
                 setGroup(singleItemValue);
                 break;
+            case "measure":
+                setMeasure(singleItemValue);
+                break;
         }
     }, []);
 
@@ -168,6 +173,8 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     showDrawer={showFilterModal}
                 >
                     <FilterIndicators
+                        measures={allMeasures}
+                        measure={selectedMeasure}
                         scopes={scopes}
                         scopeValue={[scope]}
                         onFilterChange={updateFilter}
@@ -263,6 +270,7 @@ export const FilterTable = React.memo(
 function useFilterIndicators(props: {
     indicators: Indicator[];
     scope: string;
+    selectedMeasure: string;
     selectedType: string;
     selectedCompetencies: string[];
     selectedGroup: string;
@@ -279,6 +287,7 @@ function useFilterIndicators(props: {
         selectedTheme,
         selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     } = props;
 
     const allThemes = React.useMemo(() => {
@@ -291,6 +300,13 @@ function useFilterIndicators(props: {
     const allGroups = React.useMemo(() => {
         return _(indicators)
             .map(indicator => indicator.group)
+            .uniq()
+            .value();
+    }, [indicators]);
+
+    const allMeasures = React.useMemo(() => {
+        return _(indicators)
+            .map(indicator => indicator.measure)
             .uniq()
             .value();
     }, [indicators]);
@@ -311,8 +327,10 @@ function useFilterIndicators(props: {
 
                 const isInGroup = selectedGroup ? indicator.group === selectedGroup : true;
                 const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
+                const isInMeasure = selectedMeasure ? indicator.measure === selectedMeasure : true;
 
                 return (
+                    isInMeasure &&
                     isInGroup &&
                     isInTheme &&
                     isInCompetency &&
@@ -332,9 +350,10 @@ function useFilterIndicators(props: {
         selectedType,
         selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     ]);
 
-    return { allGroups, allThemes, filteredRows };
+    return { allMeasures, allGroups, allThemes, filteredRows };
 }
 
 export const StatusIndicator = React.memo((props: { status: string }) => {

@@ -8,6 +8,7 @@ export type DataElement = {
     name: string;
     code: string;
     description: string;
+    initialDisaggregation: Maybe<DisaggregationAttrs>;
     disaggregation: Maybe<DisaggregationAttrs>;
     categories: Category[];
     isComment: boolean;
