@@ -2,9 +2,9 @@ import { NamedRef } from "$/domain/entities/Ref";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { D2Api } from "$/types/d2-api";
 import { D2ApiAppSettings } from "$/data/repositories/D2ApiAppSettings";
-import { AppSettings } from "$/domain/entities/AppSettings";
 import { Maybe } from "$/utils/ts-utils";
 import { UnitDate } from "$/domain/entities/UnitDate";
+import rec from "$/domain/entities/generic/Rec";
 
 export const metadataCodes = {
     attributes: {
@@ -85,7 +85,7 @@ export class D2ApiConfig {
             );
 
             return {
-                attributes: this.buildAttributes(metadata.attributes, appSettings),
+                attributes: this.buildAttributes(metadata.attributes),
                 categories: {
                     project: getOrThrowMetadata("categories", appSettings.defaultProjectId),
                 },
@@ -170,23 +170,10 @@ export class D2ApiConfig {
         });
     }
 
-    private buildAttributes(
-        attributes: D2NamedCodeRef[],
-        appSettings: AppSettings
-    ): D2Config["attributes"] {
-        return {
-            group: getOrThrow(attributes, appSettings.groupField, "attributes"),
-            project: getOrThrow(attributes, metadataCodes.attributes.project, "attributes"),
-            createdByApp: getOrThrow(attributes, appSettings.dataSetFilterField, "attributes"),
-            inputDates: getOrThrow(attributes, appSettings.inputDateField, "attributes"),
-            periodDates: getOrThrow(attributes, appSettings.periodDateField, "attributes"),
-            outcomeDates: getOrThrow(
-                attributes,
-                metadataCodes.attributes.outcomeDates,
-                "attributes"
-            ),
-            outputDates: getOrThrow(attributes, metadataCodes.attributes.outputDates, "attributes"),
-        };
+    private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
+        return rec(metadataCodes.attributes)
+            .mapValues(([_key, code]) => getOrThrow(attributes, code, "attributes"))
+            .value();
     }
 }
 

@@ -31,7 +31,7 @@ export function addToDate(date: string, units: UnitDate, unitValue: number): str
             newDate.setDate(newDate.getDate() + unitValue);
             break;
         default:
-            throw new Error("Unidad no válida");
+            throw new Error("Invalid Date Unit");
     }
 
     return newDate.toISOString();

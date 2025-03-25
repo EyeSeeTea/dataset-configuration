@@ -19,8 +19,6 @@ import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Id } from "$/domain/entities/Ref";
 import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
-import IconButton from "@material-ui/core/IconButton";
-import CloseIcon from "@material-ui/icons/CloseRounded";
 import styled from "styled-components";
 
 type AddDisaggregateModalProps = {
@@ -116,9 +114,13 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
                             onOpen={() => setShowButton(true)}
                         >
                             <StickyCloseButton>
-                                <IconButton onClick={() => setShowButton(false)}>
-                                    <CloseIcon color="primary" titleAccess={i18n.t("Close")} />
-                                </IconButton>
+                                <Button
+                                    onClick={() => setShowButton(false)}
+                                    color="primary"
+                                    variant="contained"
+                                >
+                                    {i18n.t("Close")}
+                                </Button>
                             </StickyCloseButton>
                             {categories.map(category => (
                                 <MenuItem key={category.value} value={category.value}>
