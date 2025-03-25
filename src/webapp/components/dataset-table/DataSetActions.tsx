@@ -8,8 +8,9 @@ import { EditSharing } from "$/webapp/components/edit-sharing/EditSharing";
 import { EditOrgUnits } from "$/webapp/components/edit-orgunits/EditOrgUnits";
 import { DataSetLogs } from "$/webapp/components/dataset-logs/DataSetLogs";
 import { Maybe } from "$/utils/ts-utils";
-import { useDeleteDataSets } from "$/webapp/hooks/useDataSets";
+import { useDeleteDataSets, useUpdatePeriodDate } from "$/webapp/hooks/useDataSets";
 import { component } from "$/utils/react";
+import { DataSetPeriodDates } from "$/webapp/components/dataset-periods/DataSetPeriodDates";
 
 export type DataSetActionsProps = {
     tableAction: Maybe<TableAction>;
@@ -49,6 +50,18 @@ const DataSetActions_ = React.memo((props: DataSetActionsProps) => {
         },
     });
 
+    const { updatePeriodDate } = useUpdatePeriodDate({
+        ids: selectedIds,
+        onSuccess: () => {
+            clearTableAction();
+            snackbar.success(i18n.t("Period date updated"));
+        },
+        onError: message => {
+            snackbar.error(message);
+            clearTableAction();
+        },
+    });
+
     const renderActions = () => {
         switch (action) {
             case "remove":
@@ -72,6 +85,14 @@ const DataSetActions_ = React.memo((props: DataSetActionsProps) => {
                 );
             case "logs":
                 return <DataSetLogs onCancel={clearTableAction} dataSetIds={selectedIds} />;
+            case "set_period_dates":
+                return (
+                    <DataSetPeriodDates
+                        onSave={updatePeriodDate}
+                        onCancel={clearTableAction}
+                        dataSetIds={selectedIds}
+                    />
+                );
             default:
                 return null;
         }
@@ -82,7 +103,7 @@ const DataSetActions_ = React.memo((props: DataSetActionsProps) => {
 
 export type TableAction = {
     ids: Id[];
-    action: "remove" | "sharing" | "orgUnits" | "logs" | "details";
+    action: "remove" | "sharing" | "orgUnits" | "logs" | "details" | "set_period_dates";
 };
 export type TableConfigProps = { onAction: (action: TableAction) => void; refreshTable: number };
 export const DataSetActions = component(DataSetActions_);

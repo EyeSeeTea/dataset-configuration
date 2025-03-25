@@ -12,9 +12,7 @@ export class GetLogsUseCase {
     execute(options: GetLogsOptions): FutureData<Log[]> {
         return this.dataSetRepository.getByIds(options.dataSetsIds).flatMap(dataSets => {
             const ids = dataSets.map(dataSet => dataSet.id);
-            return this.logsRepository
-                .getByDataSets({ dataSetsIds: ids })
-                .map(logs => Log.buildLogsWithDataSetDetails(dataSets, logs));
+            return this.logsRepository.getByDataSets({ dataSetsIds: ids, page: options.page });
         });
     }
 }

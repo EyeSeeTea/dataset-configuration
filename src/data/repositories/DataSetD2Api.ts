@@ -22,8 +22,10 @@ import { Pager } from "@eyeseetea/d2-api/api";
 import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
-import { convertToCategories } from "$/data/utils";
+import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
+import { PeriodDate } from "$/domain/entities/PeriodDate";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
+import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -45,6 +47,7 @@ export class DataSetD2Api {
                         sharing: { public: true },
                     },
                     filter: {
+                        id: { in: options.filters.ids },
                         "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
                         "attributeValues.value": { eq: "true" },
                         identifiable: { token: options.filters.search },
@@ -209,6 +212,7 @@ export class DataSetD2Api {
         const dataElementGroups = this.buildDataElementsGroupsCodes(d2DataSet);
 
         return DataSet.create({
+            periodDate: this.buildPeriodDateFromAttributes(d2DataSet, attributes),
             indicators: this.buildIndicatorsFromDataSetElements(d2DataSet),
             orgUnits: d2DataSet.organisationUnits
                 ? d2DataSet.organisationUnits.map((ou): OrgUnit => {
@@ -239,6 +243,26 @@ export class DataSetD2Api {
             notifyUser: d2DataSet.notifyCompletingUser,
             expiryDays: d2DataSet.expiryDays,
             openFuturePeriods: d2DataSet.openFuturePeriods,
+        });
+    }
+
+    private buildPeriodDateFromAttributes(
+        d2DataSet: D2DataSet,
+        attributes: D2Config["attributes"]
+    ): PeriodDate {
+        const inputDate = d2DataSet.attributeValues.find(
+            attribute => attribute.attribute.id === attributes.inputDates.id
+        );
+        const periodDate = d2DataSet.attributeValues.find(
+            attribute => attribute.attribute.id === attributes.periodDates.id
+        );
+
+        const [startDate, endDate] = getStartEndDate(inputDate?.value);
+
+        return PeriodDate.create({
+            startDate: startDate ? convertAttributeValueToDate(startDate) : "",
+            endDate: endDate ? convertAttributeValueToDate(endDate) : "",
+            periods: parsePeriodDateAttribute(periodDate?.value),
         });
     }
 

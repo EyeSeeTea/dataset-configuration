@@ -1,6 +1,7 @@
 import { CoreCompetencyD2Repository } from "$/data/repositories/CoreCompetencyD2Repository";
 import { DataElementD2Repository } from "$/data/repositories/DataElementD2Repository";
 import { DataSetD2Repository } from "$/data/repositories/DataSetD2Repository";
+import { DataSetPeriodDateD2Repository } from "$/data/repositories/DataSetPeriodDateD2Repository";
 import { DataSetTestRepository } from "$/data/repositories/DataSetTestRepository";
 import { IndicatorD2Repository } from "$/data/repositories/IndicatorD2Repository";
 import { LogD2Repository } from "$/data/repositories/LogD2Repository";
@@ -15,6 +16,7 @@ import { SharingTestRepository } from "$/data/repositories/SharingTestRepository
 import { Config } from "$/domain/entities/Config";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
+import { DataSetPeriodDateRepository } from "$/domain/repositories/DataSetPeriodDateRepository";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
 import { IndicatorRepository } from "$/domain/repositories/IndicatorRepository";
 import { LogRepository } from "$/domain/repositories/LogRepository";
@@ -30,9 +32,11 @@ import { GetOrgUnitsByIdsUseCase } from "$/domain/usecases/GetOrgUnitsByIdsUseCa
 import { GetProjectsUseCase } from "$/domain/usecases/GetProjectsUseCase";
 import { GetRelatedIndicatorsUseCase } from "$/domain/usecases/GetRelatedIndicatorsUseCase";
 import { MigrateDataSetProjectsUseCase } from "$/domain/usecases/MigrateDataSetProjectsUseCase";
+import { MigratePeriodDatesUseCase } from "$/domain/usecases/MigratePeriodDatesUseCase";
 import { RemoveDataSetsUseCase } from "$/domain/usecases/RemoveDataSetsUseCase";
 import { SaveDataSetUseCase } from "$/domain/usecases/SaveDataSetUseCase";
 import { SaveOrgUnitDataSetUseCase } from "$/domain/usecases/SaveOrgUnitDataSetUseCase";
+import { SavePeriodDateUseCase } from "$/domain/usecases/SavePeriodDateUseCase";
 import { SaveSharingDataSetsUseCase } from "$/domain/usecases/SaveSharingDataSetsUseCase";
 import { SearchSharingUseCase } from "$/domain/usecases/SearchSharingUseCase";
 import { ValidateDataSetNameUseCase } from "$/domain/usecases/ValidateDataSetNameUseCase";
@@ -54,6 +58,7 @@ type Repositories = {
     coreCompetencyRepository: CoreCompetencyRepository;
     indicatorRepository: IndicatorRepository;
     dataElementRepository: DataElementRepository;
+    dataSetPeriodDateRepository: DataSetPeriodDateRepository;
 };
 
 function getCompositionRoot(repositories: Repositories, config: Config) {
@@ -61,9 +66,21 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
         dataSets: {
             getByIds: new GetDataSetsByIdsUseCase(repositories.dataSetsRepository),
             getAll: new GetDataSetsUseCase(repositories.dataSetsRepository),
-            remove: new RemoveDataSetsUseCase(repositories.dataSetsRepository),
-            saveSharing: new SaveSharingDataSetsUseCase(repositories.dataSetsRepository),
-            saveOrgUnits: new SaveOrgUnitDataSetUseCase(repositories.dataSetsRepository),
+            remove: new RemoveDataSetsUseCase(
+                repositories.dataSetsRepository,
+                repositories.usersRepository,
+                repositories.logRepository
+            ),
+            saveSharing: new SaveSharingDataSetsUseCase(
+                repositories.dataSetsRepository,
+                repositories.logRepository,
+                repositories.usersRepository
+            ),
+            saveOrgUnits: new SaveOrgUnitDataSetUseCase(
+                repositories.dataSetsRepository,
+                repositories.usersRepository,
+                repositories.logRepository
+            ),
             migrateProjects: new MigrateDataSetProjectsUseCase(
                 repositories.dataSetsRepository,
                 repositories.projectRepository
@@ -75,6 +92,14 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
                 repositories.indicatorRepository,
                 repositories.dataSetsRepository,
                 config
+            ),
+            savePeriodDate: new SavePeriodDateUseCase(
+                repositories.dataSetsRepository,
+                repositories.usersRepository,
+                repositories.logRepository
+            ),
+            migratePeriodDates: new MigratePeriodDatesUseCase(
+                repositories.dataSetPeriodDateRepository
             ),
         },
         logs: {
@@ -112,6 +137,7 @@ export function getWebappCompositionRoot(api: D2Api, config: Config) {
         coreCompetencyRepository: new CoreCompetencyD2Repository(api),
         indicatorRepository: new IndicatorD2Repository(api, config),
         dataElementRepository: new DataElementD2Repository(api),
+        dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository(api),
     };
 
     return getCompositionRoot(repositories, config);
@@ -128,6 +154,7 @@ export function getTestCompositionRoot() {
         coreCompetencyRepository: new CoreCompetencyD2Repository({} as D2Api),
         indicatorRepository: new IndicatorD2Repository({} as D2Api, {} as Config),
         dataElementRepository: new DataElementD2Repository({} as D2Api),
+        dataSetPeriodDateRepository: new DataSetPeriodDateD2Repository({} as D2Api),
     };
 
     return getCompositionRoot(repositories, {} as Config);

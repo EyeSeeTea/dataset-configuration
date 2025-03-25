@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-01-30T03:34:37.405Z\n"
+"POT-Creation-Date: 2025-03-18T16:34:46.055Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -23,6 +23,9 @@ msgstr "cambio de unidades organizativas"
 msgid "clone dataset"
 msgstr "clonar dataset"
 
+msgid "period dates"
+msgstr ""
+
 msgid "No public access"
 msgstr "Sin acceso público"
 
@@ -31,6 +34,15 @@ msgstr "Vista/edición pública"
 
 msgid "Public view"
 msgstr "Acceso público"
+
+msgid "delete"
+msgstr "eliminar"
+
+msgid "change period dates"
+msgstr ""
+
+msgid "unknown action"
+msgstr ""
 
 msgid "Project id is required"
 msgstr "El id del proyecto es obligatorio"
@@ -101,8 +113,29 @@ msgstr "Usuario"
 msgid "Datasets"
 msgstr ""
 
+msgid "Load logs older than"
+msgstr ""
+
+msgid "Set output/outcome period dates: {{dataSetsNames}}"
+msgstr ""
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Start date of data input"
+msgstr ""
+
+msgid "End date of data input"
+msgstr ""
+
+msgid "Periods"
+msgstr ""
+
 msgid "DataSets removed"
 msgstr "DataSets eliminados"
+
+msgid "Period date updated"
+msgstr ""
 
 msgid "Loading details..."
 msgstr "Cargando detalles..."
@@ -155,9 +188,6 @@ msgstr "Asignar a unidades organizativas"
 msgid "Set output/outcome period dates"
 msgstr ""
 
-msgid "Change output/outcome end date for year"
-msgstr ""
-
 msgid "Clone"
 msgstr "Clonar"
 
@@ -166,9 +196,6 @@ msgstr ""
 
 msgid "Add to"
 msgstr ""
-
-msgid "Save"
-msgstr "Guardar"
 
 msgid "Create"
 msgstr "Crear"
@@ -333,6 +360,9 @@ msgid "and {{number}} more..."
 msgstr ""
 
 msgid "Removing DataSets"
+msgstr ""
+
+msgid "Updating period date"
 msgstr ""
 
 msgid "Loading..."

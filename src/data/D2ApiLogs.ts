@@ -8,10 +8,13 @@ import { DataStore } from "@eyeseetea/d2-api/api";
 import _ from "$/domain/entities/generic/Collection";
 import { D2LogsCodec } from "$/data/LogCodec";
 import i18n from "$/utils/i18n";
+import { Maybe } from "$/utils/ts-utils";
 
 const LOGS_NAMESPACE = "dataset-configuration";
 const LOGS_PAGE_CURRENT_KEY = "logs-page-current";
 const LOGS_PAGE_PREFIX = "logs-page-";
+const MAX_LOGS_PAGES = 100;
+const MAX_LOGS_PER_PAGE = 200;
 
 export class D2ApiLogs {
     private dataStore: DataStore;
@@ -20,24 +23,100 @@ export class D2ApiLogs {
     }
 
     getByDate(options: GetLogsOptions): FutureData<Log[]> {
+        const { page = 0 } = options;
         return this.getCurrentPage().flatMap(currentPage => {
-            return apiToFuture(
-                this.dataStore.get<D2Logs[]>(LOGS_PAGE_PREFIX + currentPage)
-            ).flatMap(d2Logs => {
+            return Future.joinObj({
+                logsCurrent: this.getLogs(currentPage - page, options.dataSetsIds),
+                logsPrevious: this.getLogs(currentPage - page - 1, options.dataSetsIds),
+            }).map(({ logsCurrent, logsPrevious }) => {
+                return _(logsCurrent.concat(logsPrevious))
+                    .sortBy(log => log.date)
+                    .reverse()
+                    .value();
+            });
+        });
+    }
+
+    save(logs: Log[]): FutureData<void> {
+        return this.getCurrentPage().flatMap(currentPage => {
+            return this.getLogs(currentPage, []).flatMap(existingLogs => {
+                const nextCurrentPage =
+                    logs.length < MAX_LOGS_PER_PAGE
+                        ? currentPage
+                        : this.getNextPage(currentPage + 1, MAX_LOGS_PAGES);
+
+                return Future.joinObj({
+                    saveLogsPage: this.saveLogsPage(
+                        nextCurrentPage,
+                        this.mapLogsToD2Logs(existingLogs.concat(logs))
+                    ),
+                    updateCurrentPage: this.saveNewLogsPage(currentPage, nextCurrentPage),
+                }).toVoid();
+            });
+        });
+    }
+
+    private mapLogsToD2Logs(logs: Log[]): D2Logs[] {
+        return logs.map((log): D2Logs => {
+            return {
+                action: log.actionDescription,
+                date: log.date,
+                status: log.status,
+                user: {
+                    displayName: log.user.name,
+                    id: log.user.id,
+                    username: log.user.username,
+                },
+                datasets: log.dataSets.map(dataSet => ({
+                    id: dataSet.id,
+                    displayName: dataSet.name,
+                })),
+            };
+        });
+    }
+
+    private saveNewLogsPage(currentPage: number, nextPage: number): FutureData<void> {
+        if (nextPage === currentPage) return Future.void();
+        return Future.joinObj({
+            updateCurrentPage: this.updateCurrentPage(nextPage),
+            saveLogsPage: this.saveLogsPage(nextPage, []),
+        }).toVoid();
+    }
+
+    private saveLogsPage(page: number, logs: D2Logs[]): FutureData<void> {
+        return apiToFuture(this.dataStore.save(LOGS_PAGE_PREFIX + page, logs));
+    }
+
+    private updateCurrentPage(page: number): FutureData<void> {
+        return apiToFuture(this.dataStore.save(LOGS_PAGE_CURRENT_KEY, page as unknown as object));
+    }
+
+    private getLogs(page: number, dataSetsIds: Id[]): FutureData<Log[]> {
+        const nextPage = this.getNextPage(page, MAX_LOGS_PAGES);
+        const pageToFetch = nextPage < 0 ? MAX_LOGS_PAGES - 1 : nextPage;
+        return apiToFuture(this.dataStore.get<D2Logs[]>(LOGS_PAGE_PREFIX + pageToFetch)).flatMap(
+            d2Logs => {
                 if (!d2Logs) return Future.success([]);
                 const errors = this.getErrors(d2Logs);
 
                 if (errors.length > 0) {
-                    return Future.error(new Error(errors.join("\n")));
+                    console.error("Error getting logs", errors);
                 }
 
-                const logs = d2Logs.map(d2Log => this.buildLog(d2Log));
-                const filterLogs = logs.filter(log =>
-                    log.dataSets.some(dataset => options.dataSetsIds.includes(dataset.id))
-                );
+                const logs = _(d2Logs)
+                    .compactMap(d2Log => this.buildLog(d2Log))
+                    .value();
+
+                const filterLogs =
+                    dataSetsIds.length > 0
+                        ? logs.filter(log =>
+                              log.dataSets.some(dataset => dataSetsIds.includes(dataset.id))
+                          )
+                        : logs;
+
                 return Future.success(filterLogs);
-            });
-        });
+            }
+        );
     }
 
     private getLegacyActionsNames(): Record<string, D2LegacyAction> {
@@ -54,6 +133,7 @@ export class D2ApiLogs {
                 description: i18n.t("change organisation units"),
             },
             "clone dataset": { action: "clone", description: i18n.t("clone dataset") },
+            "change period dates": { action: "period_dates", description: i18n.t("period dates") },
         };
     }
 
@@ -68,14 +148,14 @@ export class D2ApiLogs {
         return errors;
     }
 
-    private buildLog(d2Log: D2Logs): Log {
+    private buildLog(d2Log: D2Logs): Maybe<Log> {
+        if (d2Log.datasets.some(ds => !ds.id)) return undefined;
         const action = this.buildActionFromLegacyDescription(d2Log.action);
         return Log.create({
-            actionDescription: action.description,
             action: action.action,
             date: d2Log.date,
             status: d2Log.status,
-            dataSets: d2Log.datasets.map(ds => ({ id: ds.id, shortName: "" })),
+            dataSets: d2Log.datasets.map(ds => ({ id: ds.id, name: ds.displayName })),
             type: "dataSets",
             user: {
                 id: d2Log.user.id,
@@ -100,12 +180,16 @@ export class D2ApiLogs {
             }
         );
     }
+
+    private getNextPage(currentPage: number, maxLogPages: number): number {
+        return ((currentPage % maxLogPages) + maxLogPages) % maxLogPages;
+    }
 }
 
 export type D2LogCurrentPage = number;
 export type D2Logs = {
     action: string;
-    datasets: Array<{ id: Id }>;
+    datasets: Array<{ id: Id; displayName: string }>;
     date: ISODateString;
     status: Log["status"];
     user: { displayName: string; id: Id; username: string };
