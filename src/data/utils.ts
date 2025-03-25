@@ -7,6 +7,7 @@ import { CancelableResponse } from "@eyeseetea/d2-api";
 import { apiToFuture } from "$/data/api-futures";
 import { Category, defaultLabel } from "$/domain/entities/Category";
 import { Maybe } from "$/utils/ts-utils";
+import { Stats } from "$/domain/entities/Stats";
 
 export function chunkRequest<Res>(
     ids: Id[],
@@ -63,9 +64,9 @@ export function convertAttributeValueToDate(
         return "";
     }
 
-    const year = parseInt(dateString.substring(0, 4), 10);
-    const month = parseInt(dateString.substring(4, 6), 10) - 1;
-    const day = parseInt(dateString.substring(6, 8), 10);
+    const year = parseInt(dateString.substring(0, 4));
+    const month = parseInt(dateString.substring(4, 6)) - 1;
+    const day = parseInt(dateString.substring(6, 8));
 
     const date = new Date(year, month, day, 0, 0, 0);
 
@@ -75,6 +76,18 @@ export function convertAttributeValueToDate(
     }
 
     return date.toISOString();
+}
+
+export function getStatsFromD2Response(d2Response: MetadataResponse): Stats {
+    const errorMessage = getErrorFromResponse(d2Response);
+    return Stats.create({
+        created: d2Response.stats.created,
+        updated: d2Response.stats.updated,
+        deleted: d2Response.stats.deleted,
+        ignored: d2Response.stats.ignored,
+        total: d2Response.stats.total,
+        errorMessage: errorMessage,
+    });
 }
 
 export type D2NamedRef = { id: Id; displayName: string };
