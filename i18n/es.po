@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-03-24T18:02:21.035Z\n"
+"POT-Creation-Date: 2025-03-25T01:35:25.589Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -293,9 +293,6 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
-msgid "Group"
-msgstr ""
-
 msgid "Measure"
 msgstr ""
 
@@ -306,6 +303,9 @@ msgid "Per indicator graying out"
 msgstr ""
 
 msgid "Core competency"
+msgstr ""
+
+msgid "Group"
 msgstr ""
 
 msgid "Disaggregation"

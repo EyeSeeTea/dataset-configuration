@@ -23,9 +23,10 @@ import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 import { Indicator, indicatorTypes } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
-import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { PeriodDate } from "$/domain/entities/PeriodDate";
 import { DataSetList } from "$/domain/entities/DataSetList";
+import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
+import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -277,30 +278,13 @@ export class DataSetD2Api {
             attribute => attribute.attribute.id === attributes.periodDates.id
         );
 
-        const [startDate, endDate] = inputDate?.value.split("-") ?? ["", ""];
+        const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
         return PeriodDate.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
-            periods: this.parsePeriodDateAttribute(periodDate?.value),
+            periods: parsePeriodDateAttribute(periodDate?.value),
         });
-    }
-
-    private parsePeriodDateAttribute(periodDate: Maybe<string>): PeriodDate["periods"] {
-        const splitPeriodsDates = periodDate?.split(",") ?? [];
-        return _(splitPeriodsDates)
-            .compactMap(period => {
-                const [year, dates] = period.split("=");
-                if (!year || !dates) return undefined;
-                const [startDate, endDate] = dates.split("-") ?? ["", ""];
-                if (!startDate || !endDate) return undefined;
-                return {
-                    year: Number(year),
-                    startDate: convertAttributeValueToDate(startDate),
-                    endDate: convertAttributeValueToDate(endDate),
-                };
-            })
-            .value();
     }
 
     private buildIndicatorsFromDataSetElements(d2DataSet: D2DataSet): Indicator[] {

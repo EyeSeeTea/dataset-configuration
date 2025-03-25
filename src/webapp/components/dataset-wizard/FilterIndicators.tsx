@@ -5,25 +5,23 @@ import { Chip, Divider, Drawer, Grid, IconButton, Typography } from "@material-u
 import FilterListIcon from "@material-ui/icons/FilterList";
 import CloseIcon from "@material-ui/icons/Close";
 import i18n from "$/utils/i18n";
-import { Dropdown } from "@eyeseetea/d2-ui-components";
+import { Dropdown, DropdownItem } from "@eyeseetea/d2-ui-components";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
 import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
-export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "group" | "measure";
+export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "measure";
 
 export type FilterIndicatorsProps = {
     indicatorsPerCompetency: IndicatorPerItem[];
     indicatorsPerType: IndicatorPerItem[];
     coreCompetencies: CoreCompetency[];
     coreValues: string[];
-    groups: string[];
-    group: string;
     measure: string;
     measures: string[];
     onClose: () => void;
     onFilterChange: (scope: ChipItem[], type: FilterType) => void;
-    scopes: string[];
+    scopes: DropdownItem[];
     scopeValue: string[];
     showCloseButton?: boolean;
     themes: string[];
@@ -59,9 +57,7 @@ export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
 export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
     const {
         coreCompetencies,
-        coreValues: coreValue,
-        groups,
-        group,
+        coreValues,
         measure,
         measures,
         onClose,
@@ -99,7 +95,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             <Divider />
 
             <ChipFilter
-                items={scopes.map(scope => ({ text: scope, value: scope }))}
+                items={scopes}
                 label={i18n.t("Origin")}
                 onChange={value => onFilterChange(value, "scope")}
                 value={scopeValue}
@@ -109,7 +105,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                 items={coreCompetenciesItems}
                 label={i18n.t("Core competencies")}
                 onChange={value => onFilterChange(value, "coreCompetency")}
-                value={coreValue}
+                value={coreValues}
                 mode="multiple"
             />
 
@@ -136,18 +132,6 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                     }
                     label={i18n.t("Theme")}
                     value={theme}
-                />
-            </BodyFilterContainer>
-
-            <BodyFilterContainer>
-                <Dropdown
-                    className="dropdown"
-                    items={groups.map(g => ({ text: g, value: g }))}
-                    onChange={value =>
-                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "group")
-                    }
-                    label={i18n.t("Group")}
-                    value={group}
                 />
             </BodyFilterContainer>
 

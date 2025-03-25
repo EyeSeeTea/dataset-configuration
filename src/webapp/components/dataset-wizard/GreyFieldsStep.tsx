@@ -1,5 +1,5 @@
 import React from "react";
-import { differenceBy } from "lodash";
+import differenceBy from "lodash/differenceBy";
 import { Dropdown } from "@eyeseetea/d2-ui-components";
 import { Accordion, AccordionDetails, AccordionSummary, Typography } from "@material-ui/core";
 

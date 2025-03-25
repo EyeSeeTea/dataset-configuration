@@ -2,7 +2,6 @@
 // @ts-ignore
 import htmlencode from "htmlencode";
 import isEqual from "lodash/isEqual";
-import last from "lodash/last";
 
 import _ from "$/domain/entities/generic/Collection";
 import velocity from "./velocity";
@@ -411,7 +410,7 @@ export function groupConsecutiveBy<T, U = T>(xs: T[], mapper: (item: T) => U): T
         if (acc.length === 0) {
             return acc.concat([[x]]);
         } else {
-            const lastGroup = last(acc) as T[];
+            const lastGroup = _(acc).last() as T[];
             const lastElement = lastGroup[lastGroup.length - 1] as T;
 
             if (isEqual(mapper(lastElement), mapper(x))) {

@@ -40,4 +40,20 @@ describe("Rec", () => {
         expectTypeOf(merged).toEqualTypeOf<Rec<{ x: number; s: string; n: boolean; z: number }>>();
         expect(merged.toObject()).toEqual({ x: 1, s: "hello", n: true, z: 123 });
     });
+
+    test("mapValues", () => {
+        const rec1 = Rec.from({ a: 1, b: 2, c: 3 });
+        const result = rec1.mapValues(([_key, value]) => value * 2).value();
+        expect(result).toEqual({ a: 2, b: 4, c: 6 });
+
+        const result2 = rec1.mapValues(([key, value]) => `${value * 2}_${key}`).value();
+        expectTypeOf(result2).toEqualTypeOf<{ a: string; b: string; c: string }>();
+        expect(result2).toEqual({ a: "2_a", b: "4_b", c: "6_c" });
+
+        const emptyObj = Rec.from({})
+            .mapValues(([_key, value]) => value)
+            .value();
+
+        expect(emptyObj).toEqual({});
+    });
 });

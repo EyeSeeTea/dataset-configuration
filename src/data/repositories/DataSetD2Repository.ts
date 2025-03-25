@@ -725,7 +725,7 @@ const indicatorTypeLabel: Record<IndicatorAttrs["type"], string> = {
 };
 
 const ownerFields = { $owner: true };
-type D2DataSetOwner = MetadataPick<{
+export type D2DataSetOwner = MetadataPick<{
     dataSets: { fields: typeof ownerFields };
 }>["dataSets"][number];
 
@@ -745,9 +745,9 @@ type D2CategoryOptionCombo = {
     categoryOptions: Ref[];
 };
 
-type D2Attribute = { attribute: { id: Id }; value: string };
 type D2CategoryComboDataSet = { dataSetId: Id; categoryCombos: D2ApiCategoryComboType[] };
 
 export type D2Section = MetadataPick<{
     sections: { fields: typeof ownerFields };
 }>["sections"][number];
+type D2Attribute = { attribute: { id: Id }; value: string };
