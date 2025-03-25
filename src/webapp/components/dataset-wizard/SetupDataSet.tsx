@@ -1,5 +1,5 @@
 import React from "react";
-import { OrgUnitsSelector } from "@eyeseetea/d2-ui-components";
+import { OrgUnitsSelector, useSnackbar } from "@eyeseetea/d2-ui-components";
 import {
     Grid,
     IconButton,
@@ -19,6 +19,8 @@ import { ProjectsSelectorModal } from "$/webapp/components/dataset-wizard/Projec
 import { Maybe } from "$/utils/ts-utils";
 import { component } from "$/utils/react";
 import _ from "$/domain/entities/generic/Collection";
+import { GetListOptions } from "$/domain/repositories/ProjectRepository";
+import { useBooleanState } from "$/webapp/hooks/useBooleanState";
 
 export type SetupDataSetProps = {
     dataSet: DataSet;
@@ -30,8 +32,10 @@ export type SetupDataSetProps = {
 
 const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
     const { api, config, compositionRoot } = useAppContext();
-    const { dataSet, onChange, onValidate, projects, validationStatus } = props;
+    const { dataSet, onChange, onValidate, validationStatus } = props;
     const [projectModalOpen, setProjectModalOpen] = React.useState(false);
+    const [showClosedProjects, setShowClosedProjects] = React.useState(false);
+    const { isLoading, projects } = useGetProjects({ includeClosedProjects: showClosedProjects });
 
     const openProjectModal = React.useCallback(() => {
         setProjectModalOpen(true);
@@ -178,11 +182,39 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
                     projects={projects}
                     onChange={updateProject}
                     onClose={() => setProjectModalOpen(false)}
+                    showClosedProjects={showClosedProjects}
+                    onCloseProjects={setShowClosedProjects}
+                    isLoading={isLoading}
                 />
             )}
         </Grid>
     );
 });
+
+export function useGetProjects(options: GetListOptions) {
+    const { compositionRoot } = useAppContext();
+    const snackbar = useSnackbar();
+    const [isLoading, setIsLoading] = useBooleanState(false);
+    const [projects, setProjects] = React.useState<Project[]>([]);
+
+    React.useEffect(() => {
+        setIsLoading.enable();
+        return compositionRoot.projects.getAll
+            .execute({ includeClosedProjects: options.includeClosedProjects })
+            .run(
+                projects => {
+                    setProjects(projects);
+                    setIsLoading.disable();
+                },
+                error => {
+                    snackbar.error(error.message);
+                    setIsLoading.disable();
+                }
+            );
+    }, [compositionRoot.projects.getAll, snackbar, options.includeClosedProjects, setIsLoading]);
+
+    return { isLoading, projects };
+}
 
 function debounce<F extends (...args: any[]) => any>(func: F, delay: number) {
     let timeout: ReturnType<typeof setTimeout> | null = null;
