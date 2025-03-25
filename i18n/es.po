@@ -92,6 +92,18 @@ msgstr "DataSet no encontrado"
 msgid "Data set name already exists: {{dataSetName}}"
 msgstr "Ya existe un dataset con el nombre: {{dataSetName}}"
 
+msgid "User is not an admin"
+msgstr ""
+
+msgid "Day"
+msgstr ""
+
+msgid "Month"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
 msgid "Add"
 msgstr "Añadir"
 
@@ -189,6 +201,9 @@ msgid "Sharing"
 msgstr "Permisos"
 
 msgid "Access"
+msgstr ""
+
+msgid "Settings"
 msgstr ""
 
 msgid "Details"
@@ -389,6 +404,9 @@ msgstr ""
 msgid "Projects"
 msgstr "Proyectos"
 
+msgid "Filter list"
+msgstr ""
+
 msgid "Back"
 msgstr "Volver"
 
@@ -399,6 +417,84 @@ msgid "Org. Units"
 msgstr ""
 
 msgid "Core Competencies"
+msgstr ""
+
+msgid "General"
+msgstr ""
+
+msgid "Sections"
+msgstr ""
+
+msgid "Settings saved"
+msgstr ""
+
+msgid "Configuration settings"
+msgstr ""
+
+msgid "Projects Category"
+msgstr ""
+
+msgid "Category combination"
+msgstr ""
+
+msgid "Core competency data element group set"
+msgstr ""
+
+msgid "Default Period End Date - Month"
+msgstr ""
+
+msgid "Default Time Period End Date (Last year) - Value"
+msgstr ""
+
+msgid "Units"
+msgstr ""
+
+msgid "Country organisation unit level"
+msgstr ""
+
+msgid "Created by dataSet Configuration attribute"
+msgstr ""
+
+msgid "Attribute for Period Dates"
+msgstr ""
+
+msgid "Attribute for interval dates"
+msgstr ""
+
+msgid "Data element theme group set"
+msgstr ""
+
+msgid "Indicator theme group set"
+msgstr ""
+
+msgid "Group attribute"
+msgstr ""
+
+msgid "Output data element group"
+msgstr ""
+
+msgid "Global indicators mandatory data element group set"
+msgstr ""
+
+msgid "Global indicators mandatory indicator group set"
+msgstr ""
+
+msgid "Data Element origin group set"
+msgstr ""
+
+msgid "Indicator origin group set"
+msgstr ""
+
+msgid "Data Element status group set"
+msgstr ""
+
+msgid "Indicator status group set"
+msgstr ""
+
+msgid "Hide in dataset attribute"
+msgstr ""
+
+msgid "User group excluded of selecting core items"
 msgstr ""
 
 msgid "Public Access"

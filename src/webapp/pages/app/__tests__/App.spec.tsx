@@ -23,6 +23,10 @@ function getView() {
         indicators: [],
         regions: [],
         userGroups: [],
+        periodEndDateDay: 1,
+        periodEndDateMonth: 4,
+        periodLastYearEndDate: 0,
+        periodLastYearUnits: "month",
     };
     return render(
         <Provider config={{ baseUrl: "http://localhost:8080", apiVersion: 30 }}>

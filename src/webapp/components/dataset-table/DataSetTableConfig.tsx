@@ -14,6 +14,7 @@ import DetailsIcon from "@material-ui/icons/Details";
 import DeleteIcon from "@material-ui/icons/Delete";
 import CopyIcon from "@material-ui/icons/FileCopy";
 import ListIcon from "@material-ui/icons/List";
+import SettingsIcon from "@material-ui/icons/Settings";
 
 import _ from "$/domain/entities/generic/Collection";
 import i18n from "$/utils/i18n";
@@ -53,6 +54,16 @@ export function useTableConfig(props: TableConfigProps) {
                         name: "lastUpdated",
                         text: i18n.t("Last updated"),
                         getValue: dataSet => dataSet.lastUpdated,
+                    },
+                ],
+                globalActions: [
+                    {
+                        name: "settings",
+                        text: i18n.t("Settings"),
+                        icon: <SettingsIcon />,
+                        onClick: () => {
+                            onAction({ ids: [], action: "app-settings" });
+                        },
                     },
                 ],
                 actions: [

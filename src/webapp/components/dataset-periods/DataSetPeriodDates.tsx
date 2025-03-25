@@ -8,6 +8,7 @@ import { useGetDataSetsByIds } from "$/webapp/hooks/useDataSets";
 import { addToDate } from "$/utils/date";
 import { PeriodDate, PeriodDetailsAttrs } from "$/domain/entities/PeriodDate";
 import i18n from "$/utils/i18n";
+import { useAppContext } from "$/webapp/contexts/app-context";
 
 export type DataSetPeriodDatesProps = {
     dataSetIds: Id[];
@@ -16,6 +17,7 @@ export type DataSetPeriodDatesProps = {
 };
 
 function useGetYears(props: { period: PeriodDate }) {
+    const { config } = useAppContext();
     const { period } = props;
     const { startDate, endDate, periods, years } = period;
 
@@ -25,10 +27,10 @@ function useGetYears(props: { period: PeriodDate }) {
         if (!startDate || !endDate) return [];
 
         return years.map((year): PeriodDate["periods"][number] => {
-            const month = 4;
-            const day = 1;
-            const units = "months";
-            const unitValue = 0;
+            const month = config.periodEndDateMonth;
+            const day = config.periodEndDateDay;
+            const units = config.periodLastYearUnits;
+            const unitValue = config.periodLastYearEndDate;
             const currentPeriod = periods.find(period => period.year === year);
 
             const defaultEndDate = new Date(year + 1, month - 1, day, 0, 0, 0).toISOString();
@@ -44,7 +46,7 @@ function useGetYears(props: { period: PeriodDate }) {
                 endDate: currentPeriod?.endDate ?? endM ?? "",
             };
         });
-    }, [years, startDate, endDate, lastYear, periods]);
+    }, [years, startDate, endDate, lastYear, periods, config]);
 
     return periodsByYear;
 }
@@ -123,7 +125,7 @@ export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) =>
                     value={periodDate.endDate || null}
                     onChange={value => onUpdatePeriodDate(value, "endDate")}
                     label={i18n.t("End date of data input")}
-                    minDate={periodDate.startDate || ""}
+                    minDate={periodDate.startDate || undefined}
                     format="yyyy-MM-DD"
                 />
             </DatesContainer>

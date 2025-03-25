@@ -82,7 +82,7 @@ export const ProjectTable = React.memo(() => {
                         sortable: false,
                         getValue: project => {
                             if (project instanceof DataSet) {
-                                const items = project.orgsUnits.map(x => x.name);
+                                const items = project.orgUnits.map(x => x.name);
                                 return <TooltipTruncate items={items} />;
                             } else {
                                 return " - ";

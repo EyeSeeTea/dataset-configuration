@@ -28,6 +28,11 @@ export class ProjectD2Repository implements ProjectRepository {
 
     getList(): FutureData<Project[]> {
         return this.getCategories().flatMap(categories => {
+            if (!categories.project.code) {
+                console.warn("Project category code not found in metadata", categories.project);
+                return Future.success([]);
+            }
+
             return this.getCategoryOptionsByCode(categories.project.code).map(categoryOptions => {
                 return this.getProjectsWithDates(categoryOptions);
             });

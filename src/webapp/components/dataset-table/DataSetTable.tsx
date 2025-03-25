@@ -9,6 +9,7 @@ import { useTableConfig } from "$/webapp/components/dataset-table/DataSetTableCo
 import { DataSetDetails } from "$/webapp/components/dataset-table/DataSetDetails";
 import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 import { component } from "$/utils/react";
+import { SettingsForm } from "$/webapp/components/settings-form/SettingsForm";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 
@@ -24,6 +25,10 @@ const DataSetTable_: React.FC = React.memo(() => {
             setRefreshTable(prevValue => prevValue + 1);
         }
     }, []);
+
+    const closeSettingsModal = () => {
+        setTableAction(undefined);
+    };
 
     return (
         <>
@@ -41,6 +46,9 @@ const DataSetTable_: React.FC = React.memo(() => {
                 }
             />
             <DataSetActions tableAction={tableAction} onChangeAction={refreshDataSets} />
+            {tableAction?.action === "app-settings" && (
+                <SettingsForm onClose={closeSettingsModal} />
+            )}
         </>
     );
 });
