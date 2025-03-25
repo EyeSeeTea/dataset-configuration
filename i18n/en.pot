@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-20T16:15:17.488Z\n"
-"PO-Revision-Date: 2025-03-20T16:15:17.488Z\n"
+"POT-Creation-Date: 2025-03-25T01:35:25.589Z\n"
+"PO-Revision-Date: 2025-03-25T01:35:25.589Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -260,9 +260,6 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
-msgid "Group"
-msgstr ""
-
 msgid "Measure"
 msgstr ""
 
@@ -273,6 +270,9 @@ msgid "Per indicator graying out"
 msgstr ""
 
 msgid "Core competency"
+msgstr ""
+
+msgid "Group"
 msgstr ""
 
 msgid "Disaggregation"
