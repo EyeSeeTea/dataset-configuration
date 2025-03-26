@@ -21,32 +21,19 @@ export class UserD2Repository implements UserRepository {
 
         const isAdmin = allAuthorities.some(authority => authorities.admin.includes(authority));
 
+        const hasAccess = (requiredAuthorities: string[]) =>
+            isAdmin || requiredAuthorities.every(authority => allAuthorities.includes(authority));
+
         return new User({
             id: d2User.id,
             name: d2User.displayName,
             userGroups: d2User.userGroups,
             ...d2User.userCredentials,
             access: {
-                canCreatePublicDataSets:
-                    isAdmin ||
-                    authorities.dataSets.createPublic.every(authority =>
-                        allAuthorities.includes(authority)
-                    ),
-                canDeleteDataSets:
-                    isAdmin ||
-                    authorities.dataSets.delete.every(authority =>
-                        allAuthorities.includes(authority)
-                    ),
-                canCreateDataSets:
-                    isAdmin ||
-                    authorities.dataSets.create.every(authority =>
-                        allAuthorities.includes(authority)
-                    ),
-                canEditCombinations:
-                    isAdmin ||
-                    authorities.categoryCombo.edit.every(authority =>
-                        allAuthorities.includes(authority)
-                    ),
+                canCreatePublicDataSets: hasAccess(authorities.dataSets.createPublic),
+                canDeleteDataSets: hasAccess(authorities.dataSets.delete),
+                canCreateDataSets: hasAccess(authorities.dataSets.create),
+                canEditCombinations: hasAccess(authorities.categoryCombo.edit),
             },
         });
     }

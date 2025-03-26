@@ -13,7 +13,7 @@ export class DataSetList extends Struct<DataSetListAttrs>() {
     }
 
     get isPrivate(): boolean {
-        return !this.permissions.metadata.read;
+        return !this.isPublic;
     }
 
     hasPermissionsToUpdate(user: User): boolean {

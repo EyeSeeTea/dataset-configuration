@@ -12,6 +12,6 @@ export type Region = NamedCodeRef;
  *
  */
 
-export function extractRegionCode(value: string): string {
-    return (value?.slice(0, 2) || "").toUpperCase();
+export function extractRegionCode(code: string): string {
+    return (code?.slice(0, 2) || "").toUpperCase();
 }

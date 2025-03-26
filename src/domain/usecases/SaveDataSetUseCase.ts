@@ -39,8 +39,11 @@ export class SaveDataSetUseCase {
     execute(options: SaveDataSetOptions): FutureData<void> {
         return this.userUtils.checkDataSetAccess([options.dataSet]).flatMap(() => {
             const { dataSet } = options;
-            return this.validateDataSet(dataSet).flatMap(() => {
-                return this.validateDataSetName(dataSet).flatMap(() => {
+            return this.validateDataSet(dataSet)
+                .flatMap(() => {
+                    return this.validateDataSetName(dataSet);
+                })
+                .flatMap(() => {
                     return this.dataSetRepository
                         .save([dataSet])
                         .flatMap(() => {
@@ -52,7 +55,6 @@ export class SaveDataSetUseCase {
                             return this.sendNotificationError(options, error.message);
                         });
                 });
-            });
         });
     }
 

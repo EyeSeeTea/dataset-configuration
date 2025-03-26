@@ -238,7 +238,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
-            canBeUpdated: false,
+            canBeUpdated: true,
             indicators: [],
             access: [],
             coreCompetencies: [],

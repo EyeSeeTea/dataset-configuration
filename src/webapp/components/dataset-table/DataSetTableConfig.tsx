@@ -136,10 +136,19 @@ export type CommonActionsProps<T> = {
     user: User;
 };
 
-export function getCommonActions<T extends ReferenceObject>(
+export interface HasPermission extends ReferenceObject {
+    hasPermissionsToUpdate(user: User): boolean;
+}
+
+export function getCommonActions<T extends HasPermission>(
     props: CommonActionsProps<T>
 ): DataTableAction<T>[] {
     const { onAction, navigateTo, user } = props;
+
+    const isActionActive = (records: T[]): boolean => {
+        return props.isActive(records) && canDataSetBeUpdated(records, user);
+    };
+
     return [
         {
             name: "edit",
@@ -147,9 +156,7 @@ export function getCommonActions<T extends ReferenceObject>(
             icon: <EditIcon />,
             multiple: false,
             primary: true,
-            isActive: records => {
-                return props.isActive(records) && canDataSetBeUpdated(records, user);
-            },
+            isActive: isActionActive,
             onClick(selectedIds) {
                 const dataSetId = _(selectedIds).first();
                 if (!dataSetId) return;
@@ -161,9 +168,7 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Sharing Settings"),
             icon: <SharingIcon />,
             multiple: true,
-            isActive: records => {
-                return props.isActive(records) && canDataSetBeUpdated(records, user);
-            },
+            isActive: isActionActive,
             onClick(selectedIds) {
                 onAction({ ids: selectedIds, action: "sharing" });
             },
@@ -173,9 +178,7 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Assign to Organisation Units"),
             icon: <DomainIcon />,
             multiple: true,
-            isActive: records => {
-                return props.isActive(records) && canDataSetBeUpdated(records, user);
-            },
+            isActive: isActionActive,
             onClick: selectedIds => {
                 onAction({ ids: selectedIds, action: "orgUnits" });
             },
@@ -185,9 +188,7 @@ export function getCommonActions<T extends ReferenceObject>(
             text: i18n.t("Set output/outcome period dates"),
             icon: <DateRangeIcon />,
             multiple: true,
-            isActive: records => {
-                return props.isActive(records) && canDataSetBeUpdated(records, user);
-            },
+            isActive: isActionActive,
             onClick: selectedIds => {
                 onAction({ ids: selectedIds, action: "set_period_dates" });
             },
@@ -222,10 +223,6 @@ export function getCommonActions<T extends ReferenceObject>(
     ];
 }
 
-function canDataSetBeUpdated<T>(records: T[], user: User): boolean {
-    return records.every(dataSet => {
-        if (dataSet instanceof DataSetList) {
-            return dataSet.hasPermissionsToUpdate(user);
-        }
-    });
+function canDataSetBeUpdated<T extends HasPermission>(records: T[], user: User): boolean {
+    return records.every(dataSet => dataSet.hasPermissionsToUpdate(user));
 }
