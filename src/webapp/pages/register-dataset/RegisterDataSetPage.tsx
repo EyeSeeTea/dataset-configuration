@@ -6,7 +6,6 @@ import { Id, Ref } from "$/domain/entities/Ref";
 import { DataSetWizard } from "$/webapp/components/dataset-wizard/DataSetWizard";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { useLoading, useSnackbar } from "@eyeseetea/d2-ui-components";
-import { Project } from "$/domain/entities/Project";
 import { generateUid } from "$/utils/uid";
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
@@ -14,7 +13,6 @@ import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 
 const RegisterDataSetPage_ = () => {
     const { id } = useParams<Partial<Ref>>();
-    const { projects } = useGetProjects();
     const loading = useLoading();
     const { dataSet, status, updateDataSet, dataSetSettings } = useGetDataSetSettings({
         id: id || "",
@@ -34,7 +32,6 @@ const RegisterDataSetPage_ = () => {
         <DataSetWizard
             id={id}
             dataSet={dataSet}
-            projects={projects}
             dataSetSettings={dataSetSettings}
             updateDataSet={updateDataSet}
         />
@@ -70,21 +67,6 @@ export function useGetDataSetSettings(props: { id: Id }) {
         status,
         updateDataSet,
     };
-}
-
-function useGetProjects() {
-    const { compositionRoot } = useAppContext();
-    const snackbar = useSnackbar();
-
-    const [projects, setProjects] = React.useState<Project[]>([]);
-
-    React.useEffect(() => {
-        return compositionRoot.projects.getAll.execute().run(setProjects, error => {
-            snackbar.error(error.message);
-        });
-    }, [compositionRoot.projects.getAll, snackbar]);
-
-    return { projects };
 }
 
 export type LoadingStatus = "idle" | "loading" | "finished" | "error";

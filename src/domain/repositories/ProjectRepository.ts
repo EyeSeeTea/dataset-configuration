@@ -8,7 +8,9 @@ import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 export interface ProjectRepository {
     get(options: GetDataSetOptions): FutureData<Paginated<Project>>;
     getAll(): FutureData<Project[]>;
-    getList(): FutureData<Project[]>;
     getById(id: Id): FutureData<Project>;
     save(project: Project): FutureData<Stats>;
+    getList(options: GetListOptions): FutureData<Project[]>;
 }
+
+export type GetListOptions = { includeClosedProjects: boolean };

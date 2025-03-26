@@ -10,14 +10,12 @@ import { useNavigateTo } from "$/webapp/routes";
 import { DataSet } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
-import { Project } from "$/domain/entities/Project";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import styled from "styled-components";
 import { NavigationProps } from "@eyeseetea/d2-ui-components/wizard/Navigation";
 
 export type DataSetWizardProps = {
     id?: string;
-    projects: Project[];
     dataSet: DataSet;
     updateDataSet: React.Dispatch<React.SetStateAction<DataSet>>;
     dataSetSettings: DataSetSettings;
@@ -34,7 +32,7 @@ export type ValidationStatusType = "idle" | "loading" | "error" | "success";
 
 export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     const { compositionRoot, config } = useAppContext();
-    const { dataSet, id, projects, updateDataSet, dataSetSettings } = props;
+    const { dataSet, id, updateDataSet, dataSetSettings } = props;
     const isEditing = Boolean(id);
     const actionTitle = isEditing ? i18n.t("Edit") : i18n.t("Create");
     const steps = getDataSetSteps();
@@ -81,7 +79,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                         onValidate: validateDataSetName,
                         validationStatus,
                         onChange: updateDataSet,
-                        projects,
                         dataSetSettings,
                     },
                 };
@@ -90,7 +87,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
         config,
         dataSet,
         dataSetSettings,
-        projects,
         steps,
         validateDataSetName,
         validationStatus,

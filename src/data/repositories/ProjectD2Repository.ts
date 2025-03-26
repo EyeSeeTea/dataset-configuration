@@ -3,7 +3,7 @@ import { apiToFuture } from "$/data/api-futures";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Project } from "$/domain/entities/Project";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
-import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
+import { GetListOptions, ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
 import { ISODateString, Id } from "$/domain/entities/Ref";
@@ -49,16 +49,18 @@ export class ProjectD2Repository implements ProjectRepository {
         });
     }
 
-    getList(): FutureData<Project[]> {
+    getList(options: GetListOptions): FutureData<Project[]> {
         return this.getCategories().flatMap(categories => {
             if (!categories.project.code) {
                 console.warn("Project category code not found in metadata", categories.project);
                 return Future.success([]);
             }
 
-            return this.getCategoryOptionsByCode(categories.project.code).map(categoryOptions => {
-                return this.getProjectsWithDates(categoryOptions);
-            });
+            return this.getCategoryOptionsByCode(categories.project.code, options).map(
+                categoryOptions => {
+                    return this.getProjectsWithDates(categoryOptions);
+                }
+            );
         });
     }
 
@@ -96,7 +98,7 @@ export class ProjectD2Repository implements ProjectRepository {
         });
     }
 
-    private getCategoryOptionsByCode(code: string) {
+    private getCategoryOptionsByCode(code: string, options: GetListOptions) {
         return apiToFuture(
             this.api.models.categoryOptions.get({
                 fields: {
@@ -108,11 +110,23 @@ export class ProjectD2Repository implements ProjectRepository {
                     lastUpdated: true,
                     organisationUnits: { id: true, code: true, displayName: true, path: true },
                 },
-                filter: { "categories.code": { eq: code } },
+                filter: { "categories.code": { eq: code }, ...this.buildDateFilter(options) },
                 order: "displayName:asc",
                 paging: false,
             })
         ).map(response => response.objects);
+    }
+
+    private buildDateFilter(options: GetListOptions) {
+        const currentDate = new Date().toISOString();
+        return {
+            startDate: {
+                le: options.includeClosedProjects ? undefined : currentDate,
+            },
+            endDate: {
+                ge: options.includeClosedProjects ? undefined : currentDate,
+            },
+        };
     }
 
     private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {
