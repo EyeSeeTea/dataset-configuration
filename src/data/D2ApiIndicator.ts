@@ -24,19 +24,83 @@ export class D2ApiIndicator {
     }
 
     getOutputIndicators(config: D2Config): FutureData<Indicator[]> {
-        return this.getDataElementGroupsByCompetencies(
-            config.dataElementGroupSets.coreCompetency.id
-        ).flatMap(d2Response => {
-            const coreCompetencyGroup = d2Response.objects[0];
-            if (!coreCompetencyGroup)
-                return Future.error(new Error("Core competency group not found"));
+        return this.getCompetencies(config).flatMap(competencies => {
+            return apiToFuture(
+                this.api.models.dataElementGroups.get({
+                    fields: { id: true, name: true, dataElements: true },
+                    filter: { id: { in: competencies.map(competency => competency.id) } },
+                    paging: false,
+                })
+            ).flatMap(d2ResponseGroups => {
+                const allDataElementIds = d2ResponseGroups.objects.flatMap(group =>
+                    group.dataElements.map(de => de.id)
+                );
 
-            const indicators = coreCompetencyGroup?.dataElementGroups.flatMap(deg => {
-                return this.buildIndicatorsFromGroups(deg, config);
+                const $requests = _(allDataElementIds)
+                    .chunk(300)
+                    .map(dataElementIds => {
+                        return this.buildIndicators(dataElementIds, competencies, config);
+                    })
+                    .value();
+
+                const options = { concurrency: 8 };
+                return Future.parallel($requests, options).map(indicators => indicators.flat());
             });
-
-            return Future.success(indicators);
         });
+    }
+
+    private buildIndicators(
+        dataElementIds: string[],
+        competencies: CoreCompetency[],
+        config: D2Config
+    ): FutureData<Indicator[]> {
+        return this.getDataElementsByIds(dataElementIds).map(d2ResponseDataElements => {
+            return _(d2ResponseDataElements.objects)
+                .compactMap((d2DataElement): Maybe<Indicator> => {
+                    const groupsById = _(d2DataElement.dataElementGroups).keyBy(x => x.id);
+
+                    const competency = competencies.find(competency =>
+                        groupsById.get(competency.id)
+                    );
+
+                    if (!competency) return undefined;
+
+                    return this.buildOutputIndicator(competency, d2DataElement, config);
+                })
+                .value();
+        });
+    }
+
+    private getDataElementsByIds(ids: Id[]) {
+        return apiToFuture(
+            this.api.models.dataElements.get({
+                filter: { id: { in: ids } },
+                fields: {
+                    id: true,
+                    displayName: true,
+                    displayDescription: true,
+                    valueType: true,
+                    code: true,
+                    categoryCombo: {
+                        id: true,
+                        displayName: true,
+                        categories: {
+                            id: true,
+                            name: true,
+                            displayName: true,
+                            categoryOptions: { id: true, displayName: true },
+                        },
+                    },
+                    attributeValues: { attribute: { id: true }, value: true },
+                    dataElementGroups: {
+                        id: true,
+                        displayName: true,
+                        groupSets: { id: true, displayName: true },
+                    },
+                },
+                paging: false,
+            })
+        );
     }
 
     private getCompetencies(config: D2Config): FutureData<CoreCompetency[]> {
@@ -203,19 +267,8 @@ export class D2ApiIndicator {
         );
     }
 
-    private buildIndicatorsFromGroups(
-        dataElementGroup: D2DataElementGroup,
-        config: D2Config
-    ): Indicator[] {
-        return _(dataElementGroup.dataElements)
-            .compactMap((dataElement): Maybe<Indicator> => {
-                return this.buildOutputIndicator(dataElementGroup, dataElement, config);
-            })
-            .value();
-    }
-
     private buildOutputIndicator(
-        dataElementGroup: D2DataElementGroup,
+        coreCompetency: CoreCompetency,
         dataElement: D2DataElementFromGroup,
         config: D2Config
     ): Maybe<Indicator> {
@@ -258,11 +311,7 @@ export class D2ApiIndicator {
             description: dataElement.displayDescription,
             denominator: "",
             numerator: "",
-            coreCompetency: {
-                id: dataElementGroup.id,
-                code: dataElementGroup.code,
-                name: dataElementGroup.displayName,
-            },
+            coreCompetency: coreCompetency,
             id: dataElement.id,
             name: dataElement.displayName,
             code: dataElement.code,
@@ -297,13 +346,6 @@ type D2IndicatorGroup = {
         }>;
         numerator: string;
     }>;
-};
-
-type D2DataElementGroup = {
-    id: Id;
-    code: string;
-    displayName: string;
-    dataElements: D2DataElementFromGroup[];
 };
 
 type D2DataElementFromGroup = {
