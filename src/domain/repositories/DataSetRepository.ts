@@ -19,5 +19,5 @@ export type DataSetName = Pick<DataSet, "id" | "name">;
 export type GetDataSetOptions = {
     paging: { page: number; pageSize: number };
     sorting: { field: DataSetOrderFields; order: "asc" | "desc" };
-    filters: { search?: string; ids?: Id[]; projectsIds?: Id[] };
+    filters: { search?: string; ids?: Id[]; projectsIds?: Id[]; includeDataSets?: boolean };
 };

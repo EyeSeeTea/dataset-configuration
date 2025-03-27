@@ -30,6 +30,7 @@ export type DataSetAttrs = {
     indicators: Indicator[];
     periodDate: Maybe<PeriodDate>;
     disabledFields: DisabledField[];
+    shortName: string;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -50,10 +51,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this.getValidationErrors();
     }
 
-    get shortName(): string {
-        return this.truncateValue(this.name);
-    }
-
     private truncateValue(input: string): string {
         const targetLength = 50;
         return input.length > targetLength ? input.slice(0, targetLength) : input;
@@ -66,12 +63,14 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     updateProject(project: Maybe<Project>, config: Config): DataSet {
         const name = project ? `${project.name} DataSet` : "";
+        const shortName = this.truncateValue(name);
         const orgsUnits = project ? project.orgsUnits : this.orgUnits;
 
         const accessGroupsFromProject = this.getAccessFromProject(project, config);
 
         return this._update({
             access: accessGroupsFromProject,
+            shortName,
             project,
             name,
             orgUnits: orgsUnits,
@@ -243,6 +242,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             id,
             lastUpdated: "",
             name: "",
+            shortName: "",
             orgUnits: [],
             permissions: {
                 data: Permission.create({ read: false, write: false }),

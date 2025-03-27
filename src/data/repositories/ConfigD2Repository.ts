@@ -22,12 +22,15 @@ export class ConfigD2Repository implements ConfigRepository {
 
     get(): FutureData<Config> {
         return this.getConfig().flatMap(apiConfig => {
-            return Future.joinObj({
-                regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
-                userGroups: this.getUserGroups(),
-                indicators: this.getIndicators(),
-                categoryCombinations: this.getCategoryCombos([], 1),
-            }).map(response => {
+            return Future.joinObj(
+                {
+                    regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
+                    userGroups: this.getUserGroups(),
+                    indicators: this.getIndicators(),
+                    categoryCombinations: this.getCategoryCombos([], 1),
+                },
+                { concurrency: 4 }
+            ).map(response => {
                 return {
                     ...response,
                     periodEndDateMonth: apiConfig.periodEndDateMonth,
@@ -87,10 +90,13 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getIndicators() {
         return this.getConfig().flatMap(config => {
-            return Future.joinObj({
-                outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
-                outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
-            }).map(({ outcomeIndicators, outputIndicators }) => {
+            return Future.joinObj(
+                {
+                    outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
+                    outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
+                },
+                { concurrency: 2 }
+            ).map(({ outcomeIndicators, outputIndicators }) => {
                 return outcomeIndicators.concat(outputIndicators);
             });
         });
