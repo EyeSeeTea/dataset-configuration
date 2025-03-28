@@ -146,6 +146,11 @@ export class DataSet extends Struct<DataSetAttrs>() {
             .value();
     }
 
+    updateShortName(): DataSet {
+        const truncatedShortName = this.truncateValue(this.name);
+        return this._update({ shortName: truncatedShortName });
+    }
+
     static buildAccess(permissions: Permissions): string {
         const dataDescription = DataSet.buildAccessDescription(permissions.data);
         const metadataDescription = DataSet.buildAccessDescription(permissions.metadata);

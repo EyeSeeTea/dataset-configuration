@@ -32,7 +32,8 @@ export class SaveDataSetUseCase {
                     )
                 );
 
-            return this.dataSetRepository.save([dataSet]);
+            const dataSetToSave = dataSet.updateShortName();
+            return this.dataSetRepository.save([dataSetToSave]);
         });
     }
 
