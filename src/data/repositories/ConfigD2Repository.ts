@@ -1,6 +1,6 @@
 import { D2ApiIndicator } from "$/data/D2ApiIndicator";
 import { apiToFuture } from "$/data/api-futures";
-import { D2ApiConfig, D2Config, metadataCodes } from "$/data/repositories/D2ApiMetadata";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { convertToCategories } from "$/data/utils";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Config } from "$/domain/entities/Config";
@@ -23,12 +23,15 @@ export class ConfigD2Repository implements ConfigRepository {
 
     get(): FutureData<Config> {
         return this.getConfig().flatMap(apiConfig => {
-            return Future.joinObj({
-                regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
-                userGroups: this.getUserGroups(),
-                indicators: this.getIndicators(),
-                categoryCombinations: this.getCategoryCombos([], 1),
-            }).map(response => {
+            return Future.joinObj(
+                {
+                    regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
+                    userGroups: this.getUserGroups(),
+                    indicators: this.getIndicators(),
+                    categoryCombinations: this.getCategoryCombos([], 1),
+                },
+                { concurrency: 4 }
+            ).map(response => {
                 return {
                     ...response,
                     periodEndDateMonth: apiConfig.periodEndDateMonth,
@@ -89,26 +92,15 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getIndicators() {
         return this.getConfig().flatMap(config => {
-            return Future.joinObj({
-                outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
-                outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
-            }).map(({ outcomeIndicators, outputIndicators }) => {
+            return Future.joinObj(
+                {
+                    outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
+                    outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
+                },
+                { concurrency: 2 }
+            ).map(({ outcomeIndicators, outputIndicators }) => {
                 return outcomeIndicators.concat(outputIndicators);
             });
-        });
-    }
-
-    private getOrgUnitLevelGroup(): FutureData<number> {
-        return apiToFuture(
-            this.api.models.organisationUnitLevels.get({
-                fields: { id: true, level: true },
-                filter: { name: { eq: metadataCodes.orgUnitLevels.country } },
-            })
-        ).flatMap(d2Response => {
-            const orgUnitLevel = d2Response.objects[0];
-            return orgUnitLevel
-                ? Future.success(orgUnitLevel.level)
-                : Future.error(new Error("Country level not found"));
         });
     }
 

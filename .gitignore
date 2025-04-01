@@ -40,3 +40,5 @@ cypress/fixtures/
 .idea/*
 
 docs/
+# build-dependencies-visualizer generates a dist folder for the report
+/dist

@@ -176,7 +176,7 @@ export class ProjectD2Repository implements ProjectRepository {
     private getProjects(page: number, pageSize: number) {
         return this.get({
             paging: { page, pageSize },
-            filters: {},
+            filters: { includeDataSets: false },
             sorting: { field: "lastUpdated", order: "asc" },
         });
     }
@@ -206,7 +206,7 @@ export class ProjectD2Repository implements ProjectRepository {
                 });
 
                 const projectsIds = projects.map(project => project.id);
-                return this.getDataSets(projectsIds).map(dataSets => {
+                return this.getDataSets(projectsIds, options).map(dataSets => {
                     return {
                         page: d2Response.pager.page,
                         pageCount: d2Response.pager.pageCount,
@@ -220,6 +220,7 @@ export class ProjectD2Repository implements ProjectRepository {
     }
 
     private buildProjectsWithDataSets(projects: Project[], dataSets: DataSet[]): Project[] {
+        if (dataSets.length === 0) return projects;
         return projects.map(project => {
             const dataSetsForProject = dataSets.filter(
                 dataSet => dataSet.project?.id === project.id
@@ -229,7 +230,8 @@ export class ProjectD2Repository implements ProjectRepository {
         });
     }
 
-    private getDataSets(projectsIds: Id[]): FutureData<DataSet[]> {
+    private getDataSets(projectsIds: Id[], options: GetDataSetOptions): FutureData<DataSet[]> {
+        if (!options.filters.includeDataSets) return Future.success([]);
         return this.d2DataSetApi
             .getWithOrgUnits({
                 paging: { page: 1, pageSize: 1e6 },

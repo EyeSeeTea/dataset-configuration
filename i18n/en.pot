@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-25T01:35:25.589Z\n"
-"PO-Revision-Date: 2025-03-25T01:35:25.589Z\n"
+"POT-Creation-Date: 2025-04-01T12:43:40.514Z\n"
+"PO-Revision-Date: 2025-04-01T12:43:40.514Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -87,9 +87,6 @@ msgid "Select at least one country"
 msgstr ""
 
 msgid "DataSet not found"
-msgstr ""
-
-msgid "Data set name already exists: {{dataSetName}}"
 msgstr ""
 
 msgid "There has been an error when dataset '{{dataSetName}}' was being saved."

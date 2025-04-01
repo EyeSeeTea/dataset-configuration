@@ -43,6 +43,14 @@ export function runMetadata(d2Response: CancelableResponse<MetadataResponse>): F
     );
 }
 
+export function buildErrorFromException(err: Error): string {
+    const error = err as unknown as MapError;
+    const errorResponse = error?.response?.data?.response;
+    if (!errorResponse) return error.message ?? "Unknown error";
+
+    return getErrorFromResponse(errorResponse);
+}
+
 export function convertToCategories(d2Categories: D2Category[]): Category[] {
     return d2Categories.map(category => ({
         id: category.id,
@@ -97,3 +105,7 @@ export type D2CategoryCombo = D2NamedRef & {
     categoryOptionCombos: D2NamedRef[];
 };
 type D2AttributeDateValue = string; // format: YYYYMMDD
+
+type MapError = { response: Maybe<MapErroResponse>; message: string };
+type MapErroResponse = { data: Maybe<ErrorResponse> };
+type ErrorResponse = { response: MetadataResponse };

@@ -44,8 +44,9 @@ export class SaveDataSetUseCase {
                     return this.validateDataSetName(dataSet);
                 })
                 .flatMap(() => {
+                    const dataSetToSave = dataSet.updateShortName();
                     return this.dataSetRepository
-                        .save([dataSet])
+                        .save([dataSetToSave])
                         .flatMap(() => {
                             return this.saveProject(dataSet).flatMap(stats => {
                                 return this.sendNotification(options, stats.errorMessage);

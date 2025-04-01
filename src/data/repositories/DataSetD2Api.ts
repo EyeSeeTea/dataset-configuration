@@ -88,9 +88,14 @@ export class DataSetD2Api {
         coreCompetencies: CoreCompetency[],
         pager: Pager
     ): FutureData<Paginated<DataSet>> {
-        const projectIds = this.getProjectIds(d2DataSets, attributes);
+        const dataSetsCreatedByApp = d2DataSets.filter(d2DataSet =>
+            d2DataSet.attributeValues.find(
+                x => x.attribute.id === attributes.createdByApp.id && x.value === "true"
+            )
+        );
+        const projectIds = this.getProjectIds(dataSetsCreatedByApp, attributes);
         return this.getProjectsByIds(projectIds).map(projects => {
-            const dataSets = d2DataSets.map(d2DataSet => {
+            const dataSets = dataSetsCreatedByApp.map(d2DataSet => {
                 return this.buildDataSet(d2DataSet, coreCompetencies, projects, attributes);
             });
             return { ...pager, data: dataSets };
@@ -248,6 +253,7 @@ export class DataSetD2Api {
             description: d2DataSet.displayDescription,
             id: d2DataSet.id,
             name: d2DataSet.displayName,
+            shortName: d2DataSet.displayShortName,
             lastUpdated: d2DataSet.lastUpdated,
             permissions: {
                 data: this.buildPermission(d2DataSet.sharing.public, "data"),
