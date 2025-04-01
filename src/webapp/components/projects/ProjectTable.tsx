@@ -12,15 +12,28 @@ import { useNavigateTo } from "$/webapp/routes";
 import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 import { getCommonActions } from "$/webapp/components/dataset-table/DataSetTableConfig";
 import { useDataSetsRoutes } from "$/webapp/hooks/useDataSets";
+import { Struct } from "$/domain/entities/generic/Struct";
 
-type ProjectColumns = ProjectAttrs & { orgUnits: string; coreCompetencies: string };
+export class ProjectColumns extends Struct<ProjectAttrs>() {
+    get orgUnits(): string {
+        return " - ";
+    }
+
+    get coreCompetencies(): string {
+        return " - ";
+    }
+
+    hasPermissionsToUpdate(): boolean {
+        return false;
+    }
+}
 
 function objIsDataSet(project: ProjectColumns): boolean {
     return project instanceof DataSet;
 }
 
 export const ProjectTable = React.memo(() => {
-    const { compositionRoot } = useAppContext();
+    const { compositionRoot, currentUser } = useAppContext();
     const snackbar = useSnackbar();
     const navigateTo = useNavigateTo();
     const [refreshTable, setRefreshTable] = React.useState(0);
@@ -44,6 +57,7 @@ export const ProjectTable = React.memo(() => {
                         onAction: setTableAction,
                         navigateTo,
                         isActive: projects => projects.every(project => objIsDataSet(project)),
+                        user: currentUser,
                     }),
                 ],
                 details: [
@@ -99,9 +113,11 @@ export const ProjectTable = React.memo(() => {
                 paginationOptions: { pageSizeInitialValue: 50, pageSizeOptions: [50, 100, 200] },
                 searchBoxLabel: i18n.t("Search"),
                 childrenKeys: ["dataSets"],
-                onActionButtonClick: goToCreateDataSet,
+                onActionButtonClick: currentUser.access.canCreateDataSets
+                    ? goToCreateDataSet
+                    : undefined,
             };
-        }, [goToCreateDataSet, navigateTo]),
+        }, [goToCreateDataSet, navigateTo, currentUser]),
         React.useCallback(
             (search, pagination, sorting) => {
                 console.debug(refreshTable);
@@ -119,11 +135,7 @@ export const ProjectTable = React.memo(() => {
                                 setLoading(false);
                                 return resolve({
                                     objects: response.data.map(project => {
-                                        return {
-                                            ...project,
-                                            orgUnits: " - ",
-                                            coreCompetencies: " - ",
-                                        };
+                                        return ProjectColumns.create(project);
                                     }),
                                     pager: {
                                         page: response.page,

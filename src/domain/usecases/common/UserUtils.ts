@@ -1,3 +1,4 @@
+import { DataSet } from "$/domain/entities/DataSet";
 import { Log, LogAction, LogStatus } from "$/domain/entities/Log";
 import { User } from "$/domain/entities/User";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
@@ -24,6 +25,20 @@ export class UserUtils {
                 status,
             });
             return this.logRepository.save([log]);
+        });
+    }
+
+    checkDataSetAccess(dataSets: DataSet[]): FutureData<void> {
+        return this.getCurrentUser().flatMap(user => {
+            const hasAccess = dataSets.every(dataSet => {
+                return dataSet.hasPermissionsToUpdate(user);
+            });
+
+            return hasAccess
+                ? Future.void()
+                : Future.error(
+                      new Error(i18n.t("User does not have access to update the data sets"))
+                  );
         });
     }
 }

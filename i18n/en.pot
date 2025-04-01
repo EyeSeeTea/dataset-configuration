@@ -104,6 +104,12 @@ msgstr ""
 msgid "Warnings"
 msgstr ""
 
+msgid "Data set name already exists: {{dataSetName}}"
+msgstr ""
+
+msgid "User does not have access to update the data sets"
+msgstr ""
+
 msgid "User is not an admin"
 msgstr ""
 

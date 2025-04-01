@@ -20,27 +20,29 @@ export class SaveSharingDataSetsUseCase {
     execute(options: SaveDataSetOptions): FutureData<DataSet[]> {
         const dataSetsIds = options.dataSets.map(dataSet => dataSet.id);
         return this.getDataSetsByIds(dataSetsIds).flatMap(dataSets => {
-            const dataSetsWithPermissions = this.setPermissionsToDataSets(dataSets, options);
-            return this.dataSetRepository
-                .save(dataSetsWithPermissions)
-                .flatMap(() => {
-                    return this.userUtils
-                        .logAction({
-                            action: "sharing",
-                            dataSets: dataSetsWithPermissions,
-                            status: "success",
-                        })
-                        .map(() => dataSetsWithPermissions);
-                })
-                .flatMapError(error => {
-                    return this.userUtils
-                        .logAction({
-                            action: "sharing",
-                            dataSets: dataSetsWithPermissions,
-                            status: "failed",
-                        })
-                        .flatMap(() => Future.error(error));
-                });
+            return this.userUtils.checkDataSetAccess(dataSets).flatMap(() => {
+                const dataSetsWithPermissions = this.setPermissionsToDataSets(dataSets, options);
+                return this.dataSetRepository
+                    .save(dataSetsWithPermissions)
+                    .flatMap(() => {
+                        return this.userUtils
+                            .logAction({
+                                action: "sharing",
+                                dataSets: dataSetsWithPermissions,
+                                status: "success",
+                            })
+                            .map(() => dataSetsWithPermissions);
+                    })
+                    .flatMapError(error => {
+                        return this.userUtils
+                            .logAction({
+                                action: "sharing",
+                                dataSets: dataSetsWithPermissions,
+                                status: "failed",
+                            })
+                            .flatMap(() => Future.error(error));
+                    });
+            });
         });
     }
 

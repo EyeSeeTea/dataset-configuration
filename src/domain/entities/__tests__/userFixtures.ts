@@ -18,6 +18,12 @@ export function createUserWithGroups(userGroups: NamedRef[] = []): User {
         username: "user",
         userRoles: [],
         userGroups,
+        access: {
+            canCreatePublicDataSets: true,
+            canDeleteDataSets: true,
+            canCreateDataSets: true,
+            canEditCombinations: true,
+        },
     });
 }
 function createUser(userRoles: UserRole[], userGroups: NamedRef[] = []): User {
@@ -27,5 +33,11 @@ function createUser(userRoles: UserRole[], userGroups: NamedRef[] = []): User {
         username: "user",
         userRoles,
         userGroups,
+        access: {
+            canDeleteDataSets: true,
+            canCreatePublicDataSets: true,
+            canCreateDataSets: true,
+            canEditCombinations: true,
+        },
     });
 }

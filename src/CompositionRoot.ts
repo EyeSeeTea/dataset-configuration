@@ -129,6 +129,8 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
                 repositories.notificationRepository,
                 repositories.userGroupRepository,
                 repositories.projectRepository,
+                repositories.usersRepository,
+                repositories.logRepository,
                 config
             ),
             getSettings: new GetDataSetSettingsUseCase(

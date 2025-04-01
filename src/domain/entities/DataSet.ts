@@ -13,6 +13,8 @@ import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
 import { PeriodDate } from "$/domain/entities/PeriodDate";
 import { UserGroup } from "$/domain/entities/UserGroup";
+import { User } from "$/domain/entities/User";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -31,6 +33,7 @@ export type DataSetAttrs = {
     indicators: Indicator[];
     periodDate: Maybe<PeriodDate>;
     disabledFields: DisabledField[];
+    canBeUpdated: boolean;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -38,7 +41,6 @@ export type AccessData = { id: Id; permissions: Permissions; name: string; type:
 export type AccessType = "users" | "groups";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
-export type DataSetList = Pick<DataSet, "id" | "name" | "lastUpdated" | "permissions">;
 export type DisabledField = {
     dataElementId: Id;
     optionComboId: Id;
@@ -236,6 +238,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
+            canBeUpdated: true,
             indicators: [],
             access: [],
             coreCompetencies: [],
@@ -257,5 +260,10 @@ export class DataSet extends Struct<DataSetAttrs>() {
             disabledFields: [],
             ...initialData,
         });
+    }
+
+    hasPermissionsToUpdate(user: User): boolean {
+        const dataSetList = DataSetList.create({ ...this });
+        return dataSetList.hasPermissionsToUpdate(user);
     }
 }
