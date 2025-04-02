@@ -41,6 +41,9 @@ export const metadataCodes = {
     categoryCombination: {
         projectTargetActual: "GL_CATBOMBO_ProjectCCTarAct",
     },
+    userGroups: {
+        adminNotification: "GL_GlobalAdministrator",
+    },
 };
 
 const metadataFieldsApp = [
@@ -52,6 +55,7 @@ const metadataFieldsApp = [
     "indicatorGroups",
     "indicatorGroupSets",
     "organisationUnitLevels",
+    "userGroups",
 ] as const;
 
 type MetadataKeyType = (typeof metadataFieldsApp)[number];
@@ -67,10 +71,10 @@ export class D2ApiConfig {
     }
 
     private getMetadata(): FutureData<D2Config> {
-        return this.d2ApiAppSettings.getMetadataFromSettings().map(settings => {
+        return this.d2ApiAppSettings.getMetadataFromSettings().map((settings): D2Config => {
             const { appSettings, metadata } = settings;
             const getOrThrowMetadata = (metadataKey: MetadataKeyType, value: Maybe<string>) =>
-                getOrThrow(metadata[metadataKey], value);
+                getOrThrow(metadata[metadataKey], value, metadataKey);
 
             const orgUnitLevel = getOrThrowMetadata(
                 "organisationUnitLevels",
@@ -157,27 +161,40 @@ export class D2ApiConfig {
                 periodEndDateMonth: appSettings.periodEndDateMonth,
                 periodLastYearEndDate: appSettings.periodLastYearEndDate,
                 periodLastYearUnits: appSettings.periodLastYearUnits,
+                userGroups: {
+                    adminNotification: metadata.userGroups.find(
+                        userGroup => userGroup.name === metadataCodes.userGroups.adminNotification
+                    ),
+                },
             };
         });
     }
 
     private buildAttributes(attributes: D2NamedCodeRef[]): D2Config["attributes"] {
         return rec(metadataCodes.attributes)
-            .mapValues(([_key, code]) => getOrThrow(attributes, code))
+            .mapValues(([_key, code]) => getOrThrow(attributes, code, "attributes"))
             .value();
     }
 }
 
-function getOrThrow(modelData: D2NamedCodeRef[], value: Maybe<string>): D2NamedCodeRef {
+function getOrThrow(
+    modelData: D2NamedCodeRef[],
+    value: Maybe<string>,
+    metadataKey: MetadataKeyType
+): D2NamedCodeRef {
     const model = modelData.find(
         attribute => attribute.code === value || attribute.name === value || attribute.id === value
     );
-    if (!model) throw new Error(`Metadata object not found: code="${value}"`);
+    if (!model)
+        throw new Error(`Metadata object not found: id/name/code="${metadataKey}-${value}"`);
 
     return model;
 }
 
 export type D2Config = {
+    userGroups: {
+        adminNotification: Maybe<D2NamedCodeRef>;
+    };
     periodEndDateMonth: number;
     periodEndDateDay: number;
     periodLastYearEndDate: number;

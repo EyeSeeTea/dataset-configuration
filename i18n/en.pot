@@ -89,7 +89,22 @@ msgstr ""
 msgid "DataSet not found"
 msgstr ""
 
+msgid "There has been an error when dataset '{{dataSetName}}' was being saved."
+msgstr ""
+
+msgid "User: {{username}} ({{userId}})"
+msgstr ""
+
+msgid "with warnings"
+msgstr ""
+
+msgid "Warnings"
+msgstr ""
+
 msgid "Data set name already exists: {{dataSetName}}"
+msgstr ""
+
+msgid "User does not have access to update the data sets"
 msgstr ""
 
 msgid "User is not an admin"

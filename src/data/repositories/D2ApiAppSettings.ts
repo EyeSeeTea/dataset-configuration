@@ -160,6 +160,12 @@ export class D2ApiAppSettings {
                             },
                         },
                     },
+                    userGroups: {
+                        fields: { id: true, name: true, code: true },
+                        filter: {
+                            identifiable: { in: [metadataCodes.userGroups.adminNotification] },
+                        },
+                    },
                 })
             ).map(metadata => {
                 return { appSettings, metadata };

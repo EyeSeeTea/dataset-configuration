@@ -11,7 +11,6 @@ import { DataSet } from "$/domain/entities/DataSet";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { ValidationError, getErrors } from "$/domain/entities/generic/Error";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { useSaveDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
 import styled from "styled-components";
 import { NavigationProps } from "@eyeseetea/d2-ui-components/wizard/Navigation";
 
@@ -114,7 +113,11 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                     className="wizard-dataset"
                     showNavigationTop
                     NavigationComponent={props => (
-                        <CustomNavigationComponent {...props} dataSet={dataSet} />
+                        <CustomNavigationComponent
+                            {...props}
+                            action={isEditing ? "edit" : "create"}
+                            dataSet={dataSet}
+                        />
                     )}
                 />
             </Grid>
@@ -122,12 +125,14 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
     );
 });
 
-const CustomNavigationComponent = (props: NavigationProps & { dataSet: DataSet }) => {
-    const { dataSet } = props;
+const CustomNavigationComponent = (props: CustomNavigationProps) => {
+    const { action, dataSet } = props;
     const loading = useLoading();
     const snackbar = useSnackbar();
     const navigateTo = useNavigateTo();
+
     const { saveDataSet } = useSaveDataSet({
+        action,
         dataSet,
         onLoading: () => loading.show(true, i18n.t("Saving...")),
         onSuccess: () => {
@@ -199,6 +204,39 @@ export function useValidateDataSetWizard(props: {
     return { validateSteps };
 }
 
+export function useSaveDataSet(props: {
+    dataSet: DataSet;
+    onLoading: () => void;
+    onSuccess: () => void;
+    onError: (error: string) => void;
+    action: DataSetRegisterAction;
+}) {
+    const { compositionRoot, currentUser } = useAppContext();
+    const { action, dataSet, onLoading, onSuccess, onError } = props;
+
+    const saveDataSet = React.useCallback(() => {
+        onLoading();
+        return compositionRoot.dataSets.save.execute({ dataSet, user: currentUser, action }).run(
+            () => {
+                onSuccess();
+            },
+            error => {
+                onError(error.message);
+            }
+        );
+    }, [
+        action,
+        currentUser,
+        compositionRoot.dataSets.save,
+        dataSet,
+        onLoading,
+        onSuccess,
+        onError,
+    ]);
+
+    return { saveDataSet };
+}
+
 function getErrorByValidationStatus(status: ValidationStatusType): string {
     switch (status) {
         case "error":
@@ -210,7 +248,10 @@ function getErrorByValidationStatus(status: ValidationStatusType): string {
     }
 }
 
+export const actions = ["edit", "create", "clone"] as const;
+export type DataSetRegisterAction = (typeof actions)[number];
 type ValidationStepType = Record<string, () => ValidationError<DataSet>[]>;
+type CustomNavigationProps = NavigationProps & { dataSet: DataSet; action: DataSetRegisterAction };
 
 const WizardButtonsContainer = styled.div`
     display: flex;

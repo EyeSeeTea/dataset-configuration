@@ -3,13 +3,14 @@ import { apiToFuture } from "$/data/api-futures";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { convertToCategories } from "$/data/utils";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
-import { Config, UserGroup } from "$/domain/entities/Config";
+import { Config } from "$/domain/entities/Config";
 import { Project } from "$/domain/entities/Project";
 import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
+import { UserGroup } from "$/domain/entities/UserGroup";
 import { DEFAULT_UNIT_DATE } from "$/domain/entities/UnitDate";
 
 export class ConfigD2Repository implements ConfigRepository {
@@ -36,6 +37,7 @@ export class ConfigD2Repository implements ConfigRepository {
                     periodEndDateMonth: apiConfig.periodEndDateMonth,
                     periodEndDateDay: apiConfig.periodEndDateDay,
                     periodLastYearEndDate: apiConfig.periodLastYearEndDate,
+                    notificationUserGroup: apiConfig.userGroups.adminNotification,
                     periodLastYearUnits: apiConfig.periodLastYearUnits || DEFAULT_UNIT_DATE,
                 };
             });
@@ -121,10 +123,7 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getUserGroups(): FutureData<UserGroup[]> {
         return apiToFuture(
-            this.api.models.userGroups.get({
-                fields: { id: true, name: true },
-                paging: false,
-            })
+            this.api.models.userGroups.get({ fields: { id: true, name: true }, paging: false })
         ).map(d2Response => {
             return d2Response.objects.map(d2UserGroup => ({
                 id: d2UserGroup.id,

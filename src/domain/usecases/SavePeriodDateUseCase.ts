@@ -20,29 +20,31 @@ export class SavePeriodDateUseCase {
 
     execute(options: SavePeriodDateOptions): FutureData<void> {
         return this.getDataSetsByIds(options.dataSetsIds).flatMap(dataSets => {
-            const dataSetsToSave = dataSets.map(dataSet => {
-                return DataSet.create({ ...dataSet, periodDate: options.periodDate });
-            });
-            return this.dataSetRepository
-                .save(dataSetsToSave)
-                .flatMap(() => {
-                    return this.userUtils
-                        .logAction({
-                            dataSets: dataSetsToSave,
-                            status: "success",
-                            action: "period_dates",
-                        })
-                        .toVoid();
-                })
-                .flatMapError(error => {
-                    return this.userUtils
-                        .logAction({
-                            dataSets: dataSetsToSave,
-                            status: "failed",
-                            action: "period_dates",
-                        })
-                        .flatMap(() => Future.error(error));
+            return this.userUtils.checkDataSetAccess(dataSets).flatMap(() => {
+                const dataSetsToSave = dataSets.map(dataSet => {
+                    return DataSet.create({ ...dataSet, periodDate: options.periodDate });
                 });
+                return this.dataSetRepository
+                    .save(dataSetsToSave)
+                    .flatMap(() => {
+                        return this.userUtils
+                            .logAction({
+                                dataSets: dataSetsToSave,
+                                status: "success",
+                                action: "period_dates",
+                            })
+                            .toVoid();
+                    })
+                    .flatMapError(error => {
+                        return this.userUtils
+                            .logAction({
+                                dataSets: dataSetsToSave,
+                                status: "failed",
+                                action: "period_dates",
+                            })
+                            .flatMap(() => Future.error(error));
+                    });
+            });
         });
     }
 

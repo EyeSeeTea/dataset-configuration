@@ -19,6 +19,7 @@ export const configTest: Config = {
     periodEndDateMonth: 4,
     periodLastYearEndDate: 0,
     periodLastYearUnits: "month",
+    notificationUserGroup: { id: "EVSddRDWk5i", code: "GL_admin", name: "GL_GlobalAdministrator" },
 };
 
 export function getTestContext() {
