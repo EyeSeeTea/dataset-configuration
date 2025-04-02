@@ -57,7 +57,7 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     const [mode, setMode] = React.useState<AddDisaggregateMode>("indicator");
 
     const updateMode = (value: Maybe<string>) => {
-        const mode = disaggregationModes.find(mode => mode.value === value);
+        const mode = getDisaggregationModes().find(mode => mode.value === value);
         setMode(mode?.value || "indicator");
     };
 
@@ -69,7 +69,7 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
         value: category.id,
     }));
 
-    const modes = disaggregationModes.map(mode => ({ text: mode.text, value: mode.value }));
+    const modes = getDisaggregationModes().map(mode => ({ text: mode.text, value: mode.value }));
 
     const onUpdateCategoriesIds = (categoriesIds: Id[]) => {
         const selectedCategories = categories.filter(category =>
@@ -155,28 +155,32 @@ export const AddDisaggregateModal = React.memo((props: AddDisaggregateModalProps
     );
 });
 
-const disaggregationModes = [
-    {
-        value: "indicator",
-        text: "Indicator",
-    },
-    {
-        value: "competency",
-        text: "Competency",
-    },
-    {
-        value: "all",
-        text: "All",
-    },
-    {
-        value: "individuals",
-        text: "All individuals in the data set",
-    },
-    {
-        value: "households",
-        text: "All HHS in the data set",
-    },
-] as const;
+function getDisaggregationModes() {
+    return [
+        {
+            value: "indicator",
+            text: i18n.t("Indicator"),
+        },
+        {
+            value: "competency",
+            text: i18n.t("Competency"),
+        },
+        {
+            value: "all",
+            text: i18n.t("All"),
+        },
+        {
+            value: "individuals",
+            text: i18n.t("All individuals in the data set"),
+        },
+        {
+            value: "households",
+            text: i18n.t("All HHS in the data set"),
+        },
+    ] as const;
+}
+
+const disaggregationModes = getDisaggregationModes();
 
 export type AddDisaggregateMode = (typeof disaggregationModes)[number]["value"];
 

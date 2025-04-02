@@ -7,7 +7,7 @@ import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe, UnionFromValues } from "$/utils/ts-utils";
 
-export type DisaggregationAttrs = {
+export type Disaggregation = {
     id: Id;
     name: string;
     categories: Category[];
@@ -25,8 +25,8 @@ export type IndicatorAttrs = {
     measure: string;
     scope: IndicatorScope;
     group: string;
-    disaggregation: Maybe<DisaggregationAttrs>;
-    initialDisaggregation: Maybe<DisaggregationAttrs>;
+    disaggregation: Maybe<Disaggregation>;
+    initialDisaggregation: Maybe<Disaggregation>;
     coreCompetency: CoreCompetency;
     denominator: string;
     numerator: string;

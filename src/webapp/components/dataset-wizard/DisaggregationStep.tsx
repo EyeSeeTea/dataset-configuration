@@ -2,11 +2,7 @@ import isEqual from "lodash/isEqual";
 import _ from "$/domain/entities/generic/Collection";
 import React from "react";
 import { DataSet } from "$/domain/entities/DataSet";
-import {
-    DisaggregationAttrs,
-    Indicator,
-    IndicatorWithDataElement,
-} from "$/domain/entities/Indicator";
+import { Disaggregation, Indicator, IndicatorWithDataElement } from "$/domain/entities/Indicator";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { SearchBox } from "@eyeseetea/d2-ui-components";
 import {
@@ -195,13 +191,7 @@ function useGetRelatedDataElements(props: {
                 setRefresh(refresh + 1);
                 onChange(dataSet.setIndicators(indicators));
             }, console.error);
-    }, [
-        compositionRoot.indicators.getRelated,
-        dataSet,
-        refresh,
-        settings.existingIndicatorIds,
-        onChange,
-    ]);
+    }, [compositionRoot, dataSet, refresh, settings.existingIndicatorIds, onChange]);
 
     return { indicatorsDataElements, setIndicatorsDataElements };
 }
@@ -342,7 +332,7 @@ function getDisaggregationForCategories(
     disaggregation: DataElement["disaggregation"],
     categoryCombos: CategoryCombination[],
     selectedCategories: Category[]
-): DisaggregationAttrs {
+): Disaggregation {
     const allCategoriesFromCombos = categoryCombos.flatMap(cc => cc.categories);
     const categoriesById = _(allCategoriesFromCombos)
         .uniqBy(category => category.id)
@@ -411,7 +401,7 @@ function getDisaggregationForCategories(
             .value();
 
         const ccName = categories.map(cc => cc.name).join("/");
-        const newCategoryCombo: DisaggregationAttrs = {
+        const newCategoryCombo: Disaggregation = {
             id: newCategoryComboId,
             name: ccName,
             categories: categories,

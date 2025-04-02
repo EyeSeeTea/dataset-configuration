@@ -6,7 +6,8 @@ import { Id } from "$/domain/entities/Ref";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import { useNavigateTo } from "$/webapp/routes";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
+import { useCallbackEffect } from "$/webapp/hooks/useCallbackEffect";
 
 export function useGetDataSetsByIds(ids: Id[]) {
     const { compositionRoot } = useAppContext();
@@ -14,20 +15,23 @@ export function useGetDataSetsByIds(ids: Id[]) {
     const snackbar = useSnackbar();
     const [dataSets, setDataSets] = React.useState<DataSet[]>();
 
-    React.useEffect(() => {
-        loading.show(true, "Loading data sets");
+    const getDataSets = useCallbackEffect(
+        React.useCallback(() => {
+            loading.show(true, "Loading data sets");
+            return compositionRoot.dataSets.getByIds.execute(ids).run(
+                dataSets => {
+                    setDataSets(dataSets);
+                    loading.hide();
+                },
+                error => {
+                    snackbar.error(error.message);
+                    loading.hide();
+                }
+            );
+        }, [compositionRoot.dataSets.getByIds, ids, loading, snackbar])
+    );
 
-        return compositionRoot.dataSets.getByIds.execute(ids).run(
-            dataSets => {
-                setDataSets(dataSets);
-                loading.hide();
-            },
-            error => {
-                snackbar.error(error.message);
-                loading.hide();
-            }
-        );
-    }, [compositionRoot.dataSets.getByIds, ids, loading, snackbar]);
+    React.useEffect(() => getDataSets(), [getDataSets]);
 
     return { dataSets, setDataSets };
 }
@@ -97,7 +101,7 @@ export function useUpdatePeriodDate(props: DataSetIdsAndCallback) {
     const loading = useLoading();
 
     const updatePeriodDate = React.useCallback(
-        (periodDate: PeriodDate) => {
+        (periodDate: DatePeriod) => {
             if (!ids.length) return;
 
             loading.show(true, i18n.t("Updating period date"));

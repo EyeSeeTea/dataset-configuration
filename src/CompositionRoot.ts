@@ -25,7 +25,7 @@ import { IndicatorTestRepository } from "$/data/repositories/test/IndicatorTestR
 import { Config } from "$/domain/entities/Config";
 import { AppSettingsDataRepository } from "$/domain/repositories/AppSettingsDataRepository";
 import { AppSettingsRepository } from "$/domain/repositories/AppSettingsRepository";
-import { CategoryComboRepository } from "$/domain/repositories/CategoryComboRepository";
+import { CategoryCombinationRepository } from "$/domain/repositories/CategoryCombinationRepository";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { DataSetPeriodDateRepository } from "$/domain/repositories/DataSetPeriodDateRepository";
@@ -77,7 +77,7 @@ type Repositories = {
     indicatorRepository: IndicatorRepository;
     dataElementRepository: DataElementRepository;
     dataSetPeriodDateRepository: DataSetPeriodDateRepository;
-    categoryComboRepository: CategoryComboRepository;
+    categoryComboRepository: CategoryCombinationRepository;
     appSettingsRepository: AppSettingsRepository;
     appSettingsDataRepository: AppSettingsDataRepository;
 };

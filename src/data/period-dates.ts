@@ -1,9 +1,9 @@
 import { convertAttributeValueToDate } from "$/data/utils";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 import _ from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
 
-export function parsePeriodDateAttribute(periodDate: Maybe<string>): PeriodDate["periods"] {
+export function parsePeriodDateAttribute(periodDate: Maybe<string>): DatePeriod["periods"] {
     const splitPeriodsDates = getPeriodDatesFromAttributeValue(periodDate);
     return _(splitPeriodsDates)
         .compactMap(period => {

@@ -11,7 +11,7 @@ import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
 import { Config, UserGroup } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -28,7 +28,7 @@ export type DataSetAttrs = {
     openFuturePeriods: number;
     notifyUser: boolean;
     indicators: Indicator[];
-    periodDate: Maybe<PeriodDate>;
+    periodDate: Maybe<DatePeriod>;
     disabledFields: DisabledField[];
     shortName: string;
 };

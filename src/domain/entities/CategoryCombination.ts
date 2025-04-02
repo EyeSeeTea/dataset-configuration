@@ -2,7 +2,7 @@ import { Category } from "$/domain/entities/Category";
 import { Id } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import _ from "$/domain/entities/generic/Collection";
-import { DisaggregationAttrs } from "$/domain/entities/Indicator";
+import { Disaggregation } from "$/domain/entities/Indicator";
 import { Maybe } from "$/utils/ts-utils";
 
 export type CategoryCombinationAttrs = {
@@ -15,16 +15,14 @@ export type CategoryCombinationAttrs = {
 export class CategoryCombination extends Struct<CategoryCombinationAttrs>() {
     static excludeCombinationFromIndicator(
         combinations: CategoryCombination[],
-        disaggregation: Maybe<DisaggregationAttrs>
+        disaggregation: Maybe<Disaggregation>
     ): Category[] {
         const categoriesIds = disaggregation?.categories.map(category => category.id) ?? [];
         const categoriesIdsSets = new Set(categoriesIds);
 
         const allCategories = combinations
             .filter(c => c.id !== disaggregation?.id)
-            .flatMap(combination => {
-                return combination.categories;
-            });
+            .flatMap(combination => combination.categories);
 
         return _(allCategories)
             .filter(category => !categoriesIdsSets.has(category.id))
@@ -44,13 +42,13 @@ export class CategoryCombination extends Struct<CategoryCombinationAttrs>() {
             .value();
     }
 
-    static buildFromDisaggregations(disaggregations: DisaggregationAttrs[]): CategoryCombination[] {
+    static buildFromDisaggregations(disaggregations: Disaggregation[]): CategoryCombination[] {
         return disaggregations.map(disaggregation => {
             return this.buildFromDisaggregation(disaggregation);
         });
     }
 
-    static buildFromDisaggregation(disaggregation: DisaggregationAttrs): CategoryCombination {
+    static buildFromDisaggregation(disaggregation: Disaggregation): CategoryCombination {
         return CategoryCombination.create({
             ...disaggregation,
             optionsCombos: disaggregation.optionsCombos.map(optionCombo => {

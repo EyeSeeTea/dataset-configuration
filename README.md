@@ -70,16 +70,22 @@ $ yarn localize
 
 Check the example script, entry `"script-example"`in `package.json`->scripts and `src/scripts/example.ts`.
 
+Migrate project
+
+```bash
+yarn run migrate-ds-project -u 'http://localhost:8080' --username 'username' --password 'password'
+```
+
 Migrate output dates to period dates
 
 ```bash
- npx ts-node src/scripts/migrate-dataset-period-dates.ts -u 'http://localhost:8080' --username 'username' --password 'password'
+ yarn run migrate-period-dates -u 'http://localhost:8080' --username 'username' --password 'password'
 ```
 
 Add core competency to dataSets
 
 ```bash
- npx ts-node src/scripts/add-core-compentency-to-datasets.ts -u 'http://localhost:8080' --username 'username' --password 'password' --data-set-ids="id1,id2,id3" --core-competency-code="MPC"
+ yarn run add-core-competency -u 'http://localhost:8080' --username 'username' --password 'password' --data-set-ids="id1,id2,id3" --core-competency-code="MPC"
 ```
 
 ### Misc Notes

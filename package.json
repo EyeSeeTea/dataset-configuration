@@ -112,7 +112,9 @@
         "localize": "yarn update-po && d2-i18n-generate -n d2-dataset-configuration -p ./i18n/ -o ./src/locales/",
         "update-po": "yarn extract-pot && find i18n/ -name '*.po' -exec msgmerge --backup=off -U {} i18n/en.pot \\;",
         "prepare": "husky install",
-        "migrate-ds-project": "npx ts-node src/scripts/migrate-dataset-project.ts"
+        "migrate-period-dates": "npx ts-node src/scripts/migrate-dataset-period-dates",
+        "migrate-ds-project": "npx ts-node src/scripts/migrate-dataset-project.ts",
+        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
     },
     "manifest.webapp": {
         "name": "Project Configuration app",

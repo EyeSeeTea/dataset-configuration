@@ -39,9 +39,9 @@ function getCategoryCombo(dataSetElement: DataSetTemplate["dataSetElements"][0])
     }
 }
 
-class Map {
-    obj: any;
-    constructor(obj: any) {
+class CustomFormMap<T> {
+    obj: CustomFormMapType<T>;
+    constructor(obj: CustomFormMapType<T>) {
         this.obj = obj;
     }
 
@@ -60,25 +60,27 @@ class Map {
         }
     }
 
-    getOr(key: string, defaultValue: any) {
+    getOr(key: string, defaultValue: T) {
         return this.obj[key] !== undefined ? this.obj[key] : defaultValue;
     }
 }
 
-const map = (obj: any) => new Map(obj);
+const map = <T>(obj: CustomFormMapType<T>) => new CustomFormMap(obj);
 
 const createViewDataElement = (de: DataElementViewTemplate) => ({
     id: de.id,
     displayFormName: de.displayName,
     url: de.href,
-    hasUrl: () => !!de.href,
+    hasUrl: () => Boolean(de.href),
     valueType: de.valueType,
     optionSet: de.optionSetValue,
-    hasDescription: () => !!de.description,
+    hasDescription: () => Boolean(de.description),
     displayDescription: de.description,
 });
 
-function groupByKeys(objs: ItemsSection[], keys: string[]): Map | ItemsSection[] {
+type Grouped<T> = T[] | CustomFormMap<Grouped<T> | string | undefined>;
+
+function groupByKeys(objs: ItemsSection[], keys: string[]): Grouped<ItemsSection> {
     if (keys.length === 0) {
         return objs;
     } else {
@@ -244,24 +246,8 @@ const getContext = (
         },
         i18n: {
             getString: (key: string) => {
-                switch (key) {
-                    case "value":
-                        return i18n.t("Value");
-                    case "total":
-                        return i18n.t("Total");
-                    case "no_value":
-                        return i18n.t("No value");
-                    case "yes":
-                        return i18n.t("Yes");
-                    case "no":
-                        return i18n.t("No");
-                    case "section":
-                        return i18n.t("Section");
-                    case "current_date_out_of_period":
-                        return i18n.t("Current date out of accepted period");
-                    default:
-                        return "unknown";
-                }
+                const translations = getTranslationsValues();
+                return translations[key] ?? "unknown";
             },
         },
         encoder: {
@@ -434,7 +420,7 @@ export function at<T>(data: Record<string, T>, ids: string[]): T[] {
 function mapDataElementRefs(
     dataElements: Ref[],
     categoryComboByDataElementId: Record<string, Ref>
-): Map {
+): CustomFormMap<Ref[]> {
     const dataElementsGrouped = _(dataElements)
         .groupBy(de => categoryComboByDataElementId[de.id]?.id)
         .toObject();
@@ -474,6 +460,18 @@ function generatePeriodsFromAttributeValues(
         })
         .toHashMap(([year, dates]) => [year, dates])
         .toObject();
+}
+
+function getTranslationsValues(): Record<string, string> {
+    return {
+        value: i18n.t("Value"),
+        total: i18n.t("Total"),
+        no_value: i18n.t("No value"),
+        yes: i18n.t("Yes"),
+        no: i18n.t("No"),
+        section: i18n.t("Section"),
+        current_date_out_of_period: i18n.t("Current date out of accepted period"),
+    };
 }
 
 type TemplatePeriodDate = {
@@ -519,5 +517,7 @@ type DataElementViewTemplate = {
     description: string;
     optionSetValue: string;
 };
+
+type CustomFormMapType<T> = Record<string, T>;
 
 export default getTemplate;

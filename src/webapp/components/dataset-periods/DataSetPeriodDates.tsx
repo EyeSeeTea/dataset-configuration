@@ -6,17 +6,17 @@ import { Typography } from "@material-ui/core";
 import { Id } from "$/domain/entities/Ref";
 import { useGetDataSetsByIds } from "$/webapp/hooks/useDataSets";
 import { addToDate } from "$/utils/date";
-import { PeriodDate, PeriodDetailsAttrs } from "$/domain/entities/PeriodDate";
+import { DatePeriod, PeriodDetailsAttrs } from "$/domain/entities/DatePeriod";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 
 export type DataSetPeriodDatesProps = {
     dataSetIds: Id[];
     onCancel: () => void;
-    onSave: (periodDate: PeriodDate) => void;
+    onSave: (periodDate: DatePeriod) => void;
 };
 
-function useGetYears(props: { period: PeriodDate }) {
+function useGetYears(props: { period: DatePeriod }) {
     const { config } = useAppContext();
     const { period } = props;
     const { startDate, endDate, periods, years } = period;
@@ -26,7 +26,7 @@ function useGetYears(props: { period: PeriodDate }) {
     const periodsByYear = React.useMemo(() => {
         if (!startDate || !endDate) return [];
 
-        return years.map((year): PeriodDate["periods"][number] => {
+        return years.map((year): DatePeriod["periods"][number] => {
             const month = config.periodEndDateMonth;
             const day = config.periodEndDateDay;
             const units = config.periodLastYearUnits;
@@ -51,7 +51,7 @@ function useGetYears(props: { period: PeriodDate }) {
     return periodsByYear;
 }
 
-const emptyPeriodDate = PeriodDate.create({
+const emptyPeriodDate = DatePeriod.create({
     startDate: "",
     endDate: "",
     periods: [],
@@ -60,8 +60,8 @@ const emptyPeriodDate = PeriodDate.create({
 export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) => {
     const { dataSetIds, onCancel, onSave } = props;
     const { dataSets } = useGetDataSetsByIds(dataSetIds);
-    const [periodDate, setPeriodDate] = React.useState<PeriodDate>(() => {
-        return PeriodDate.create(emptyPeriodDate);
+    const [periodDate, setPeriodDate] = React.useState<DatePeriod>(() => {
+        return DatePeriod.create(emptyPeriodDate);
     });
 
     React.useEffect(() => {

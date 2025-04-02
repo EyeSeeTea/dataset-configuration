@@ -6,7 +6,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { LogRepository } from "$/domain/repositories/LogRepository";
 import { UserUtils } from "$/domain/usecases/common/UserUtils";
 import { UserRepository } from "$/domain/repositories/UserRepository";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 
 export class SavePeriodDateUseCase {
     private userUtils: UserUtils;
@@ -51,4 +51,4 @@ export class SavePeriodDateUseCase {
     }
 }
 
-export type SavePeriodDateOptions = { dataSetsIds: Id[]; periodDate: PeriodDate };
+export type SavePeriodDateOptions = { dataSetsIds: Id[]; periodDate: DatePeriod };

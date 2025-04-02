@@ -1,9 +1,9 @@
 import { Struct } from "$/domain/entities/generic/Struct";
 
 export type PeriodDetailsAttrs = { year: number; startDate: string; endDate: string };
-type PeriodDateAttrs = { startDate: string; endDate: string; periods: PeriodDetailsAttrs[] };
+type DatePeriodAttrs = { startDate: string; endDate: string; periods: PeriodDetailsAttrs[] };
 
-export class PeriodDate extends Struct<PeriodDateAttrs>() {
+export class DatePeriod extends Struct<DatePeriodAttrs>() {
     get years() {
         return this.generateYears();
     }
@@ -42,11 +42,11 @@ export class PeriodDate extends Struct<PeriodDateAttrs>() {
         return Array.from({ length: endYear - startYear + 1 }, (_, index) => startYear + index);
     }
 
-    setDates<K extends keyof PeriodDate>(value: PeriodDate[K], fieldName: K): PeriodDate {
+    setDates<K extends keyof DatePeriod>(value: DatePeriod[K], fieldName: K): DatePeriod {
         return this._update({ [fieldName]: value });
     }
 
-    updatedPeriods(periods: PeriodDetailsAttrs[]): PeriodDate {
+    updatedPeriods(periods: PeriodDetailsAttrs[]): DatePeriod {
         return this._update({ periods });
     }
 }

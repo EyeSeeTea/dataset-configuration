@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-03-25T01:35:25.589Z\n"
-"PO-Revision-Date: 2025-03-25T01:35:25.589Z\n"
+"POT-Creation-Date: 2025-04-02T18:02:53.605Z\n"
+"PO-Revision-Date: 2025-04-02T18:02:53.605Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -234,6 +234,21 @@ msgid "Current Disaggregation"
 msgstr ""
 
 msgid "Add to"
+msgstr ""
+
+msgid "Indicator"
+msgstr ""
+
+msgid "Competency"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "All individuals in the data set"
+msgstr ""
+
+msgid "All HHS in the data set"
 msgstr ""
 
 msgid "Create"

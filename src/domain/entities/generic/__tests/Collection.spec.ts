@@ -341,4 +341,12 @@ describe("Collection", () => {
         expect(numbers.difference([2, 4]).toArray()).toEqual([1, 3, 5]);
         expect(letters.difference(["b"], ["d"]).toArray()).toEqual(["a", "c"]);
     });
+
+    test("concat", () => {
+        const numbers = _([1, 2, 3]);
+        const letters = _(["a", "b", "c"]);
+
+        expect(numbers.concat([4, 5]).toArray()).toEqual([1, 2, 3, 4, 5]);
+        expect(letters.concat(["d"]).toArray()).toEqual(["a", "b", "c", "d"]);
+    });
 });

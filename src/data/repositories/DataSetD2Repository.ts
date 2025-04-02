@@ -21,7 +21,7 @@ import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import getTemplate from "$/data/entry-form/CustomForm";
 import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import { IndicatorAttrs, indicatorTypes } from "$/domain/entities/Indicator";
-import { Id, Ref } from "$/domain/entities/Ref";
+import { Id, Ref, getRefs } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
 import isEqual from "lodash/isEqual";
@@ -260,7 +260,8 @@ export class DataSetD2Repository implements DataSetRepository {
                     );
                     return {
                         dataSetId: dataSet.id,
-                        categoryCombos: _(categoryCombos.concat(nonExistingCategoryCombos))
+                        categoryCombos: _(categoryCombos)
+                            .concat(nonExistingCategoryCombos)
                             .uniqBy(cc => cc.id)
                             .value(),
                     };
@@ -571,18 +572,18 @@ export class DataSetD2Repository implements DataSetRepository {
                 filterExisting: true,
             });
 
+            const publicAccessNotation = "r-------";
+
             return categoryCombosToCreate.map(categoryCombo => {
                 return {
                     dataDimensionType: DIMENSITON_TYPE,
-                    publicAccess: "r-------",
+                    publicAccess: publicAccessNotation,
                     id: categoryCombo.id,
                     name: categoryCombo.name,
-                    categories: categoryCombo.categories.map(category => ({ id: category.id })),
+                    categories: getRefs(categoryCombo.categories),
                     userGroupAccesses: dataSet.access
                         .filter(access => access.type === "groups")
-                        .map(access => {
-                            return { access: "r-------", id: access.id };
-                        }),
+                        .map(access => ({ access: publicAccessNotation, id: access.id })),
                 };
             });
         });

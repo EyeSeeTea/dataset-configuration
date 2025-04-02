@@ -2,10 +2,10 @@ import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategory
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Id } from "$/domain/entities/Ref";
 import { FutureData } from "$/domain/entities/generic/Future";
-import { CategoryComboRepository } from "$/domain/repositories/CategoryComboRepository";
+import { CategoryCombinationRepository } from "$/domain/repositories/CategoryCombinationRepository";
 import { D2Api } from "$/types/d2-api";
 
-export class CategoryComboD2Repository implements CategoryComboRepository {
+export class CategoryComboD2Repository implements CategoryCombinationRepository {
     private d2ApiCategoryCombo: D2ApiCategoryCombo;
     constructor(private api: D2Api) {
         this.d2ApiCategoryCombo = new D2ApiCategoryCombo(this.api);

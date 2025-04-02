@@ -24,7 +24,7 @@ import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
 import { Indicator, indicatorTypes } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
@@ -224,9 +224,12 @@ export class DataSetD2Api {
             return section.greyedFields.map((greyField): DisabledField => {
                 const indicatorType = indicatorTypes.find(it => it === type);
                 if (!indicatorType) throw new Error(`Invalid indicator type: ${type}`);
+                if (!coreCompetency)
+                    throw new Error(`Invalid core competency for section: ${section.name}`);
+
                 return {
                     type: indicatorType,
-                    competencyId: coreCompetency?.id ?? "",
+                    competencyId: coreCompetency.id,
                     dataElementId: greyField.dataElement.id,
                     optionComboId: greyField.categoryOptionCombo.id,
                 };
@@ -273,7 +276,7 @@ export class DataSetD2Api {
     private buildPeriodDateFromAttributes(
         d2DataSet: D2DataSet,
         attributes: D2Config["attributes"]
-    ): PeriodDate {
+    ): DatePeriod {
         const inputDate = d2DataSet.attributeValues.find(
             attribute => attribute.attribute.id === attributes.inputDates.id
         );
@@ -283,7 +286,7 @@ export class DataSetD2Api {
 
         const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
-        return PeriodDate.create({
+        return DatePeriod.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
             periods: parsePeriodDateAttribute(periodDate?.value),

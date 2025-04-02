@@ -4,7 +4,7 @@ import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { DataSetPeriodDate } from "$/domain/entities/DataSetPeriodDate";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSetPeriodDateRepository } from "$/domain/repositories/DataSetPeriodDateRepository";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
 import _ from "$/domain/entities/generic/Collection";
@@ -175,7 +175,7 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
         d2DataSet: D2PeriodDataSet,
         attributes: D2Config["attributes"],
         propertyName: keyof D2Config["attributes"]
-    ): PeriodDate {
+    ): DatePeriod {
         const inputDate = d2DataSet.attributeValues.find(
             attribute => attribute.attribute.id === attributes.inputDates.id
         );
@@ -185,7 +185,7 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
 
         const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
-        return PeriodDate.create({
+        return DatePeriod.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
             periods: periodDate ? parsePeriodDateAttribute(periodDate?.value) : [],
