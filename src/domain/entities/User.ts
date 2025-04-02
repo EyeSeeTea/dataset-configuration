@@ -7,6 +7,12 @@ export interface UserAttrs {
     username: string;
     userRoles: UserRole[];
     userGroups: NamedRef[];
+    access: {
+        canCreatePublicDataSets: boolean;
+        canCreateDataSets: boolean;
+        canEditCombinations: boolean;
+        canDeleteDataSets: boolean;
+    };
 }
 
 export interface UserRole extends NamedRef {

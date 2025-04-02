@@ -71,27 +71,3 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
         </li>
     );
 });
-
-export function useSaveDataSet(props: {
-    dataSet: DataSet;
-    onLoading: () => void;
-    onSuccess: () => void;
-    onError: (error: string) => void;
-}) {
-    const { compositionRoot } = useAppContext();
-    const { dataSet, onLoading, onSuccess, onError } = props;
-
-    const saveDataSet = React.useCallback(() => {
-        onLoading();
-        return compositionRoot.dataSets.save.execute(dataSet).run(
-            () => {
-                onSuccess();
-            },
-            error => {
-                onError(error.message);
-            }
-        );
-    }, [compositionRoot.dataSets.save, dataSet, onLoading, onSuccess, onError]);
-
-    return { saveDataSet };
-}

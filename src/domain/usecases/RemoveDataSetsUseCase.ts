@@ -1,4 +1,4 @@
-import { DataSetList } from "$/domain/entities/DataSet";
+import { DataSetList } from "$/domain/entities/DataSetList";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
