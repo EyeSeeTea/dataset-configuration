@@ -5,7 +5,7 @@ import { getWebappCompositionRoot } from "$/CompositionRoot";
 import { DataSet } from "$/domain/entities/DataSet";
 import { writeFileSync } from "fs";
 import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
-import { escapeCSVField } from "$/scripts/utils";
+import { escapeCSVField } from "$/scripts/csv";
 
 function main() {
     const cmd = command({

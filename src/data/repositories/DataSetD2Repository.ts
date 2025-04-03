@@ -18,7 +18,7 @@ import { Maybe } from "$/utils/ts-utils";
 import { buildErrorFromException, chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 
-import getTemplate from "$/data/entry-form/CustomForm";
+import getTemplate, { DataSetTemplate } from "$/data/entry-form/CustomForm";
 import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import { IndicatorAttrs, indicatorTypes } from "$/domain/entities/Indicator";
 import { Id, Ref, getRefs } from "$/domain/entities/Ref";
@@ -274,11 +274,7 @@ export class DataSetD2Repository implements DataSetRepository {
     }
 
     private buildDataEntryForm(
-        dataSet: {
-            id: Id;
-            dataSetElements: Array<{ dataElement: Ref; categoryCombo: { id: string | undefined } }>;
-            dataEntryForm?: D2DataSetOwner["dataEntryForm"];
-        },
+        dataSet: DataSetTemplate & { id: Id; dataEntryForm?: D2DataSetOwner["dataEntryForm"] },
         dataSetToSave: DataSetToSave,
         ccByDataSet: D2CategoryComboDataSet[],
         config: D2Config,

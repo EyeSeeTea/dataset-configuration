@@ -26,12 +26,10 @@ const data = {
 };
 
 function getCategoryCombo(dataSetElement: DataSetTemplate["dataSetElements"][0]) {
-    const { dataElement, categoryCombo } = dataSetElement;
+    const { categoryCombo } = dataSetElement;
 
-    if (categoryCombo) {
-        return categoryCombo;
-    } else if (dataElement && dataElement.categoryCombo) {
-        return dataElement.categoryCombo;
+    if (categoryCombo.id) {
+        return { id: categoryCombo.id };
     } else {
         throw new Error(
             `Cannot get category combo for dataSetElement: ${JSON.stringify(dataSetElement)}`
@@ -199,7 +197,7 @@ const getContext = (
         .toObject();
 
     const categoryCombosId = _(dataset.dataSetElements)
-        .map(dse => getCategoryCombo(dse).id)
+        .compactMap(dse => getCategoryCombo(dse).id)
         .uniq()
         .value();
 
@@ -369,7 +367,7 @@ function getItemsForSections(
 }
 
 const getTemplate = (
-    dataSet: any,
+    dataSet: DataSetTemplate,
     categoryCombos: D2ApiCategoryComboType[],
     dataSetToSave: DataSet,
     d2Config: D2Config,
@@ -502,12 +500,12 @@ export type DataSetTemplate = {
     renderAsTabs: boolean;
     dataElementDecoration: boolean;
     dataSetElements: Array<{
-        dataElement: { id: string; categoryCombo: CategoryComboTemplate };
+        dataElement: { id: string };
         categoryCombo: CategoryComboTemplate;
     }>;
 };
 
-type CategoryComboTemplate = { id: string };
+type CategoryComboTemplate = { id: string | undefined };
 type DataElementViewTemplate = {
     id: string;
     displayName: string;

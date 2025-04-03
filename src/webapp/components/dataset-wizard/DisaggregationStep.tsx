@@ -240,9 +240,9 @@ function useUpdateIndicators(props: {
 
                 const initialData =
                     indicator.type === "outputs"
-                        ? settings.indicators.filter(x => x.id === indicator.id)[0]
+                        ? settings.indicators.find(x => x.id === indicator.id)
                               ?.initialDisaggregation
-                        : dataElements.filter(de => de.id === dataElements[0]?.id)[0]
+                        : dataElements.find(de => de.id === dataElements[0]?.id)
                               ?.initialDisaggregation;
 
                 const newDisaggregation = getDisaggregationForCategories(

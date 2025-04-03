@@ -6,7 +6,7 @@ import { getWebappCompositionRoot } from "$/CompositionRoot";
 import { ConfigD2Repository } from "$/data/repositories/ConfigD2Repository";
 import { writeFileSync } from "fs";
 import { DataSet } from "$/domain/entities/DataSet";
-import { escapeCSVField } from "$/scripts/utils";
+import { escapeCSVField } from "$/scripts/csv";
 import { Indicator } from "$/domain/entities/Indicator";
 
 function main() {
