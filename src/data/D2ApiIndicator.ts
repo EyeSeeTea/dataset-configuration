@@ -1,7 +1,7 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope } from "$/domain/entities/Indicator";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
 import { Id, Ref } from "$/domain/entities/Ref";
@@ -24,19 +24,83 @@ export class D2ApiIndicator {
     }
 
     getOutputIndicators(config: D2Config): FutureData<Indicator[]> {
-        return this.getDataElementGroupsByCompetencies(
-            config.dataElementGroupSets.coreCompetency.id
-        ).flatMap(d2Response => {
-            const coreCompetencyGroup = d2Response.objects[0];
-            if (!coreCompetencyGroup)
-                return Future.error(new Error("Core competency group not found"));
+        return this.getCompetencies(config).flatMap(competencies => {
+            return apiToFuture(
+                this.api.models.dataElementGroups.get({
+                    fields: { id: true, name: true, dataElements: true },
+                    filter: { id: { in: competencies.map(competency => competency.id) } },
+                    paging: false,
+                })
+            ).flatMap(d2ResponseGroups => {
+                const allDataElementIds = d2ResponseGroups.objects.flatMap(group =>
+                    group.dataElements.map(de => de.id)
+                );
 
-            const indicators = coreCompetencyGroup?.dataElementGroups.flatMap(deg => {
-                return this.buildIndicatorsFromGroups(deg, config);
+                const $requests = _(allDataElementIds)
+                    .chunk(300)
+                    .map(dataElementIds => {
+                        return this.buildIndicators(dataElementIds, competencies, config);
+                    })
+                    .value();
+
+                const options = { concurrency: 8 };
+                return Future.parallel($requests, options).map(indicators => indicators.flat());
             });
-
-            return Future.success(indicators);
         });
+    }
+
+    private buildIndicators(
+        dataElementIds: string[],
+        competencies: CoreCompetency[],
+        config: D2Config
+    ): FutureData<Indicator[]> {
+        return this.getDataElementsByIds(dataElementIds).map(d2ResponseDataElements => {
+            return _(d2ResponseDataElements.objects)
+                .compactMap((d2DataElement): Maybe<Indicator> => {
+                    const groupsById = _(d2DataElement.dataElementGroups).keyBy(x => x.id);
+
+                    const competency = competencies.find(competency =>
+                        groupsById.get(competency.id)
+                    );
+
+                    if (!competency) return undefined;
+
+                    return this.buildOutputIndicator(competency, d2DataElement, config);
+                })
+                .value();
+        });
+    }
+
+    private getDataElementsByIds(ids: Id[]) {
+        return apiToFuture(
+            this.api.models.dataElements.get({
+                filter: { id: { in: ids } },
+                fields: {
+                    id: true,
+                    displayName: true,
+                    displayDescription: true,
+                    valueType: true,
+                    code: true,
+                    categoryCombo: {
+                        id: true,
+                        displayName: true,
+                        categories: {
+                            id: true,
+                            name: true,
+                            displayName: true,
+                            categoryOptions: { id: true, displayName: true },
+                        },
+                    },
+                    attributeValues: { attribute: { id: true }, value: true },
+                    dataElementGroups: {
+                        id: true,
+                        displayName: true,
+                        groupSets: { id: true, displayName: true },
+                    },
+                },
+                paging: false,
+            })
+        );
     }
 
     private getCompetencies(config: D2Config): FutureData<CoreCompetency[]> {
@@ -66,19 +130,19 @@ export class D2ApiIndicator {
         d2Groups: Ref[],
         config: D2Config,
         groupType: "dataElementGroups" | "indicatorGroups"
-    ): Maybe<Indicator["scope"]> {
-        const isCore = d2Groups.some(deg => deg.id === config[groupType].coreIndicator.id);
+    ): Maybe<IndicatorScope> {
+        const isMandatory = d2Groups.some(deg => deg.id === config[groupType].coreIndicator.id);
         const isLocal = d2Groups.some(deg => deg.id === config[groupType].localIndicator.id);
         const isDonor = d2Groups.some(deg => deg.id === config[groupType].donorIndicator.id);
 
-        if (isCore) {
-            return "core";
+        if (isMandatory) {
+            return "mandatory";
         } else if (isLocal) {
             return "local";
         } else if (isDonor) {
             return "donor";
         } else {
-            return undefined;
+            return "suggested";
         }
     }
 
@@ -96,6 +160,7 @@ export class D2ApiIndicator {
                     displayName: true,
                     indicators: {
                         code: true,
+                        displayDescription: true,
                         attributeValues: { attribute: { id: true }, value: true },
                         denominator: true,
                         displayName: true,
@@ -139,6 +204,9 @@ export class D2ApiIndicator {
                 );
 
                 return Indicator.create({
+                    measure: "",
+                    valueType: "",
+                    description: indicator.displayDescription,
                     relatedDataElements: [],
                     denominator: indicator.denominator,
                     numerator: indicator.numerator,
@@ -150,8 +218,9 @@ export class D2ApiIndicator {
                     status: this.getValueOrEmpty(status?.displayName),
                     type: "outcomes",
                     scope: scope,
-                    group: this.getValueOrEmpty(group?.value),
+                    group: group?.value ?? indicator.displayName,
                     disaggregation: undefined,
+                    initialDisaggregation: undefined,
                     categories: [],
                 });
             })
@@ -171,12 +240,15 @@ export class D2ApiIndicator {
                         dataElements: {
                             id: true,
                             displayName: true,
+                            displayDescription: true,
+                            valueType: true,
                             code: true,
                             categoryCombo: {
                                 id: true,
                                 displayName: true,
                                 categories: {
                                     id: true,
+                                    name: true,
                                     displayName: true,
                                     categoryOptions: { id: true, displayName: true },
                                 },
@@ -195,19 +267,8 @@ export class D2ApiIndicator {
         );
     }
 
-    private buildIndicatorsFromGroups(
-        dataElementGroup: D2DataElementGroup,
-        config: D2Config
-    ): Indicator[] {
-        return _(dataElementGroup.dataElements)
-            .compactMap((dataElement): Maybe<Indicator> => {
-                return this.buildOutputIndicator(dataElementGroup, dataElement, config);
-            })
-            .value();
-    }
-
     private buildOutputIndicator(
-        dataElementGroup: D2DataElementGroup,
+        coreCompetency: CoreCompetency,
         dataElement: D2DataElementFromGroup,
         config: D2Config
     ): Maybe<Indicator> {
@@ -231,14 +292,26 @@ export class D2ApiIndicator {
             attribute => attribute.attribute.id === config.attributes.group.id
         );
 
+        const measure = dataElement.dataElementGroups.find(deg =>
+            deg.groupSets.find(gs => gs.id === config.dataElementGroupSets.measure.id)
+        );
+
+        const disaggregation = dataElement.categoryCombo
+            ? {
+                  id: dataElement.categoryCombo.id,
+                  name: dataElement.categoryCombo.displayName,
+                  categories: convertToCategories(dataElement.categoryCombo.categories),
+                  optionsCombos: [],
+              }
+            : undefined;
+
         return Indicator.create({
+            measure: this.getValueOrEmpty(measure?.displayName),
+            valueType: dataElement.valueType,
+            description: dataElement.displayDescription,
             denominator: "",
             numerator: "",
-            coreCompetency: {
-                id: dataElementGroup.id,
-                code: dataElementGroup.code,
-                name: dataElementGroup.displayName,
-            },
+            coreCompetency: coreCompetency,
             id: dataElement.id,
             name: dataElement.displayName,
             code: dataElement.code,
@@ -247,13 +320,8 @@ export class D2ApiIndicator {
             type: "outputs",
             scope: scope,
             group: this.getValueOrEmpty(group?.value),
-            disaggregation: dataElement.categoryCombo
-                ? {
-                      id: dataElement.categoryCombo.id,
-                      name: dataElement.categoryCombo.displayName,
-                      categories: convertToCategories(dataElement.categoryCombo.categories),
-                  }
-                : undefined,
+            disaggregation: disaggregation,
+            initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
         });
@@ -265,6 +333,7 @@ type D2IndicatorGroup = {
     name: string;
     displayName: string;
     indicators: Array<{
+        displayDescription: string;
         code: string;
         attributeValues: Array<{ attribute: { id: Id }; value: string }>;
         denominator: string;
@@ -279,22 +348,18 @@ type D2IndicatorGroup = {
     }>;
 };
 
-type D2DataElementGroup = {
-    id: Id;
-    code: string;
-    displayName: string;
-    dataElements: D2DataElementFromGroup[];
-};
-
 type D2DataElementFromGroup = {
     id: Id;
     displayName: string;
+    displayDescription: string;
+    valueType: string;
     code: string;
     categoryCombo: {
         id: Id;
         displayName: string;
         categories: Array<{
             id: Id;
+            name: string;
             displayName: string;
             categoryOptions: Array<{ id: Id; displayName: string }>;
         }>;

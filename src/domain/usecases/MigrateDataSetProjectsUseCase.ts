@@ -13,10 +13,14 @@ export class MigrateDataSetProjectsUseCase {
     ) {}
 
     execute(): FutureData<MigrateResponse> {
-        return Future.joinObj({
-            dataSets: this.getAllDataSets(),
-            projects: this.projectRepository.getAll(),
-        }).flatMap(({ dataSets, projects }) => {
+        console.debug("Loading dataSets and projects...");
+        return Future.joinObj(
+            {
+                dataSets: this.getAllDataSets(),
+                projects: this.projectRepository.getAll(),
+            },
+            { concurrency: 2 }
+        ).flatMap(({ dataSets, projects }) => {
             const allDataSets = this.assignProjectsToDataSets(dataSets, projects);
             const dataSetsWithProjects = allDataSets.filter(ds => ds.project);
             const dataSetsWithoutProjects = allDataSets.filter(ds => !ds.project);
@@ -39,7 +43,6 @@ export class MigrateDataSetProjectsUseCase {
     }
 
     private getAllDataSets(): FutureData<DataSet[]> {
-        console.debug("Loading dataSets and projects...");
         return this.dataSetRepository.getAll();
     }
 }

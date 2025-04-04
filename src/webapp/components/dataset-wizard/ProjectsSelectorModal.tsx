@@ -1,6 +1,13 @@
 import React from "react";
 import { ConfirmationDialog } from "@eyeseetea/d2-ui-components";
-import { Grid, Button, Checkbox, FormControlLabel, TextField } from "@material-ui/core";
+import {
+    Grid,
+    Button,
+    Checkbox,
+    FormControlLabel,
+    TextField,
+    LinearProgress,
+} from "@material-ui/core";
 import { FixedSizeList as List } from "react-window";
 import i18n from "$/utils/i18n";
 import { Project } from "$/domain/entities/Project";
@@ -9,13 +16,15 @@ import { Maybe } from "$/utils/ts-utils";
 
 export type ProjectsSelectorModalProps = {
     onChange: (project: Maybe<Project>) => void;
+    onCloseProjects: (value: boolean) => void;
+    showClosedProjects: boolean;
     onClose: () => void;
     projects: Project[];
+    isLoading: boolean;
 };
 
 const ProjectsSelectorModal_ = React.memo((props: ProjectsSelectorModalProps) => {
-    const { onClose, onChange, projects } = props;
-    const [showClosedProjects, setShowClosedProjects] = React.useState(false);
+    const { onClose, onChange, isLoading, projects, onCloseProjects, showClosedProjects } = props;
     const [searchProject, setSearchProject] = React.useState("");
 
     const onSelectProject = React.useCallback(
@@ -28,31 +37,9 @@ const ProjectsSelectorModal_ = React.memo((props: ProjectsSelectorModalProps) =>
 
     const projectsToShow = React.useMemo(() => {
         return projects.filter(project => {
-            const matchesSearch =
-                !searchProject || project.name.toLowerCase().includes(searchProject.toLowerCase());
-
-            return showClosedProjects ? matchesSearch : matchesSearch && project.isOpen;
+            return project.name.toLowerCase().includes(searchProject.toLowerCase());
         });
-    }, [projects, searchProject, showClosedProjects]);
-
-    const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-        const project = projectsToShow[index];
-        if (!project) return null;
-
-        return (
-            <div style={{ ...style, width: "initial" }}>
-                <Grid item xs={12}>
-                    <Button
-                        onClick={() => onSelectProject(project)}
-                        color="primary"
-                        disableElevation
-                    >
-                        {project.name}
-                    </Button>
-                </Grid>
-            </div>
-        );
-    };
+    }, [projects, searchProject]);
 
     return (
         <ConfirmationDialog open cancelText={i18n.t("Cancel")} onCancel={onClose} fullWidth>
@@ -62,12 +49,19 @@ const ProjectsSelectorModal_ = React.memo((props: ProjectsSelectorModalProps) =>
                         control={
                             <Checkbox
                                 checked={showClosedProjects}
-                                onChange={event => setShowClosedProjects(event.target.checked)}
+                                onChange={event => onCloseProjects(event.target.checked)}
                             />
                         }
                         label={i18n.t("Show closed projects")}
                     />
                 </Grid>
+
+                {isLoading && (
+                    <Grid item xs={12}>
+                        <LinearProgress variant="indeterminate" />
+                    </Grid>
+                )}
+
                 <Grid item xs={12}>
                     <TextField
                         value={searchProject}
@@ -80,11 +74,45 @@ const ProjectsSelectorModal_ = React.memo((props: ProjectsSelectorModalProps) =>
                     {i18n.t("<No value>")}
                 </Button>
                 <List height={500} itemCount={projectsToShow.length} itemSize={30} width="100%">
-                    {Row}
+                    {rowProps => {
+                        const project = projectsToShow[rowProps.index];
+                        if (!project) return null;
+                        return (
+                            <div style={{ ...rowProps.style, width: "initial" }}>
+                                <ProjectItem
+                                    isLoading={isLoading}
+                                    project={project}
+                                    onSelectProject={onSelectProject}
+                                    key={project.id}
+                                />
+                            </div>
+                        );
+                    }}
                 </List>
             </Grid>
         </ConfirmationDialog>
     );
 });
+
+function ProjectItem(props: {
+    project: Project;
+    onSelectProject: (project: Project) => void;
+    isLoading: boolean;
+}) {
+    const { project, onSelectProject, isLoading } = props;
+
+    return (
+        <Grid item xs={12}>
+            <Button
+                onClick={() => onSelectProject(project)}
+                color="primary"
+                disableElevation
+                disabled={isLoading}
+            >
+                {project.name}
+            </Button>
+        </Grid>
+    );
+}
 
 export const ProjectsSelectorModal = component(ProjectsSelectorModal_);

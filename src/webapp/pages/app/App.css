@@ -20,6 +20,19 @@ li {
     margin-left: 0;
 }
 
+.dropdown-resetmargins > div {
+    margin-inline-start: 0;
+    margin-block-start: 0;
+}
+
+.dropdown-resetmargins > label {
+    margin-inline-start: 0;
+}
+
+.dropdown-resetmargins div[role="button"] {
+    color: #000;
+}
+
 tr:has(.MuiAlert-message) {
     background-color: rgb(255, 238, 238);
 }
@@ -38,16 +51,63 @@ tr:has(.MuiAlert-message) {
 .indicator-row {
     display: flex;
     padding-block: 1em;
+}
 
-    p {
-        margin: 0;
-    }
+.indicator-row p {
+    margin: 0;
+}
 
-    button {
-        margin-left: auto;
-    }
+.indicator-row button {
+    margin-left: auto;
 }
 
 .periods-text {
     padding: 0.5em 0;
+}
+
+.dataelement-header {
+    border: 1px solid rgb(224, 224, 224);
+    padding: 0.5em;
+}
+
+.dataelement-row {
+    border: 1px solid rgb(224, 224, 224);
+    max-width: 33vw;
+    overflow: hidden;
+    padding: 0.5em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding-block-start: 1em;
+}
+
+.setting-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding: 1em;
+}
+
+.settings-tabs {
+    background-color: rgb(228, 228, 228);
+}
+
+.settings-tabs button[role="tab"] {
+    flex-basis: 50% !important;
+    max-width: none;
+}
+
+/* 
+  Workaround to change the background color for selected items in dropdowns
+  because d2-ui-components uses its own theme provider.
+  TODO: add a prop to make theme configurable in d2-ui-components
+  https://github.com/EyeSeeTea/d2-ui-components/blob/development/src/dropdown/GenericDropdown.tsx#L26C7-L26C24
+*/
+li.Mui-selected {
+    background-color: rgb(253 90 0 / 50%) !important;
 }

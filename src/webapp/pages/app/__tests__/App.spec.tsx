@@ -23,6 +23,15 @@ function getView() {
         indicators: [],
         regions: [],
         userGroups: [],
+        periodEndDateDay: 1,
+        periodEndDateMonth: 4,
+        periodLastYearEndDate: 0,
+        periodLastYearUnits: "month",
+        notificationUserGroup: {
+            id: "EVSddRDWk5i",
+            code: "GL_admin",
+            name: "GL_GlobalAdministrator",
+        },
     };
     return render(
         <Provider config={{ baseUrl: "http://localhost:8080", apiVersion: 30 }}>

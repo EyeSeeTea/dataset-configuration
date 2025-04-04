@@ -3,7 +3,7 @@ import { apiToFuture } from "$/data/api-futures";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Project } from "$/domain/entities/Project";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
-import { ProjectRepository } from "$/domain/repositories/ProjectRepository";
+import { GetListOptions, ProjectRepository } from "$/domain/repositories/ProjectRepository";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
 import { ISODateString, Id } from "$/domain/entities/Ref";
@@ -16,6 +16,8 @@ import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Maybe } from "$/utils/ts-utils";
 import { Config } from "$/domain/entities/Config";
+import { Stats } from "$/domain/entities/Stats";
+import { getErrorFromResponse } from "$/data/utils";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
@@ -26,11 +28,39 @@ export class ProjectD2Repository implements ProjectRepository {
         this.d2ApiConfig = new D2ApiConfig(this.api);
     }
 
-    getList(): FutureData<Project[]> {
+    getById(id: Id): FutureData<Project> {
+        return apiToFuture(
+            this.api.models.categoryOptions.get({
+                fields: {
+                    id: true,
+                    code: true,
+                    displayName: true,
+                    lastUpdated: true,
+                    organisationUnits: { id: true, code: true, path: true, displayName: true },
+                },
+                filter: { id: { eq: id } },
+                paging: false,
+            })
+        ).flatMap(response => {
+            const d2CategoryOption = response.objects[0];
+            if (!d2CategoryOption)
+                return Future.error(new Error(`Project with id ${id} not found`));
+            return Future.success(this.buildProject(d2CategoryOption));
+        });
+    }
+
+    getList(options: GetListOptions): FutureData<Project[]> {
         return this.getCategories().flatMap(categories => {
-            return this.getCategoryOptionsByCode(categories.project.code).map(categoryOptions => {
-                return this.getProjectsWithDates(categoryOptions);
-            });
+            if (!categories.project.code) {
+                console.warn("Project category code not found in metadata", categories.project);
+                return Future.success([]);
+            }
+
+            return this.getCategoryOptionsByCode(categories.project.code, options).map(
+                categoryOptions => {
+                    return this.getProjectsWithDates(categoryOptions);
+                }
+            );
         });
     }
 
@@ -38,7 +68,37 @@ export class ProjectD2Repository implements ProjectRepository {
         return this.getAllProjects(1, []);
     }
 
-    private getCategoryOptionsByCode(code: string) {
+    save(project: Project): FutureData<Stats> {
+        return apiToFuture(
+            this.api.models.categoryOptions.get({
+                fields: { $owner: true },
+                filter: { id: { eq: project.id } },
+                paging: false,
+            })
+        ).flatMap(response => {
+            const d2CategoryOption = response.objects[0];
+            return apiToFuture(
+                this.api.metadata.post({
+                    categoryOptions: [
+                        {
+                            ...(d2CategoryOption || {}),
+                            organisationUnits: project.orgsUnits.map(orgUnit => ({
+                                id: orgUnit.id,
+                            })),
+                        },
+                    ],
+                })
+            ).map(d2Response => {
+                const errorMessage = getErrorFromResponse(d2Response);
+                return Stats.create({
+                    errorMessage,
+                    ...d2Response.stats,
+                });
+            });
+        });
+    }
+
+    private getCategoryOptionsByCode(code: string, options: GetListOptions) {
         return apiToFuture(
             this.api.models.categoryOptions.get({
                 fields: {
@@ -50,11 +110,23 @@ export class ProjectD2Repository implements ProjectRepository {
                     lastUpdated: true,
                     organisationUnits: { id: true, code: true, displayName: true, path: true },
                 },
-                filter: { "categories.code": { eq: code } },
+                filter: { "categories.code": { eq: code }, ...this.buildDateFilter(options) },
                 order: "displayName:asc",
                 paging: false,
             })
         ).map(response => response.objects);
+    }
+
+    private buildDateFilter(options: GetListOptions) {
+        const currentDate = new Date().toISOString();
+        return {
+            startDate: {
+                le: options.includeClosedProjects ? undefined : currentDate,
+            },
+            endDate: {
+                ge: options.includeClosedProjects ? undefined : currentDate,
+            },
+        };
     }
 
     private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {
@@ -104,7 +176,7 @@ export class ProjectD2Repository implements ProjectRepository {
     private getProjects(page: number, pageSize: number) {
         return this.get({
             paging: { page, pageSize },
-            filters: {},
+            filters: { includeDataSets: false },
             sorting: { field: "lastUpdated", order: "asc" },
         });
     }
@@ -134,7 +206,7 @@ export class ProjectD2Repository implements ProjectRepository {
                 });
 
                 const projectsIds = projects.map(project => project.id);
-                return this.getDataSets(projectsIds).map(dataSets => {
+                return this.getDataSets(projectsIds, options).map(dataSets => {
                     return {
                         page: d2Response.pager.page,
                         pageCount: d2Response.pager.pageCount,
@@ -148,6 +220,7 @@ export class ProjectD2Repository implements ProjectRepository {
     }
 
     private buildProjectsWithDataSets(projects: Project[], dataSets: DataSet[]): Project[] {
+        if (dataSets.length === 0) return projects;
         return projects.map(project => {
             const dataSetsForProject = dataSets.filter(
                 dataSet => dataSet.project?.id === project.id
@@ -157,7 +230,8 @@ export class ProjectD2Repository implements ProjectRepository {
         });
     }
 
-    private getDataSets(projectsIds: Id[]): FutureData<DataSet[]> {
+    private getDataSets(projectsIds: Id[], options: GetDataSetOptions): FutureData<DataSet[]> {
+        if (!options.filters.includeDataSets) return Future.success([]);
         return this.d2DataSetApi
             .getWithOrgUnits({
                 paging: { page: 1, pageSize: 1e6 },

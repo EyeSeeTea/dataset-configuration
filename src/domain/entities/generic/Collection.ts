@@ -260,6 +260,15 @@ export class Collection<T> {
         return _c(pairs);
     }
 
+    difference(...others: T[][]): Collection<T> {
+        const excluded = new Set<T>(others.flat());
+        return _c(this.xs.filter(x => !excluded.has(x)));
+    }
+
+    concat(...others: T[][]): Collection<T> {
+        return _c(this.xs.concat(...others));
+    }
+
     /* Methods that return HashMap */
 
     indexBy<U>(grouperFn: (x: T) => U): HashMap<U, T> {

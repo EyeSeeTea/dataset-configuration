@@ -7,11 +7,14 @@ import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
-import { Indicator } from "$/domain/entities/Indicator";
-import { Config, UserGroup } from "$/domain/entities/Config";
+import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
+import { Config } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
+import { UserGroup } from "$/domain/entities/UserGroup";
+import { User } from "$/domain/entities/User";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -28,7 +31,10 @@ export type DataSetAttrs = {
     openFuturePeriods: number;
     notifyUser: boolean;
     indicators: Indicator[];
-    periodDate: Maybe<PeriodDate>;
+    periodDate: Maybe<DatePeriod>;
+    disabledFields: DisabledField[];
+    canBeUpdated: boolean;
+    shortName: string;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -36,15 +42,16 @@ export type AccessData = { id: Id; permissions: Permissions; name: string; type:
 export type AccessType = "users" | "groups";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
-export type DataSetList = Pick<DataSet, "id" | "name" | "lastUpdated" | "permissions">;
+export type DisabledField = {
+    dataElementId: Id;
+    optionComboId: Id;
+    competencyId: Id;
+    type: IndicatorType;
+};
 
 export class DataSet extends Struct<DataSetAttrs>() {
     validate(): ValidationError<DataSet>[] {
         return this.getValidationErrors();
-    }
-
-    get shortName(): string {
-        return this.truncateValue(this.name);
     }
 
     private truncateValue(input: string): string {
@@ -59,12 +66,14 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     updateProject(project: Maybe<Project>, config: Config): DataSet {
         const name = project ? `${project.name} DataSet` : "";
+        const shortName = this.truncateValue(name);
         const orgsUnits = project ? project.orgsUnits : this.orgUnits;
 
         const accessGroupsFromProject = this.getAccessFromProject(project, config);
 
         return this._update({
             access: accessGroupsFromProject,
+            shortName,
             project,
             name,
             orgUnits: orgsUnits,
@@ -138,6 +147,11 @@ export class DataSet extends Struct<DataSetAttrs>() {
             .compactMap(access => Project.extractCode(access.name))
             .uniq()
             .value();
+    }
+
+    updateShortName(): DataSet {
+        const truncatedShortName = this.truncateValue(this.name);
+        return this._update({ shortName: truncatedShortName });
     }
 
     static buildAccess(permissions: Permissions): string {
@@ -222,8 +236,13 @@ export class DataSet extends Struct<DataSetAttrs>() {
         };
     }
 
+    setDisabledFields(disabledFields: DataSetAttrs["disabledFields"]): DataSet {
+        return this._update({ disabledFields });
+    }
+
     static initial(id: Id, initialData: Partial<DataSetAttrs> = {}): DataSet {
         return DataSet.create({
+            canBeUpdated: true,
             indicators: [],
             access: [],
             coreCompetencies: [],
@@ -232,6 +251,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             id,
             lastUpdated: "",
             name: "",
+            shortName: "",
             orgUnits: [],
             permissions: {
                 data: Permission.create({ read: false, write: false }),
@@ -242,7 +262,13 @@ export class DataSet extends Struct<DataSetAttrs>() {
             openFuturePeriods: 0,
             notifyUser: false,
             periodDate: undefined,
+            disabledFields: [],
             ...initialData,
         });
+    }
+
+    hasPermissionsToUpdate(user: User): boolean {
+        const dataSetList = DataSetList.create({ ...this });
+        return dataSetList.hasPermissionsToUpdate(user);
     }
 }

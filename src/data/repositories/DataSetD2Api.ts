@@ -5,7 +5,7 @@ import {
     AccessType,
     CoreCompetency,
     DataSet,
-    DataSetList,
+    DisabledField,
     OrgUnit,
 } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
@@ -20,10 +20,11 @@ import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Pager } from "@eyeseetea/d2-api/api";
 import { D2OrgUnit } from "$/data/repositories/OrgUnitD2Repository";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, indicatorTypes } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { convertAttributeValueToDate, convertToCategories } from "$/data/utils";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
+import { DataSetList } from "$/domain/entities/DataSetList";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
@@ -45,6 +46,7 @@ export class DataSetD2Api {
                         displayName: true,
                         lastUpdated: true,
                         sharing: { public: true },
+                        access: true,
                     },
                     filter: {
                         id: { in: options.filters.ids },
@@ -58,7 +60,8 @@ export class DataSetD2Api {
                 })
             ).map(d2Response => {
                 const dataSets = d2Response.objects.map((d2DataSet): DataSetList => {
-                    return {
+                    return DataSetList.create({
+                        canBeUpdated: d2DataSet.access.update,
                         id: d2DataSet.id,
                         name: d2DataSet.displayName,
                         lastUpdated: d2DataSet.lastUpdated,
@@ -66,7 +69,7 @@ export class DataSetD2Api {
                             data: this.buildPermission(d2DataSet.sharing.public, "data"),
                             metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
                         },
-                    };
+                    });
                 });
                 return { ...d2Response.pager, data: dataSets };
             });
@@ -85,9 +88,14 @@ export class DataSetD2Api {
         coreCompetencies: CoreCompetency[],
         pager: Pager
     ): FutureData<Paginated<DataSet>> {
-        const projectIds = this.getProjectIds(d2DataSets, attributes);
+        const dataSetsCreatedByApp = d2DataSets.filter(d2DataSet =>
+            d2DataSet.attributeValues.find(
+                x => x.attribute.id === attributes.createdByApp.id && x.value === "true"
+            )
+        );
+        const projectIds = this.getProjectIds(dataSetsCreatedByApp, attributes);
         return this.getProjectsByIds(projectIds).map(projects => {
-            const dataSets = d2DataSets.map(d2DataSet => {
+            const dataSets = dataSetsCreatedByApp.map(d2DataSet => {
                 return this.buildDataSet(d2DataSet, coreCompetencies, projects, attributes);
             });
             return { ...pager, data: dataSets };
@@ -211,7 +219,27 @@ export class DataSetD2Api {
         const projectDetails = projects.find(project => project.id === projectAttributeId);
         const dataElementGroups = this.buildDataElementsGroupsCodes(d2DataSet);
 
+        const disabledFields = d2DataSet.sections.flatMap(section => {
+            const degCode = this.extractCompetencyCode(section.id, section.code);
+            const coreCompetency = coreCompetencies.find(cc => cc.code === degCode);
+            const [_, type] = this.getSectionNameAndType(section.name);
+            return section.greyedFields.map((greyField): DisabledField => {
+                const indicatorType = indicatorTypes.find(it => it === type);
+                if (!indicatorType) throw new Error(`Invalid indicator type: ${type}`);
+                if (!coreCompetency)
+                    throw new Error(`Invalid core competency for section: ${section.name}`);
+
+                return {
+                    type: indicatorType,
+                    competencyId: coreCompetency.id,
+                    dataElementId: greyField.dataElement.id,
+                    optionComboId: greyField.categoryOptionCombo.id,
+                };
+            });
+        });
+
         return DataSet.create({
+            canBeUpdated: d2DataSet.access.update,
             periodDate: this.buildPeriodDateFromAttributes(d2DataSet, attributes),
             indicators: this.buildIndicatorsFromDataSetElements(d2DataSet),
             orgUnits: d2DataSet.organisationUnits
@@ -228,6 +256,7 @@ export class DataSetD2Api {
             description: d2DataSet.displayDescription,
             id: d2DataSet.id,
             name: d2DataSet.displayName,
+            shortName: d2DataSet.displayShortName,
             lastUpdated: d2DataSet.lastUpdated,
             permissions: {
                 data: this.buildPermission(d2DataSet.sharing.public, "data"),
@@ -243,13 +272,14 @@ export class DataSetD2Api {
             notifyUser: d2DataSet.notifyCompletingUser,
             expiryDays: d2DataSet.expiryDays,
             openFuturePeriods: d2DataSet.openFuturePeriods,
+            disabledFields: disabledFields,
         });
     }
 
     private buildPeriodDateFromAttributes(
         d2DataSet: D2DataSet,
         attributes: D2Config["attributes"]
-    ): PeriodDate {
+    ): DatePeriod {
         const inputDate = d2DataSet.attributeValues.find(
             attribute => attribute.attribute.id === attributes.inputDates.id
         );
@@ -259,7 +289,7 @@ export class DataSetD2Api {
 
         const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
-        return PeriodDate.create({
+        return DatePeriod.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
             periods: parsePeriodDateAttribute(periodDate?.value),
@@ -359,6 +389,14 @@ export class DataSetD2Api {
                               id: categoryCombo.id,
                               name: categoryCombo.displayName,
                               categories: categories,
+                              optionsCombos: categoryCombo.categoryOptionCombos.map(
+                                  optionCombo => ({
+                                      id: optionCombo.id,
+                                      name: optionCombo.displayName,
+                                      categoryCombo: { id: "" },
+                                      options: [],
+                                  })
+                              ),
                           }
                         : indicator.disaggregation,
                 });
@@ -389,26 +427,19 @@ export class DataSetD2Api {
                     relatedDataElements: relatedDataElements
                         .concat(commentsDataElements)
                         .map(dataElement => {
+                            const disaggregation = dataElement.categoryCombo
+                                ? this.buildDisaggregation(dataElement.categoryCombo)
+                                : this.buildDisaggregation(dataElement.dataElement.categoryCombo);
+
                             return {
+                                valueType: dataElement.dataElement.valueType,
+                                description: dataElement.dataElement.displayDescription,
                                 id: dataElement.dataElement.id,
                                 name: dataElement.dataElement.displayName,
                                 code: dataElement.dataElement.code,
                                 isComment: dataElement.dataElement.code.endsWith(COMMENT_SUFIX),
-                                disaggregation: dataElement.categoryCombo
-                                    ? {
-                                          id: dataElement.categoryCombo.id,
-                                          name: dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.categoryCombo.categories
-                                          ),
-                                      }
-                                    : {
-                                          id: dataElement.dataElement.categoryCombo.id,
-                                          name: dataElement.dataElement.categoryCombo.displayName,
-                                          categories: convertToCategories(
-                                              dataElement.dataElement.categoryCombo.categories
-                                          ),
-                                      },
+                                disaggregation: disaggregation,
+                                initialDisaggregation: disaggregation,
                                 categories: [],
                             };
                         }),
@@ -416,15 +447,45 @@ export class DataSetD2Api {
             })
             .value();
     }
+
+    private buildDisaggregation(
+        categoryCombo: D2DataSet["dataSetElements"][number]["categoryCombo"]
+    ) {
+        return {
+            id: categoryCombo.id,
+            name: categoryCombo.displayName,
+            categories: convertToCategories(categoryCombo.categories),
+            optionsCombos: categoryCombo.categoryOptionCombos.map(optionCombo => ({
+                id: optionCombo.id,
+                name: optionCombo.displayName,
+                categoryCombo: { id: "" },
+                options: [],
+            })),
+        };
+    }
+
+    getSectionNameAndType(sectionName: string) {
+        const lastSpaceIndex = sectionName.lastIndexOf(" ");
+        const name = sectionName.slice(0, lastSpaceIndex);
+        const type = sectionName.slice(lastSpaceIndex + 1).toLowerCase();
+        return [name, type];
+    }
 }
 
 export const categoryComboFields = {
     id: true,
     displayName: true,
-    categories: { id: true, displayName: true, categoryOptions: { id: true, displayName: true } },
+    categories: {
+        id: true,
+        name: true,
+        displayName: true,
+        categoryOptions: { id: true, displayName: true },
+    },
+    categoryOptionCombos: { id: true, displayName: true },
 } as const;
 
 export const dataSetFields = {
+    access: true,
     created: true,
     displayDescription: true,
     displayName: true,
@@ -435,7 +496,16 @@ export const dataSetFields = {
     lastUpdated: true,
     sharing: { public: true },
     displayShortName: true,
-    sections: { id: true, displayName: true, code: true },
+    sections: {
+        id: true,
+        name: true,
+        displayName: true,
+        code: true,
+        greyedFields: {
+            dataElement: true,
+            categoryOptionCombo: true,
+        },
+    },
     userGroupAccesses: { id: true, displayName: true, access: true },
     userAccesses: { id: true, displayName: true, access: true },
     attributeValues: { value: true, attribute: { id: true } },
@@ -443,9 +513,11 @@ export const dataSetFields = {
     dataSetElements: {
         dataElement: {
             id: true,
+            displayDescription: true,
             displayName: true,
             code: true,
             categoryCombo: categoryComboFields,
+            valueType: true,
         },
         categoryCombo: categoryComboFields,
     },

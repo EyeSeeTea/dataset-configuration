@@ -12,3 +12,11 @@ export interface NamedRef extends Ref {
 export interface NamedCodeRef extends NamedRef {
     code: string;
 }
+
+export function getRef<Obj extends Ref>(obj: Obj): Ref {
+    return { id: obj.id };
+}
+
+export function getRefs<Obj extends Ref>(objs: Obj[]): Ref[] {
+    return objs.map(getRef);
+}

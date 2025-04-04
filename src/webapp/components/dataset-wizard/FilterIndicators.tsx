@@ -5,20 +5,23 @@ import { Chip, Divider, Drawer, Grid, IconButton, Typography } from "@material-u
 import FilterListIcon from "@material-ui/icons/FilterList";
 import CloseIcon from "@material-ui/icons/Close";
 import i18n from "$/utils/i18n";
-import { Dropdown } from "@eyeseetea/d2-ui-components";
+import { Dropdown, DropdownItem } from "@eyeseetea/d2-ui-components";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
+import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
 
-export type FilterType = "scope" | "core" | "outputType" | "theme" | "group";
+export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "measure";
 
 export type FilterIndicatorsProps = {
+    indicatorsPerCompetency: IndicatorPerItem[];
+    indicatorsPerType: IndicatorPerItem[];
     coreCompetencies: CoreCompetency[];
     coreValues: string[];
-    groups: string[];
-    group: string;
+    measure: string;
+    measures: string[];
     onClose: () => void;
     onFilterChange: (scope: ChipItem[], type: FilterType) => void;
-    scopes: string[];
+    scopes: DropdownItem[];
     scopeValue: string[];
     showCloseButton?: boolean;
     themes: string[];
@@ -32,6 +35,7 @@ export type FilterWrapperProps = {
     children: React.JSX.Element;
     showDrawer: boolean;
 };
+
 export type FilterMode = "default" | "drawer";
 
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
@@ -53,9 +57,9 @@ export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
 export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
     const {
         coreCompetencies,
-        coreValues: coreValue,
-        groups,
-        group,
+        coreValues,
+        measure,
+        measures,
         onClose,
         onFilterChange,
         scopes,
@@ -65,7 +69,15 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         theme,
         types,
         selectedType,
+        indicatorsPerCompetency,
+        indicatorsPerType,
     } = props;
+
+    const coreCompetenciesItems = generateCoreCompetencies(
+        coreCompetencies,
+        indicatorsPerCompetency
+    );
+
     return (
         <FilterIndicatorContainer style={{ maxWidth: "300px" }}>
             <HeaderFilterContainer>
@@ -83,30 +95,33 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             <Divider />
 
             <ChipFilter
-                items={scopes.map(scope => ({ text: scope, value: scope }))}
-                label={i18n.t("Scope")}
+                items={scopes}
+                label={i18n.t("Origin")}
                 onChange={value => onFilterChange(value, "scope")}
                 value={scopeValue}
             />
 
             <ChipFilter
-                items={coreCompetencies.map(coreCompetency => ({
-                    text: coreCompetency.name,
-                    value: coreCompetency.id,
-                }))}
+                items={coreCompetenciesItems}
                 label={i18n.t("Core competencies")}
-                onChange={value => onFilterChange(value, "core")}
-                value={coreValue}
+                onChange={value => onFilterChange(value, "coreCompetency")}
+                value={coreValues}
                 mode="multiple"
             />
 
             <ChipFilter
-                items={types.map(t => ({ text: t, value: t }))}
+                items={generateTypesItems(types, indicatorsPerType)}
                 label={i18n.t("Type")}
                 onChange={value => onFilterChange(value, "outputType")}
                 value={[selectedType]}
                 mode="single"
             />
+
+            <BodyFilterContainer>
+                <Typography variant="body1">
+                    <strong>{i18n.t("Additional")}</strong>
+                </Typography>
+            </BodyFilterContainer>
 
             <BodyFilterContainer>
                 <Dropdown
@@ -123,17 +138,42 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
             <BodyFilterContainer>
                 <Dropdown
                     className="dropdown"
-                    items={groups.map(g => ({ text: g, value: g }))}
+                    items={measures.map(g => ({ text: g, value: g }))}
                     onChange={value =>
-                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "group")
+                        onFilterChange([{ text: value ?? "", value: value ?? "" }], "measure")
                     }
-                    label={i18n.t("Group")}
-                    value={group}
+                    label={i18n.t("Measure")}
+                    value={measure}
                 />
             </BodyFilterContainer>
         </FilterIndicatorContainer>
     );
 });
+
+function generateCoreCompetencies(
+    coreCompetencies: CoreCompetency[],
+    indicatorsPerCompetency: IndicatorPerItem[]
+) {
+    return coreCompetencies.map(coreCompetency =>
+        createItem(coreCompetency.name, coreCompetency.id, indicatorsPerCompetency)
+    );
+}
+
+function generateTypesItems(types: string[], indicatorsPerCompetency: IndicatorPerItem[]) {
+    return types.map(type => createItem(type, type, indicatorsPerCompetency, type.toLowerCase()));
+}
+
+function createItem(
+    label: string,
+    value: string,
+    indicatorsPerCompetency: IndicatorPerItem[],
+    conditionValue?: string
+) {
+    const valueToCompare = conditionValue ?? value;
+    const indicator = indicatorsPerCompetency.find(item => item.id === valueToCompare);
+    const totalIndicators = indicator ? `(${indicator.totalIndicators})` : "";
+    return { text: `${label} ${totalIndicators}`, value };
+}
 
 export type ChipFilterProps = {
     items: ChipItem[];

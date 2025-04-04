@@ -6,7 +6,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { LogRepository } from "$/domain/repositories/LogRepository";
 import { UserUtils } from "$/domain/usecases/common/UserUtils";
 import { UserRepository } from "$/domain/repositories/UserRepository";
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 
 export class SavePeriodDateUseCase {
     private userUtils: UserUtils;
@@ -20,29 +20,31 @@ export class SavePeriodDateUseCase {
 
     execute(options: SavePeriodDateOptions): FutureData<void> {
         return this.getDataSetsByIds(options.dataSetsIds).flatMap(dataSets => {
-            const dataSetsToSave = dataSets.map(dataSet => {
-                return DataSet.create({ ...dataSet, periodDate: options.periodDate });
-            });
-            return this.dataSetRepository
-                .save(dataSetsToSave)
-                .flatMap(() => {
-                    return this.userUtils
-                        .logAction({
-                            dataSets: dataSetsToSave,
-                            status: "success",
-                            action: "period_dates",
-                        })
-                        .toVoid();
-                })
-                .flatMapError(error => {
-                    return this.userUtils
-                        .logAction({
-                            dataSets: dataSetsToSave,
-                            status: "failed",
-                            action: "period_dates",
-                        })
-                        .flatMap(() => Future.error(error));
+            return this.userUtils.checkDataSetAccess(dataSets).flatMap(() => {
+                const dataSetsToSave = dataSets.map(dataSet => {
+                    return DataSet.create({ ...dataSet, periodDate: options.periodDate });
                 });
+                return this.dataSetRepository
+                    .save(dataSetsToSave)
+                    .flatMap(() => {
+                        return this.userUtils
+                            .logAction({
+                                dataSets: dataSetsToSave,
+                                status: "success",
+                                action: "period_dates",
+                            })
+                            .toVoid();
+                    })
+                    .flatMapError(error => {
+                        return this.userUtils
+                            .logAction({
+                                dataSets: dataSetsToSave,
+                                status: "failed",
+                                action: "period_dates",
+                            })
+                            .flatMap(() => Future.error(error));
+                    });
+            });
         });
     }
 
@@ -51,4 +53,4 @@ export class SavePeriodDateUseCase {
     }
 }
 
-export type SavePeriodDateOptions = { dataSetsIds: Id[]; periodDate: PeriodDate };
+export type SavePeriodDateOptions = { dataSetsIds: Id[]; periodDate: DatePeriod };

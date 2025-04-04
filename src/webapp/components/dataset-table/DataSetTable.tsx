@@ -9,6 +9,8 @@ import { useTableConfig } from "$/webapp/components/dataset-table/DataSetTableCo
 import { DataSetDetails } from "$/webapp/components/dataset-table/DataSetDetails";
 import { DataSetActions, TableAction } from "$/webapp/components/dataset-table/DataSetActions";
 import { component } from "$/utils/react";
+import { SettingsForm } from "$/webapp/components/settings-form/SettingsForm";
+import { useAppContext } from "$/webapp/contexts/app-context";
 
 export type DataSetColumns = DataSetAttrs & { permissionDescription: string };
 
@@ -16,6 +18,7 @@ const DataSetTable_: React.FC = React.memo(() => {
     const [refreshTable, setRefreshTable] = React.useState(0);
     const [tableAction, setTableAction] = React.useState<TableAction>();
     const tableConfig = useTableConfig({ onAction: setTableAction, refreshTable });
+    const { currentUser } = useAppContext();
     const { goToCreateDataSet } = useDataSetsRoutes();
 
     const refreshDataSets = React.useCallback((isCancelAction: boolean) => {
@@ -25,11 +28,17 @@ const DataSetTable_: React.FC = React.memo(() => {
         }
     }, []);
 
+    const closeSettingsModal = () => {
+        setTableAction(undefined);
+    };
+
     return (
         <>
             <HomeTabs activeTab="dataSets" />
             <ObjectsTable
-                onActionButtonClick={goToCreateDataSet}
+                onActionButtonClick={
+                    currentUser.access.canCreateDataSets ? goToCreateDataSet : undefined
+                }
                 className="dataset-table"
                 {...tableConfig}
                 sideComponents={
@@ -41,6 +50,9 @@ const DataSetTable_: React.FC = React.memo(() => {
                 }
             />
             <DataSetActions tableAction={tableAction} onChangeAction={refreshDataSets} />
+            {tableAction?.action === "app-settings" && (
+                <SettingsForm onClose={closeSettingsModal} />
+            )}
         </>
     );
 });

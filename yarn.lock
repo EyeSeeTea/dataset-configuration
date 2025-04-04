@@ -2640,10 +2640,10 @@
     qs "6.9.7"
     react "^16.12.0"
 
-"@eyeseetea/d2-ui-components@2.9.0-beta.3":
-  version "2.9.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-ui-components/-/d2-ui-components-2.9.0-beta.3.tgz#86e79bdb4b469580b79eb54e13a839eafab62654"
-  integrity sha512-y6LQXvYHUG2eX/ttJcHBRIBfjOsMway6RV8b/bThwmVlc3UuAPUUT8ANExc24gnwcM57u1iPg2Q5/RyOCK2ryA==
+"@eyeseetea/d2-ui-components@2.10.1-beta.3":
+  version "2.10.1-beta.3"
+  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-ui-components/-/d2-ui-components-2.10.1-beta.3.tgz#5d3525dbde896dc254f01b4cfa5c5e4dfaefb916"
+  integrity sha512-Eb9P04zydwunMLhQ8XXcw1SK2KQjir+jm+bti0Wq5aaXUjJwHsRYWvouQHFdwUB7hZ7hevgNcz7pXk7sr5PB9g==
   dependencies:
     "@date-io/core" "1.3.6"
     "@date-io/moment" "1.0.2"
@@ -6036,6 +6036,11 @@ html-escaper@^2.0.0:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/html-escaper/-/html-escaper-2.0.2.tgz#dfd60027da36a36dfcbe236262c00a5822681453"
   integrity sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==
+
+htmlencode@0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/htmlencode/-/htmlencode-0.0.4.tgz#f7e2d6afbe18a87a78e63ba3308e753766740e3f"
+  integrity sha512-0uDvNVpzj/E2TfvLLyyXhKBRvF1y84aZsyRxRXFsQobnHaL4pcaXk+Y9cnFlvnxrBLeXDNq/VJBD+ngdBgQG1w==
 
 http-cache-semantics@^4.0.0:
   version "4.1.1"

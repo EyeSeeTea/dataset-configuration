@@ -40,5 +40,5 @@ cypress/fixtures/
 .idea/*
 
 docs/
-
-commands.sh
+# build-dependencies-visualizer generates a dist folder for the report
+/dist

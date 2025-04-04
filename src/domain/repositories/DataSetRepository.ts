@@ -1,8 +1,9 @@
 import { FutureData } from "$/domain/entities/generic/Future";
-import { DataSet, DataSetList } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export interface DataSetRepository {
     getByIds(ids: Id[]): FutureData<DataSet[]>;
@@ -19,5 +20,5 @@ export type DataSetName = Pick<DataSet, "id" | "name">;
 export type GetDataSetOptions = {
     paging: { page: number; pageSize: number };
     sorting: { field: DataSetOrderFields; order: "asc" | "desc" };
-    filters: { search?: string; ids?: Id[]; projectsIds?: Id[] };
+    filters: { search?: string; ids?: Id[]; projectsIds?: Id[]; includeDataSets?: boolean };
 };

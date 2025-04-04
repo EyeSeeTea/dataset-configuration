@@ -1,6 +1,11 @@
 import React from "react";
 import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
-import { ObjectsTable, ObjectsTableProps, TableState } from "@eyeseetea/d2-ui-components";
+import {
+    ObjectsTable,
+    ObjectsTableProps,
+    TableSorting,
+    TableState,
+} from "@eyeseetea/d2-ui-components";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -14,7 +19,9 @@ import { Indicator } from "$/domain/entities/Indicator";
 import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { Alert } from "@material-ui/lab";
+import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
+import { Maybe } from "$/utils/ts-utils";
+import styled from "styled-components";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -31,14 +38,20 @@ export type IndicatorsColumns = {
     disaggregation: string;
 };
 
-const scopes = ["Core", "Donor", "Local"];
+const scopes = [
+    { text: "Global Mandatory", value: "mandatory" },
+    { text: "Global Suggested", value: "suggested" },
+    { text: "Donor", value: "donor" },
+    { text: "Local", value: "local" },
+];
+
 const types = ["Outputs", "Outcomes"];
 
 export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const { dataSet, dataSetSettings, onChange } = props;
     const { coreCompetencies, indicators } = dataSetSettings;
     const [showFilterModal, setShowFilterModal] = React.useState(false);
-    const [scope, setScope] = React.useState("Core");
+    const [scope, setScope] = React.useState("mandatory");
     const [selectedCompetencies, setCore] = React.useState<string[]>(
         _(dataSet.indicators)
             .map(indicator => indicator.coreCompetency.id)
@@ -46,23 +59,27 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             .value()
     );
     const [selectedType, setType] = React.useState("Outputs");
-    const [selectedGroup, setGroup] = React.useState("");
     const [selectedTheme, setTheme] = React.useState("");
-    const [onlySelected, setOnlySelected] = React.useState(false);
+    const [selectedMeasure, setMeasure] = React.useState("");
+    const [selectedFilterValue, setSelectedFilterValue] = React.useState<SelectedFilterValue>();
     const [selectedIndicators, setSelectedIndicators] = React.useState<Id[]>(
         dataSet.indicators.map(indicator => indicator.id)
     );
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
+    const [sorting, setSorting] = React.useState<TableSorting<Indicator>>({
+        field: "status",
+        order: "asc",
+    });
 
-    const { allGroups, allThemes, filteredRows } = useFilterIndicators({
+    const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
         indicators,
         scope,
         selectedType,
         selectedCompetencies,
-        selectedGroup,
         selectedTheme,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     });
 
     const validateIndicators = useValidateIndicators({
@@ -70,6 +87,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         indicators,
         onChange,
         setSelectedIndicators,
+        setSorting,
     });
 
     const columns: ObjectsTableProps<Indicator>["columns"] = [
@@ -111,7 +129,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             case "scope":
                 setScope(singleItemValue);
                 break;
-            case "core":
+            case "coreCompetency":
                 setCore(value.map(v => v.value));
                 break;
             case "outputType":
@@ -120,8 +138,8 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             case "theme":
                 setTheme(singleItemValue);
                 break;
-            case "group":
-                setGroup(singleItemValue);
+            case "measure":
+                setMeasure(singleItemValue);
                 break;
         }
     }, []);
@@ -136,10 +154,17 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             })
             .join(", ");
 
-        return _([scope, selectedType, competencies, selectedGroup, selectedTheme])
+        return _([scope, selectedType, competencies, selectedTheme])
             .filter(item => item.length > 0)
             .join(", ");
-    }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedGroup, selectedTheme]);
+    }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedTheme]);
+
+    const indicatorsPerCompetency = useBuildTotalByKey(
+        dataSet.indicators,
+        indicator => indicator.coreCompetency.id
+    );
+
+    const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
 
     return (
         <form>
@@ -149,6 +174,8 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     showDrawer={showFilterModal}
                 >
                     <FilterIndicators
+                        measures={allMeasures}
+                        measure={selectedMeasure}
                         scopes={scopes}
                         scopeValue={[scope]}
                         onFilterChange={updateFilter}
@@ -158,10 +185,10 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         types={types}
                         selectedType={selectedType}
                         themes={allThemes}
-                        groups={allGroups}
-                        group={selectedGroup}
                         theme={selectedTheme}
                         onClose={() => setShowFilterModal(false)}
+                        indicatorsPerCompetency={indicatorsPerCompetency}
+                        indicatorsPerType={indicatorsPerType}
                     />
                 </FilterWrapper>
 
@@ -187,11 +214,12 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         columns={columns}
                         rows={filteredRows}
                         forceSelectionColumn
-                        filterComponents={<FilterTable onChange={setOnlySelected} />}
+                        filterComponents={<FilterTable onChange={setSelectedFilterValue} />}
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
                         searchBoxLabel={i18n.t("Search by name")}
                         searchBoxColumns={["name"]}
                         onChange={validateIndicators}
+                        sorting={sorting}
                     />
                 </Grid>
             </Grid>
@@ -199,47 +227,53 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     );
 });
 
-export const FilterTable = React.memo((props: { onChange: (isSelected: boolean) => void }) => {
-    const { onChange } = props;
-    const [value, setValue] = React.useState<"selected" | "non-selected">("non-selected");
-    const isSelected = value === "selected";
+export const FilterTable = React.memo(
+    (props: { onChange: (value: Maybe<SelectedFilterValue>) => void }) => {
+        const { onChange } = props;
+        const [value, setValue] = React.useState<SelectedFilterValue>();
 
-    const onClick = React.useCallback(
-        (value: "selected" | "non-selected") => {
-            setValue(value);
-            onChange(value === "selected");
-        },
-        [onChange]
-    );
+        const handleAlignment = (
+            _event: React.MouseEvent<HTMLElement>,
+            newValue: Maybe<string>
+        ) => {
+            const selectedValue = selectedFilterValues.find(value => value === newValue);
+            setValue(selectedValue);
+            onChange(selectedValue);
+        };
 
-    return (
-        <div>
-            <Button
-                onClick={() => onClick("selected")}
-                variant={isSelected ? "outlined" : "text"}
-                color="primary"
-            >
-                {i18n.t("Selected")}
-            </Button>
-            <Button
-                onClick={() => onClick("non-selected")}
-                variant={!isSelected ? "outlined" : "text"}
-                color="primary"
-            >
-                {i18n.t("No Selected")}
-            </Button>
-        </div>
-    );
-});
+        return (
+            <>
+                <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
+                    <ToggleButtonStyled value="selected">
+                        <Button
+                            variant={value === "selected" ? "outlined" : "text"}
+                            color="primary"
+                        >
+                            {i18n.t("Selected")}
+                        </Button>
+                    </ToggleButtonStyled>
+                    <ToggleButtonStyled value="non-selected">
+                        <Button
+                            variant={value === "non-selected" ? "outlined" : "text"}
+                            color="primary"
+                        >
+                            {i18n.t("No Selected")}
+                        </Button>
+                    </ToggleButtonStyled>
+                </ToggleButtonGroup>
+            </>
+        );
+    }
+);
 
 function useFilterIndicators(props: {
     indicators: Indicator[];
     scope: string;
+    selectedMeasure: string;
     selectedType: string;
     selectedCompetencies: string[];
-    selectedGroup: string;
     selectedTheme: string;
-    onlySelected: boolean;
+    selectedFilterValue: Maybe<SelectedFilterValue>;
     selectedIndicators: Id[];
 }) {
     const {
@@ -247,10 +281,10 @@ function useFilterIndicators(props: {
         scope,
         selectedType,
         selectedCompetencies,
-        selectedGroup,
         selectedTheme,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     } = props;
 
     const allThemes = React.useMemo(() => {
@@ -260,45 +294,53 @@ function useFilterIndicators(props: {
             .value();
     }, [indicators]);
 
-    const allGroups = React.useMemo(() => {
+    const allMeasures = React.useMemo(() => {
         return _(indicators)
-            .map(indicator => indicator.group)
+            .map(indicator => indicator.measure)
             .uniq()
             .value();
     }, [indicators]);
 
     const filteredRows = React.useMemo(() => {
-        return indicators.filter(indicator => {
-            const isInCompetency =
-                selectedCompetencies.length > 0
-                    ? selectedCompetencies.includes(indicator.coreCompetency.id)
-                    : true;
+        return indicators
+            .filter(indicator => {
+                if (!selectedFilterValue) return true;
+                return selectedFilterValue === "selected"
+                    ? selectedIndicators.includes(indicator.id)
+                    : !selectedIndicators.includes(indicator.id);
+            })
+            .filter(indicator => {
+                const isInCompetency =
+                    selectedCompetencies.length > 0
+                        ? selectedCompetencies.includes(indicator.coreCompetency.id)
+                        : true;
 
-            const isInGroup = selectedGroup ? indicator.group === selectedGroup : true;
-            const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
-            const showSelected = onlySelected ? selectedIndicators.includes(indicator.id) : true;
+                const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
+                const isInMeasure = selectedMeasure ? indicator.measure === selectedMeasure : true;
 
-            return (
-                showSelected &&
-                isInGroup &&
-                isInTheme &&
-                isInCompetency &&
-                indicator.scope.toLowerCase() === scope.toLowerCase() &&
-                indicator.type.toLowerCase() === selectedType.toLowerCase()
-            );
-        });
+                return (
+                    isInMeasure &&
+                    isInTheme &&
+                    isInCompetency &&
+                    indicator.scope.toLowerCase() === scope.toLowerCase() &&
+                    indicator.type.toLowerCase() === selectedType.toLowerCase()
+                );
+            })
+            .sort((a, b) => {
+                return a.status.localeCompare(b.status);
+            });
     }, [
         selectedCompetencies,
-        selectedGroup,
         selectedTheme,
         indicators,
         scope,
         selectedType,
-        onlySelected,
+        selectedFilterValue,
         selectedIndicators,
+        selectedMeasure,
     ]);
 
-    return { allGroups, allThemes, filteredRows };
+    return { allMeasures, allThemes, filteredRows };
 }
 
 export const StatusIndicator = React.memo((props: { status: string }) => {
@@ -317,8 +359,9 @@ function useValidateIndicators(props: {
     onChange: (dataSet: DataSet) => void;
     dataSet: DataSet;
     setSelectedIndicators: React.Dispatch<React.SetStateAction<Id[]>>;
+    setSorting: React.Dispatch<React.SetStateAction<TableSorting<Indicator>>>;
 }) {
-    const { indicators, onChange, dataSet, setSelectedIndicators } = props;
+    const { indicators, onChange, dataSet, setSelectedIndicators, setSorting } = props;
 
     const validateIndicators = React.useCallback(
         (state: TableState<Indicator>) => {
@@ -334,6 +377,8 @@ function useValidateIndicators(props: {
                     );
                     return Indicator.create({
                         ...indicatorInfo,
+                        disaggregation:
+                            updatedIndicator?.disaggregation || indicatorInfo.disaggregation,
                         categories: updatedIndicator?.categories || indicatorInfo.categories,
                         relatedDataElements:
                             updatedIndicator?.relatedDataElements ||
@@ -343,8 +388,32 @@ function useValidateIndicators(props: {
                 .value();
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
+            setSorting(state.sorting);
         },
-        [dataSet, indicators, onChange, setSelectedIndicators]
+        [dataSet, indicators, onChange, setSelectedIndicators, setSorting]
     );
     return validateIndicators;
 }
+
+function useBuildTotalByKey(
+    indicators: Indicator[],
+    getKey: (indicator: Indicator) => string
+): IndicatorPerItem[] {
+    return React.useMemo(() => {
+        return _(indicators)
+            .groupBy(getKey)
+            .mapValues(([key, group]) => ({ id: key, totalIndicators: group.length }))
+            .values();
+    }, [indicators, getKey]);
+}
+
+const selectedFilterValues = ["selected", "non-selected"] as const;
+
+export type SelectedFilterValue = (typeof selectedFilterValues)[number];
+
+export type IndicatorPerItem = { id: Id; totalIndicators: number };
+
+const ToggleButtonStyled = styled(ToggleButton)`
+    backgroundcolor: none;
+    border: none !important;
+`;

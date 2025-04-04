@@ -1,10 +1,10 @@
-import { PeriodDate } from "$/domain/entities/PeriodDate";
+import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { Id } from "$/domain/entities/Ref";
 
 export type DataSetPeriodDate = {
     id: Id;
     name: string;
-    periodDate: PeriodDate;
-    outcomeDate: PeriodDate;
-    outputDate: PeriodDate;
+    periodDate: DatePeriod;
+    outcomeDate: DatePeriod;
+    outputDate: DatePeriod;
 };

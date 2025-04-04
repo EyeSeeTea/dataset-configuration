@@ -1,7 +1,8 @@
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { DataSet, DataSetList } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { DataSetName, DataSetRepository } from "$/domain/repositories/DataSetRepository";
+import { DataSetList } from "$/domain/entities/DataSetList";
 
 export class DataSetTestRepository implements DataSetRepository {
     getByName(): FutureData<DataSetName[]> {

@@ -1,8 +1,9 @@
+import differenceBy from "lodash/differenceBy";
 import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
 import { D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
-import { DataSet, DataSetList } from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import {
     DataSetName,
@@ -10,24 +11,32 @@ import {
     GetDataSetOptions,
 } from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { generateUid, getUid } from "$/utils/uid";
+import { getUid, generateUid } from "$/utils/uid";
 import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api, dataSetFieldsWithOrgUnits } from "$/data/repositories/DataSetD2Api";
 import { Maybe } from "$/utils/ts-utils";
-import { chunkRequest, runMetadata } from "$/data/utils";
+import { buildErrorFromException, chunkRequest, runMetadata } from "$/data/utils";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
-import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
-import { Id, Ref } from "$/domain/entities/Ref";
+
+import getTemplate, { DataSetTemplate } from "$/data/entry-form/CustomForm";
+import { D2ApiCategoryCombo, D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
+import { IndicatorAttrs, indicatorTypes } from "$/domain/entities/Indicator";
+import { Id, Ref, getRefs } from "$/domain/entities/Ref";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
-import { Category } from "$/domain/entities/Category";
-import { Disaggregation } from "$/domain/entities/DataElement";
+import { DataSetList } from "$/domain/entities/DataSetList";
+import isEqual from "lodash/isEqual";
+
+const DIMENSITON_TYPE = "DISAGGREGATION" as const;
+const CUSTOM_FORM_STYLE = "NORMAL" as const;
 
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
+    private D2ApiCategoryCombo: D2ApiCategoryCombo;
 
     constructor(private api: D2Api, private config: Config) {
         this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
+        this.D2ApiCategoryCombo = new D2ApiCategoryCombo(this.api);
     }
 
     getByName(name: string): FutureData<DataSetName[]> {
@@ -110,29 +119,17 @@ export class DataSetD2Repository implements DataSetRepository {
             const $requests = chunkRequest<string[]>(ids, dataSetIds => {
                 return apiToFuture(
                     this.api.models.dataSets.get({
-                        fields: ownerFields,
+                        fields: { ...ownerFields, dataEntryForm: { id: true, htmlCode: true } },
                         filter: { id: { in: dataSetIds } },
                         paging: false,
                     })
                 ).flatMap(d2Response => {
-                    const dataSetsToSave = this.getD2DataSetsToSave(
+                    return this.saveAllDataSets(
                         dataSetIds,
-                        d2Response.objects,
                         dataSets,
+                        d2Response.objects,
                         config
-                    );
-
-                    const categoryCombos = this.buildCategoryCombinations(dataSets);
-
-                    const metadataToPost = {
-                        categoryCombos: categoryCombos,
-                        categoryOptionCombos: this.buildCategoryOptionCombos(categoryCombos),
-                        dataSets: dataSetsToSave,
-                    };
-
-                    return runMetadata(this.api.metadata.post(metadataToPost)).flatMap(() => {
-                        return this.saveAllSections(dataSetsToSave, dataSets).map(() => []);
-                    });
+                    ).map(() => []);
                 });
             });
 
@@ -140,44 +137,174 @@ export class DataSetD2Repository implements DataSetRepository {
         });
     }
 
-    private buildCategoryOptionCombos(categoryCombos: D2CategoryCombo[]) {
-        const allCategories = this.config.categoryCombinations.flatMap(combination => {
-            return combination.categories;
-        });
-        const uniqueCategories = _(allCategories)
-            .uniqBy(category => category.id)
-            .value();
+    private saveAllDataSets(
+        dataSetIds: string[],
+        dataSets: DataSetToSave[],
+        existingDataSets: D2DataSetOwnerEntryForm[],
+        config: D2Config
+    ): FutureData<void> {
+        return this.getSectionsByIds(dataSetIds).flatMap(existingSections => {
+            return this.getCategoryCombosByDataSets(dataSets, dataSetIds).flatMap(ccByDataSet => {
+                const dataSetsToSave = this.getD2DataSetsToSave(
+                    dataSetIds,
+                    existingDataSets,
+                    dataSets,
+                    config,
+                    ccByDataSet,
+                    existingSections
+                );
 
-        return categoryCombos.flatMap(categoryCombo => {
-            const categoriesIds = categoryCombo.categories.map(category => category.id);
-            const categories = uniqueCategories.filter(category =>
-                categoriesIds.includes(category.id)
-            );
-            const categoryOptions = categories.map(category => category.options);
-            const optionsCombinations = _(categoryOptions).cartesian().value();
+                const { categoryCombos, categoryOptionCombos } = this.buildCategoryCombinations(
+                    dataSets,
+                    this.config
+                );
 
-            return optionsCombinations.map(optionCombination => {
-                const categoryOptionsName = optionCombination
-                    .map(optionsCombinations => optionsCombinations.name)
-                    .join(", ");
-
-                return {
-                    categoryCombo: { id: categoryCombo.id },
-                    id: generateUid(),
-                    name: categoryOptionsName,
-                    categoryOptions: optionCombination.map(categoryOption => ({
-                        id: categoryOption.id,
+                const metadataToPost = {
+                    categoryCombos,
+                    categoryOptionCombos,
+                    dataSets: dataSetsToSave.map(ds => ({
+                        ...ds,
+                        dataEntryForm: { id: ds.dataEntryForm.id },
                     })),
+                    dataEntryForms: _(dataSetsToSave)
+                        .filter(dataSet =>
+                            this.hasEntryFormChanged(
+                                dataSet.id,
+                                dataSet.dataEntryForm,
+                                existingDataSets
+                            )
+                        )
+                        .map(dataSet => dataSet.dataEntryForm)
+                        .uniqBy(dataEntryForm => dataEntryForm.id)
+                        .value(),
                 };
+
+                return runMetadata(this.api.metadata.post(metadataToPost))
+                    .flatMap(() => {
+                        return this.saveAllSections(
+                            dataSetsToSave,
+                            dataSets,
+                            existingSections
+                        ).toVoid();
+                    })
+                    .flatMapError(err => {
+                        return Future.error(new Error(buildErrorFromException(err)));
+                    });
             });
         });
     }
 
+    private hasEntryFormChanged(
+        dataSetId: Id,
+        entryForm: D2EntryForm,
+        existingDataSets: D2DataSetOwnerEntryForm[]
+    ): boolean {
+        const existingDataSet = existingDataSets.find(ds => ds.id === dataSetId);
+        if (!existingDataSet) return true;
+
+        const hasEntryFormChanged = existingDataSet.dataEntryForm?.htmlCode !== entryForm.htmlCode;
+        return hasEntryFormChanged;
+    }
+
+    private getCategoryCombosByDataSets(
+        dataSets: DataSetToSave[],
+        dataSetIds: Id[]
+    ): FutureData<D2CategoryComboDataSet[]> {
+        const $requests = _(dataSetIds)
+            .compactMap(dataSetId => {
+                const dataSet = dataSets.find(ds => ds.id === dataSetId);
+                if (!dataSet) return undefined;
+
+                const categoryCombos = this.getDisaggregations(dataSet, this.config, {
+                    filterExisting: false,
+                });
+
+                const d2CategoryCombos = categoryCombos.map(
+                    (categoryCombo): D2ApiCategoryComboType => {
+                        return {
+                            ...categoryCombo,
+                            displayName: categoryCombo.name,
+                            categories: categoryCombo.categories.map(category => {
+                                return {
+                                    ...category,
+                                    displayName: category.name,
+                                    categoryOptions: category.options.map(option => {
+                                        return {
+                                            ...option,
+                                            displayName: option.name,
+                                        };
+                                    }),
+                                };
+                            }),
+                            categoryOptionCombos: categoryCombo.optionsCombos.map(optionCombo => {
+                                return {
+                                    ...optionCombo,
+                                    displayName: optionCombo.name,
+                                    categoryOptions: optionCombo.options.map(option => {
+                                        return {
+                                            ...option,
+                                            displayName: option.name,
+                                        };
+                                    }),
+                                };
+                            }),
+                        };
+                    }
+                );
+
+                const ids = categoryCombos.map(cc => cc.id);
+                return this.D2ApiCategoryCombo.getByIds(ids).map(categoryCombos => {
+                    const nonExistingCategoryCombos = differenceBy(
+                        d2CategoryCombos,
+                        categoryCombos,
+                        categoryCombo => categoryCombo.id
+                    );
+                    return {
+                        dataSetId: dataSet.id,
+                        categoryCombos: _(categoryCombos)
+                            .concat(nonExistingCategoryCombos)
+                            .uniqBy(cc => cc.id)
+                            .value(),
+                    };
+                });
+            })
+            .value();
+
+        return Future.parallel($requests, { concurrency: 5 });
+    }
+
+    private buildDataEntryForm(
+        dataSet: DataSetTemplate & { id: Id; dataEntryForm?: D2DataSetOwner["dataEntryForm"] },
+        dataSetToSave: DataSetToSave,
+        ccByDataSet: D2CategoryComboDataSet[],
+        config: D2Config,
+        existingDataSetSections: D2Section[]
+    ) {
+        const allCategoryCombos =
+            ccByDataSet.find(cc => cc.dataSetId === dataSet.id)?.categoryCombos ?? [];
+        const html = getTemplate(
+            dataSet,
+            allCategoryCombos,
+            dataSetToSave,
+            config,
+            existingDataSetSections
+        );
+        const id = dataSet.dataEntryForm?.id || generateUid();
+        return {
+            id,
+            style: CUSTOM_FORM_STYLE,
+            htmlCode: html,
+            name: [dataSet.id, id].join("-"),
+        };
+    }
+
     private getD2DataSetsToSave(
         dataSetIds: string[],
-        d2DataSets: D2DataSetOwner[],
+        d2DataSets: D2DataSetOwnerEntryForm[],
         dataSets: DataSetToSave[],
-        config: D2Config
+        config: D2Config,
+        ccByDataSet: D2CategoryComboDataSet[],
+        existingSections: D2Section[]
     ) {
         return dataSetIds.map(dataSetId => {
             const existingDataSet = d2DataSets.find(ds => ds.id === dataSetId);
@@ -190,11 +317,23 @@ export class DataSetD2Repository implements DataSetRepository {
 
             const result = {
                 ...(existingDataSet || {}),
-                ...this.buildD2DataSet(dataSet, existingAttributes, config.attributes),
+                ...this.buildD2DataSet(dataSet, existingAttributes, config),
             };
 
+            const existingDataSetSections = existingSections.filter(
+                section => section.dataSet.id === dataSet.id
+            );
+
+            const customForm = this.buildDataEntryForm(
+                result,
+                dataSet,
+                ccByDataSet,
+                config,
+                existingDataSetSections
+            );
+
             const { sharing: _, ...rest } = result;
-            return rest;
+            return { ...rest, dataEntryForm: customForm };
         });
     }
 
@@ -217,45 +356,91 @@ export class DataSetD2Repository implements DataSetRepository {
         return $requests.toVoid();
     }
 
-    private saveAllSections(dataSetsToSave: Ref[], dataSets: DataSetToSave[]): FutureData<void> {
-        const dataSetsIds = dataSetsToSave.map(dataSet => dataSet.id);
-
-        return this.getSectionsByIds(dataSetsIds).flatMap(sections => {
-            const sectionsActions = dataSetsToSave.flatMap(dataSetSaved => {
-                const dataSet = dataSets.find(dataSet => dataSet.id === dataSetSaved.id);
-                const sectionsToSave = this.buildDataSetSections(
-                    dataSet?.indicators || [],
-                    dataSetSaved.id
-                );
-                const existingSectionByDataSet = sections.filter(
-                    section => section.dataSet.id === dataSetSaved.id
-                );
-                const sectionsIdsToSave = new Set(sectionsToSave.map(section => section.id));
-                const idsToDelete = existingSectionByDataSet.filter(
-                    item => !sectionsIdsToSave.has(item.id)
-                );
-
-                return { toSave: sectionsToSave, toDelete: idsToDelete };
-            });
-
-            const sectionsToDelete = sectionsActions.flatMap(sectionAction =>
-                sectionAction.toDelete.map(item => ({ id: item.id }))
+    private saveAllSections(
+        dataSetsToSave: Ref[],
+        dataSets: DataSetToSave[],
+        existingSections: D2SectionWithGreyFields[]
+    ): FutureData<void> {
+        const sectionsActions = dataSetsToSave.flatMap(dataSetSaved => {
+            const dataSet = dataSets.find(dataSet => dataSet.id === dataSetSaved.id);
+            const existingSectionByDataSet = existingSections.filter(
+                section => section.dataSet.id === dataSetSaved.id
             );
 
-            return this.deleteSections(sectionsToDelete).flatMap(() => {
-                const sectionsToSave = sectionsActions.flatMap(
-                    sectionAction => sectionAction.toSave
-                );
-                return apiToFuture(this.api.metadata.post({ sections: sectionsToSave })).flatMap(
-                    sectionResponse => {
-                        const allErrors = this.extractErrorsFromResponse(sectionResponse);
-                        if (allErrors.length > 0)
-                            return Future.error(new Error(allErrors.join("\n")));
-                        return Future.success(undefined);
-                    }
-                );
-            });
+            const sectionsToSave = this.buildDataSetSections(
+                dataSet,
+                dataSetSaved.id,
+                existingSectionByDataSet
+            );
+
+            const sectionsIdsToSave = new Set(sectionsToSave.map(section => section.id));
+
+            const idsToDelete = existingSectionByDataSet.filter(
+                item => !sectionsIdsToSave.has(item.id)
+            );
+
+            const areEqual = this.sectionsAreEqual(sectionsToSave, existingSectionByDataSet);
+            // we have over 200K categoryOptionCombos on the server
+            // which makes saving greyed fields very slow (average of 12 sec.)
+            // skipping saving sections if their values are unchanged to optimize performance
+            return { toSave: areEqual ? [] : sectionsToSave, toDelete: idsToDelete };
         });
+
+        const sectionsToDelete = sectionsActions.flatMap(sectionAction =>
+            sectionAction.toDelete.map(item => ({ id: item.id }))
+        );
+
+        return this.deleteSections(sectionsToDelete).flatMap(() => {
+            const sectionsToSave = sectionsActions.flatMap(sectionAction => sectionAction.toSave);
+            if (sectionsToSave.length === 0) return Future.success(undefined);
+
+            return apiToFuture(this.api.metadata.post({ sections: sectionsToSave })).flatMap(
+                sectionResponse => {
+                    const allErrors = this.extractErrorsFromResponse(sectionResponse);
+                    if (allErrors.length > 0) return Future.error(new Error(allErrors.join("\n")));
+                    return Future.success(undefined);
+                }
+            );
+        });
+    }
+
+    private sectionsAreEqual(
+        sectionsToSave: D2DataSetSection[],
+        existingSections: D2SectionWithGreyFields[]
+    ) {
+        const sortedSectionsToSave = _(sectionsToSave)
+            .map(section => this.getSectionSorted(section))
+            .sortBy(section => section.id)
+            .value();
+
+        const sortedExistinSections = _(existingSections)
+            .map(section => this.getSectionSorted(section))
+            .sortBy(section => section.id)
+            .value();
+
+        return isEqual(sortedSectionsToSave, sortedExistinSections);
+    }
+
+    private getSectionSorted(section: D2DataSetSection): D2DataSetSection {
+        return {
+            ...section,
+            dataElements: _(section.dataElements)
+                .sortBy(de => de.id)
+                .value(),
+            indicators: _(section.indicators)
+                .sortBy(ind => ind.id)
+                .value(),
+            greyedFields: _(section.greyedFields)
+                .map(x => ({
+                    dataElement: x.dataElement,
+                    categoryOptionCombo: x.categoryOptionCombo,
+                }))
+                .orderBy([
+                    [item => item.dataElement.id, "asc"],
+                    [item => item.categoryOptionCombo.id, "asc"],
+                ])
+                .value(),
+        };
     }
 
     private deleteSections(ids: Ref[]): FutureData<void> {
@@ -265,12 +450,15 @@ export class DataSetD2Repository implements DataSetRepository {
         ).toVoid();
     }
 
-    private getSectionsByIds(ids: Id[]) {
+    private getSectionsByIds(ids: Id[]): FutureData<D2SectionWithGreyFields[]> {
         if (ids.length === 0) return Future.success([]);
         return chunkRequest(ids, dataSetIds => {
             return apiToFuture(
                 this.api.models.sections.get({
-                    fields: { $owner: true },
+                    fields: {
+                        $owner: true,
+                        greyedFields: { id: true, dataElement: true, categoryOptionCombo: true },
+                    },
                     filter: { "dataSet.id": { in: dataSetIds } },
                     paging: false,
                 })
@@ -286,17 +474,24 @@ export class DataSetD2Repository implements DataSetRepository {
         );
     }
 
-    private buildDataSetSections(indicators: Indicator[], id: string): D2DataSetSection[] {
-        return _(indicators)
-            .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.code}`)
+    private buildDataSetSections(
+        dataSet: Maybe<DataSet>,
+        id: Id,
+        dataSetSections: D2Section[]
+    ): D2DataSetSection[] {
+        const d2Sections = _(dataSet?.indicators ?? [])
+            .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.id}`)
             .mapValues(([indicatorType, indicators]): D2DataSetSection => {
-                const [type, _sectionGroupCode] = indicatorType.split("_");
+                const [type, sectionGroupId] = indicatorType.split("_");
                 const coreCompetency = indicators[0]?.coreCompetency;
                 if (!coreCompetency || !type)
                     throw Error(`Cannot find core competency name for ${indicatorType}`);
 
                 const typeLabel = this.getIndicatorTypeName(type);
                 const code = `${id}_${typeLabel.toUpperCase()}_${coreCompetency.code}`;
+                const existingSectionInfo = dataSetSections.find(
+                    section => section.code.toLowerCase() === code.toLowerCase()
+                );
 
                 const indicatorOutComes = indicators.filter(
                     indicator => indicator.type === "outcomes"
@@ -310,144 +505,164 @@ export class DataSetD2Repository implements DataSetRepository {
                     id: dataElement.id,
                 }));
 
+                const indicatorTypeValue = indicatorTypes.find(
+                    it => it === typeLabel.toLowerCase()
+                );
+                if (!indicatorTypeValue) {
+                    throw Error(`Cannot find indicator type value for ${typeLabel}`);
+                }
+
+                const disabledFieldsForSection =
+                    dataSet?.disabledFields.filter(
+                        df => df.competencyId === sectionGroupId && indicatorTypeValue === df.type
+                    ) ?? [];
+
+                const dataElementsInSection = indicators
+                    .filter(x => x.type === "outputs")
+                    .map(indicator => ({ id: indicator.id }))
+                    .concat(refDataElements);
+
                 return {
-                    id: getUid(code),
+                    ...(existingSectionInfo || {}),
+                    id: existingSectionInfo?.id ?? getUid(code),
                     code,
                     dataSet: { id: id },
                     name: `${coreCompetency.name} ${typeLabel}`,
-                    greyedFields: [],
-                    dataElements: indicators
-                        .filter(x => x.type === "outputs")
+                    greyedFields: disabledFieldsForSection.map(disabledField => {
+                        return {
+                            dataElement: { id: disabledField.dataElementId },
+                            categoryOptionCombo: { id: disabledField.optionComboId },
+                        };
+                    }),
+                    dataElements: _(dataElementsInSection)
+                        .uniqBy(dataElement => dataElement.id)
+                        .value(),
+                    indicators: _(indicatorOutComes)
                         .map(indicator => ({ id: indicator.id }))
-                        .concat(refDataElements),
-                    indicators: indicatorOutComes.map(indicator => ({ id: indicator.id })),
+                        .uniqBy(indicator => indicator.id)
+                        .value(),
                 };
             })
             .values();
+
+        const sectionsOrderedByName = d2Sections.sort((a, b) => {
+            const [competencyName, sectionType] = this.d2DataSetApi.getSectionNameAndType(a.name);
+            const [competencyNameB, sectionTypeB] = this.d2DataSetApi.getSectionNameAndType(b.name);
+            if (!sectionType || !sectionTypeB) return -1;
+            if (!competencyName || !competencyNameB) return -1;
+
+            const baseCompare = competencyName.localeCompare(competencyNameB);
+            if (baseCompare !== 0) return baseCompare ?? -1;
+
+            return sectionTypeB.localeCompare(sectionType);
+        });
+
+        return sectionsOrderedByName.map((section, index) => ({ ...section, sortOrder: index }));
     }
 
-    private buildCategoryCombinations(dataSets: DataSetToSave[]) {
+    private buildCategoryCombinations(
+        dataSets: DataSetToSave[],
+        config: Config
+    ): { categoryCombos: D2CategoryCombo[]; categoryOptionCombos: D2CategoryOptionCombo[] } {
         const allCategoryCombos = dataSets.flatMap(dataSet => {
-            return this.buildCategoryCombinationsByDataElements(dataSet)
-                .filter(dataElementCombination => !dataElementCombination.existing)
-                .map(dataElementCombination => dataElementCombination.categoryCombo);
+            const categoryCombosToCreate = this.getDisaggregations(dataSet, config, {
+                filterExisting: true,
+            });
+
+            const publicAccessNotation = "r-------";
+
+            return categoryCombosToCreate.map(categoryCombo => {
+                return {
+                    dataDimensionType: DIMENSITON_TYPE,
+                    publicAccess: publicAccessNotation,
+                    id: categoryCombo.id,
+                    name: categoryCombo.name,
+                    categories: getRefs(categoryCombo.categories),
+                    userGroupAccesses: dataSet.access
+                        .filter(access => access.type === "groups")
+                        .map(access => ({ access: publicAccessNotation, id: access.id })),
+                };
+            });
         });
-        return _(allCategoryCombos)
-            .uniqBy(cc => cc.id)
-            .value();
-    }
 
-    private buildCategoryCombinationsByDataElements(
-        dataSet: DataSetToSave
-    ): DataElementWithCombination[] {
-        return dataSet.indicators.flatMap(indicator => {
-            switch (indicator.type) {
-                case "outputs": {
-                    if (indicator.categories.length === 0) return [];
-                    return _([
-                        this.buildDataElementByCombination(
-                            indicator.id,
-                            indicator.categories,
-                            indicator.disaggregation,
-                            dataSet
-                        ),
-                    ])
-                        .compactMap(deCombination => deCombination)
-                        .value();
-                }
-                case "outcomes": {
-                    const dataElementsComment = indicator.relatedDataElements.filter(
-                        dataElement => dataElement.isComment
-                    );
-                    const dataElementsRelated = indicator.relatedDataElements.filter(
-                        dataElement => !dataElement.isComment
-                    );
-
-                    const commentDataElement = _(dataElementsComment)
-                        .compactMap(dataElement => {
-                            return this.buildDataElementByCombination(
-                                dataElement.id,
-                                dataElement.categories,
-                                dataElement.disaggregation,
-                                dataSet
-                            );
-                        })
-                        .value();
-
-                    const relatedDataElements = _(dataElementsRelated)
-                        .compactMap(dataElement => {
-                            return this.buildDataElementByCombination(
-                                dataElement.id,
-                                dataElement.categories,
-                                dataElement.disaggregation,
-                                dataSet
-                            );
-                        })
-                        .value();
-
-                    return [...commentDataElement, ...relatedDataElements];
-                }
-            }
+        const allCategoryOptionCombos = dataSets.flatMap(dataSet => {
+            const disaggregations = this.getDisaggregations(dataSet, config, {
+                filterExisting: true,
+            });
+            return disaggregations.flatMap(disaggregation => {
+                return disaggregation.optionsCombos.map(optionCombo => {
+                    return {
+                        categoryCombo: optionCombo.categoryCombo,
+                        id: optionCombo.id,
+                        name: optionCombo.name,
+                        categoryOptions: optionCombo.options.map(categoryOption => {
+                            return { id: categoryOption.id };
+                        }),
+                    };
+                });
+            });
         });
-    }
-
-    private buildDataElementByCombination(
-        id: Id,
-        categories: Category[],
-        disaggregation: Maybe<Disaggregation>,
-        dataSet: DataSetToSave
-    ): Maybe<DataElementWithCombination> {
-        const categoriesNoDefault = categories.filter(category => category.name !== "default");
-        if (categoriesNoDefault.length === 0) return undefined;
-
-        const categoriesNames = categoriesNoDefault.map(category => category.name);
-        const currentDisaggregation =
-            disaggregation?.name !== "default" ? disaggregation?.name : undefined;
-        const categoriesFromDisaggregation = disaggregation
-            ? disaggregation.categories.filter(category => category.name !== "default")
-            : [];
-
-        const categoryComboName = [currentDisaggregation, ...categoriesNames]
-            .filter(Boolean)
-            .join("/");
-
-        const currentCategoriesIds = categoriesFromDisaggregation
-            .concat(categoriesNoDefault)
-            .map(category => category.id)
-            .join(".");
-
-        const existingCategoryOptionCombo = currentCategoriesIds
-            ? this.config.categoryCombinations.find(cc => {
-                  const categoriesIds = cc.categories.map(category => category.id).join(".");
-                  return categoriesIds === currentCategoriesIds;
-              })
-            : undefined;
 
         return {
-            isComment: true,
-            indicatorId: id,
-            existing: Boolean(existingCategoryOptionCombo?.id),
-            categoryCombo: {
-                dataDimensionType: "DISAGGREGATION",
-                publicAccess: "r-------",
-                id: existingCategoryOptionCombo?.id ?? getUid(categoryComboName),
-                name: categoryComboName,
-                categories: categoriesNoDefault.map(category => ({ id: category.id })),
-                userGroupAccesses: dataSet.access
-                    .filter(access => access.type === "groups")
-                    .map(access => {
-                        return { access: "r-------", id: access.id };
-                    }),
-            },
+            categoryCombos: _(allCategoryCombos)
+                .uniqBy(cc => cc.id)
+                .value(),
+            categoryOptionCombos: allCategoryOptionCombos,
         };
+    }
+
+    private getDisaggregations(
+        dataSet: DataSetToSave,
+        config: Config,
+        options: { filterExisting: boolean }
+    ) {
+        const { filterExisting } = options;
+        const outputIndicators = dataSet.indicators.filter(
+            indicator => indicator.type === "outputs"
+        );
+        const outcomeIndicators = dataSet.indicators
+            .filter(indicator => indicator.type === "outcomes")
+            .flatMap(indicator => indicator.relatedDataElements);
+
+        const outputDisaggregations = _(outputIndicators)
+            .compactMap(indicator => {
+                if (!filterExisting) return indicator.disaggregation;
+
+                const existing = config.categoryCombinations.find(
+                    cc => cc.id === indicator.disaggregation?.id
+                );
+                if (existing) return undefined;
+                return indicator.disaggregation;
+            })
+            .value();
+
+        const outcomeDisaggregations = _(outcomeIndicators)
+            .compactMap(dataElement => {
+                if (!filterExisting) return dataElement.disaggregation;
+
+                const existing = config.categoryCombinations.find(
+                    cc => cc.id === dataElement.disaggregation?.id
+                );
+                if (existing) return undefined;
+                return dataElement.disaggregation;
+            })
+            .value();
+
+        const categoryCombosToCreate = outputDisaggregations.concat(outcomeDisaggregations);
+        return categoryCombosToCreate;
     }
 
     private buildD2DataSet(
         dataSet: DataSetToSave,
         existingAttributes: Maybe<D2AttributeValue[]>,
-        attributes: D2Config["attributes"]
+        config: D2Config
     ) {
         return {
+            renderAsTabs: true,
+            dataElementDecoration: true,
+            categoryCombo: {
+                id: config.categoryCombos.projectTargetActual.id,
+            },
             id: dataSet.id || getUid(dataSet.name),
             shortName: dataSet.shortName,
             name: dataSet.name,
@@ -455,9 +670,11 @@ export class DataSetD2Repository implements DataSetRepository {
             description: dataSet.description,
             publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
             dataSetElements: this.buildDataSetElements(dataSet),
-            indicators: dataSet.indicators
+            indicators: _(dataSet.indicators)
                 .filter(indicator => indicator.type === "outcomes")
-                .map(indicator => ({ id: indicator.id })),
+                .map(indicator => ({ id: indicator.id }))
+                .uniqBy(indicator => indicator.id)
+                .value(),
             userAccesses: dataSet.access
                 .filter(access => access.type === "users")
                 .map(access => {
@@ -478,7 +695,7 @@ export class DataSetD2Repository implements DataSetRepository {
                 })
                 .value(),
             organisationUnits: dataSet.orgUnits.map(ou => ({ id: ou.id })),
-            attributeValues: this.buildD2Attributes(existingAttributes, dataSet, attributes),
+            attributeValues: this.buildD2Attributes(existingAttributes, dataSet, config.attributes),
             notifyCompletingUser: dataSet.notifyUser,
             openFuturePeriods: dataSet.openFuturePeriods,
             expiryDays: dataSet.expiryDays,
@@ -486,41 +703,30 @@ export class DataSetD2Repository implements DataSetRepository {
     }
 
     private buildDataSetElements(dataSet: DataSetToSave) {
-        const categoryCombos = this.buildCategoryCombinationsByDataElements(dataSet);
-
         const relatedDataElements = dataSet.indicators
             .filter(indicator => indicator.type === "outcomes")
             .flatMap(indicator => indicator.relatedDataElements)
             .map(dataElement => {
-                const categoryCombo = categoryCombos.find(cc => cc.indicatorId === dataElement.id);
-
                 return {
                     dataSet: { id: dataSet.id },
                     dataElement: { id: dataElement.id },
-                    categoryCombo: categoryCombo
-                        ? { id: categoryCombo.categoryCombo.id }
-                        : dataElement.disaggregation
-                        ? { id: dataElement.disaggregation.id }
-                        : undefined,
+                    categoryCombo: { id: dataElement.disaggregation?.id },
                 };
             });
 
         const selectedIndicators = dataSet.indicators
             .filter(indicator => indicator.type === "outputs")
             .map(indicator => {
-                const categoryCombo = categoryCombos.find(cc => cc.indicatorId === indicator.id);
                 return {
                     dataSet: { id: dataSet.id },
                     dataElement: { id: indicator.id },
-                    categoryCombo: categoryCombo
-                        ? { id: categoryCombo.categoryCombo.id }
-                        : indicator.disaggregation
-                        ? { id: indicator.disaggregation.id }
-                        : undefined,
+                    categoryCombo: { id: indicator.disaggregation?.id },
                 };
             });
 
-        return relatedDataElements.concat(selectedIndicators);
+        return _(relatedDataElements.concat(selectedIndicators))
+            .uniqBy(de => de.dataElement.id)
+            .value();
     }
 
     private buildD2Attributes(
@@ -605,6 +811,10 @@ const ownerFields = { $owner: true };
 export type D2DataSetOwner = MetadataPick<{
     dataSets: { fields: typeof ownerFields };
 }>["dataSets"][number];
+export type D2DataSetOwnerEntryForm = Omit<D2DataSetOwner, "dataEntryForm"> & {
+    dataEntryForm: Maybe<D2EntryForm>;
+};
+type D2EntryForm = { id: Id; htmlCode: string };
 
 type D2CategoryCombo = {
     dataDimensionType: "DISAGGREGATION";
@@ -615,17 +825,24 @@ type D2CategoryCombo = {
     userGroupAccesses: Array<{ access: string; id: string }>;
 };
 
-type D2Attribute = { attribute: { id: Id }; value: string };
-type DataElementWithCombination = {
-    isComment: boolean;
-    indicatorId: Id;
-    existing: boolean;
-    categoryCombo: {
-        dataDimensionType: "DISAGGREGATION";
-        publicAccess: string;
-        id: Id;
-        name: string;
-        categories: Ref[];
-        userGroupAccesses: { access: string; id: Id }[];
-    };
+type D2CategoryOptionCombo = {
+    categoryCombo: Ref;
+    id: Id;
+    name: string;
+    categoryOptions: Ref[];
 };
+
+type D2CategoryComboDataSet = { dataSetId: Id; categoryCombos: D2ApiCategoryComboType[] };
+
+export type D2Section = MetadataPick<{
+    sections: { fields: typeof ownerFields };
+}>["sections"][number];
+export type D2SectionWithGreyFields = Omit<D2Section, "greyedFields"> & {
+    greyedFields: Array<{
+        id: Id;
+        dataElement: Ref;
+        categoryOptionCombo: Ref;
+    }>;
+};
+
+type D2Attribute = { attribute: { id: Id }; value: string };

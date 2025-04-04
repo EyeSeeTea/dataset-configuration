@@ -31,6 +31,10 @@ export class Project extends Struct<ProjectAttrs>() {
         return Project.build({ ...project, dataSets });
     }
 
+    setOrgUnits(orgsUnits: OrgUnit[]): Project {
+        return this._update({ orgsUnits });
+    }
+
     /**
      * Extracts the portion of a code string before the first underscore ("_")
      * and converts it to uppercase.

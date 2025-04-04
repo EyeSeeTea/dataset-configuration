@@ -1,15 +1,17 @@
 import { D2ApiIndicator } from "$/data/D2ApiIndicator";
 import { apiToFuture } from "$/data/api-futures";
-import { D2ApiConfig, D2Config, metadataCodes } from "$/data/repositories/D2ApiMetadata";
+import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { convertToCategories } from "$/data/utils";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
-import { Config, UserGroup } from "$/domain/entities/Config";
+import { Config } from "$/domain/entities/Config";
 import { Project } from "$/domain/entities/Project";
 import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
+import { UserGroup } from "$/domain/entities/UserGroup";
+import { DEFAULT_UNIT_DATE } from "$/domain/entities/UnitDate";
 
 export class ConfigD2Repository implements ConfigRepository {
     private d2ApiConfig: D2ApiConfig;
@@ -20,12 +22,24 @@ export class ConfigD2Repository implements ConfigRepository {
     }
 
     get(): FutureData<Config> {
-        return this.getOrgUnitLevelGroup().flatMap(orgUnitLevel => {
-            return Future.joinObj({
-                regions: this.getRegions(orgUnitLevel),
-                userGroups: this.getUserGroups(),
-                indicators: this.getIndicators(),
-                categoryCombinations: this.getCategoryCombos([], 1),
+        return this.getConfig().flatMap(apiConfig => {
+            return Future.joinObj(
+                {
+                    regions: this.getRegions(apiConfig.organisationUnitLevels.country.level),
+                    userGroups: this.getUserGroups(),
+                    indicators: this.getIndicators(),
+                    categoryCombinations: this.getCategoryCombos([], 1),
+                },
+                { concurrency: 4 }
+            ).map(response => {
+                return {
+                    ...response,
+                    periodEndDateMonth: apiConfig.periodEndDateMonth,
+                    periodEndDateDay: apiConfig.periodEndDateDay,
+                    periodLastYearEndDate: apiConfig.periodLastYearEndDate,
+                    notificationUserGroup: apiConfig.userGroups.adminNotification,
+                    periodLastYearUnits: apiConfig.periodLastYearUnits || DEFAULT_UNIT_DATE,
+                };
             });
         });
     }
@@ -41,13 +55,13 @@ export class ConfigD2Repository implements ConfigRepository {
                     displayName: true,
                     categories: {
                         id: true,
+                        name: true,
                         displayName: true,
                         categoryOptions: { id: true, displayName: true },
                     },
                 },
                 filter: {
                     dataDimensionType: { eq: "DISAGGREGATION" },
-                    isDefault: { eq: "false" },
                 },
                 pageSize: 200,
                 page: page,
@@ -58,6 +72,7 @@ export class ConfigD2Repository implements ConfigRepository {
                     id: d2CategoryCombo.id,
                     name: d2CategoryCombo.displayName,
                     categories: convertToCategories(d2CategoryCombo.categories),
+                    optionsCombos: [],
                 });
             });
             if (d2Response.pager.page < d2Response.pager.pageCount) {
@@ -77,26 +92,15 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getIndicators() {
         return this.getConfig().flatMap(config => {
-            return Future.joinObj({
-                outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
-                outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
-            }).map(({ outcomeIndicators, outputIndicators }) => {
+            return Future.joinObj(
+                {
+                    outcomeIndicators: this.d2ApiIndicator.getOutcomeIndicators(config),
+                    outputIndicators: this.d2ApiIndicator.getOutputIndicators(config),
+                },
+                { concurrency: 2 }
+            ).map(({ outcomeIndicators, outputIndicators }) => {
                 return outcomeIndicators.concat(outputIndicators);
             });
-        });
-    }
-
-    private getOrgUnitLevelGroup(): FutureData<number> {
-        return apiToFuture(
-            this.api.models.organisationUnitLevels.get({
-                fields: { id: true, level: true },
-                filter: { name: { eq: metadataCodes.orgUnitLevels.country } },
-            })
-        ).flatMap(d2Response => {
-            const orgUnitLevel = d2Response.objects[0];
-            return orgUnitLevel
-                ? Future.success(orgUnitLevel.level)
-                : Future.error(new Error("Country level not found"));
         });
     }
 
@@ -119,10 +123,7 @@ export class ConfigD2Repository implements ConfigRepository {
 
     private getUserGroups(): FutureData<UserGroup[]> {
         return apiToFuture(
-            this.api.models.userGroups.get({
-                fields: { id: true, name: true },
-                paging: false,
-            })
+            this.api.models.userGroups.get({ fields: { id: true, name: true }, paging: false })
         ).map(d2Response => {
             return d2Response.objects.map(d2UserGroup => ({
                 id: d2UserGroup.id,

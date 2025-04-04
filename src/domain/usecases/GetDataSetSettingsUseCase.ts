@@ -6,14 +6,12 @@ import { Id } from "$/domain/entities/Ref";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { CoreCompetencyRepository } from "$/domain/repositories/CoreCompetencyRepository";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
-import { IndicatorRepository } from "$/domain/repositories/IndicatorRepository";
 import i18n from "$/utils/i18n";
 import { getUid } from "$/utils/uid";
 
 export class GetDataSetSettingsUseCase {
     constructor(
         private coreCompetencyRepository: CoreCompetencyRepository,
-        private indicatorRepository: IndicatorRepository,
         private dataSetRepository: DataSetRepository,
         private config: Config
     ) {}
@@ -35,19 +33,20 @@ export class GetDataSetSettingsUseCase {
     private getIndicatorsFromDataSet(dataSet: DataSet): Indicator[] {
         return this.config.indicators.map(indicator => {
             const existingIndicator = dataSet.indicators.find(ind => ind.id === indicator.id);
-            return existingIndicator
-                ? Indicator.create({
-                      ...indicator,
-                      disaggregation:
-                          existingIndicator.type === "outputs"
-                              ? existingIndicator.disaggregation
-                              : undefined,
-                      relatedDataElements:
-                          existingIndicator.type === "outcomes"
-                              ? existingIndicator.relatedDataElements
-                              : [],
-                  })
-                : indicator;
+            if (!existingIndicator) return indicator;
+
+            const disaggregation =
+                existingIndicator.type === "outputs" ? existingIndicator.disaggregation : undefined;
+
+            const relatedDataElements =
+                existingIndicator.type === "outcomes" ? existingIndicator.relatedDataElements : [];
+
+            return Indicator.create({
+                ...indicator,
+                initialDisaggregation: disaggregation,
+                disaggregation: disaggregation,
+                relatedDataElements: relatedDataElements,
+            });
         });
     }
 
@@ -60,10 +59,5 @@ export class GetDataSetSettingsUseCase {
                 ? Future.success(dataSet)
                 : Future.error(new Error(i18n.t("DataSet not found")));
         });
-    }
-
-    private getExistingIndicators(dataSetId: Id): FutureData<Indicator[]> {
-        if (!dataSetId) return Future.success([]);
-        return this.indicatorRepository.getByDataSetId(dataSetId);
     }
 }

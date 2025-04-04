@@ -82,6 +82,13 @@ export const muiTheme = createTheme({
         // useNextVariants: true,
     },
     overrides: {
+        MuiMenuItem: {
+            root: {
+                "&$selected": {
+                    backgroundColor: "rgb(253 90 0 / 50%)",
+                },
+            },
+        },
         MuiDivider: {
             light: {
                 backgroundColor: palette.divider, // No light dividers for now
