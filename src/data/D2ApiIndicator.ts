@@ -194,10 +194,10 @@ export class D2ApiIndicator {
                 if (!scope) return undefined;
 
                 const theme = indicator.indicatorGroups.find(
-                    ig => ig.indicatorGroupSet.id === config.indicatorGroupSets.theme.id
+                    ig => ig.indicatorGroupSet?.id === config.indicatorGroupSets.theme.id
                 );
                 const status = indicator.indicatorGroups.find(
-                    ig => ig.indicatorGroupSet.id === config.indicatorGroupSets.status.id
+                    ig => ig.indicatorGroupSet?.id === config.indicatorGroupSets.status.id
                 );
                 const group = indicator.attributeValues.find(
                     attribute => attribute.attribute.id === config.attributes.group.id
@@ -342,7 +342,7 @@ type D2IndicatorGroup = {
         indicatorGroups: Array<{
             displayName: string;
             id: Id;
-            indicatorGroupSet: { id: Id; displayName: string };
+            indicatorGroupSet?: { id: Id; displayName: string };
         }>;
         numerator: string;
     }>;
