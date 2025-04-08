@@ -65,7 +65,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     updateProject(project: Maybe<Project>, config: Config): DataSet {
-        const name = project ? `${project.name} DataSet` : "";
+        const name = project ? `${project.code} DataSet` : "";
         const shortName = this.truncateValue(name);
         const orgsUnits = project ? project.orgsUnits : this.orgUnits;
 

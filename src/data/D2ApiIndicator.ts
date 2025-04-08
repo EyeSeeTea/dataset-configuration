@@ -14,7 +14,7 @@ export class D2ApiIndicator {
 
     getOutcomeIndicators(config: D2Config): FutureData<Indicator[]> {
         return this.getCompetencies(config).flatMap(competencies => {
-            const competenciesNames = competencies.map(c => c.name);
+            const competenciesNames = competencies.map(c => c.initialName);
             return this.getIndicatorGroupsByCompetencies(competenciesNames).map(d2Response => {
                 return d2Response.objects.flatMap(indicatorGroup => {
                     return this.buildOutcomeIndicators(competencies, indicatorGroup, config);
@@ -103,13 +103,13 @@ export class D2ApiIndicator {
         );
     }
 
-    private getCompetencies(config: D2Config): FutureData<CoreCompetency[]> {
+    private getCompetencies(config: D2Config): FutureData<D2DataElementGroup[]> {
         return apiToFuture(
             this.api.models.dataElementGroupSets.get({
                 fields: {
                     id: true,
                     displayName: true,
-                    dataElementGroups: { id: true, code: true, displayName: true },
+                    dataElementGroups: { id: true, code: true, displayName: true, name: true },
                 },
                 filter: { id: { eq: config.dataElementGroupSets.coreCompetency.id } },
             })
@@ -121,6 +121,7 @@ export class D2ApiIndicator {
                 id: deg.id,
                 code: deg.code,
                 name: deg.displayName,
+                initialName: deg.name,
             }));
             return Future.success(competencies);
         });
@@ -179,12 +180,12 @@ export class D2ApiIndicator {
     }
 
     private buildOutcomeIndicators(
-        competencies: CoreCompetency[],
+        competencies: D2DataElementGroup[],
         indicatorGroup: D2IndicatorGroup,
         config: D2Config
     ): Indicator[] {
         const competency = competencies.find(
-            c => c.name.toLowerCase() === indicatorGroup.name.toLowerCase()
+            c => c.initialName.toLowerCase() === indicatorGroup.name.toLowerCase()
         );
         if (!competency) return [];
 
@@ -225,46 +226,6 @@ export class D2ApiIndicator {
                 });
             })
             .value();
-    }
-
-    private getDataElementGroupsByCompetencies(coreCompetencyId: string) {
-        return apiToFuture(
-            this.api.models.dataElementGroupSets.get({
-                fields: {
-                    id: true,
-                    displayName: true,
-                    dataElementGroups: {
-                        id: true,
-                        code: true,
-                        displayName: true,
-                        dataElements: {
-                            id: true,
-                            displayName: true,
-                            displayDescription: true,
-                            valueType: true,
-                            code: true,
-                            categoryCombo: {
-                                id: true,
-                                displayName: true,
-                                categories: {
-                                    id: true,
-                                    name: true,
-                                    displayName: true,
-                                    categoryOptions: { id: true, displayName: true },
-                                },
-                            },
-                            dataElementGroups: {
-                                id: true,
-                                displayName: true,
-                                groupSets: { id: true, displayName: true },
-                            },
-                            attributeValues: { attribute: { id: true }, value: true },
-                        },
-                    },
-                },
-                filter: { id: { eq: coreCompetencyId } },
-            })
-        );
     }
 
     private buildOutputIndicator(
@@ -371,3 +332,5 @@ type D2DataElementFromGroup = {
     }>;
     attributeValues: Array<{ attribute: { id: Id }; value: string }>;
 };
+
+type D2DataElementGroup = CoreCompetency & { initialName: string };
