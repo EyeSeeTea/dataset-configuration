@@ -20,6 +20,13 @@ export class Permission extends Struct<PermissionAttrs>() {
                 : Permission.create({ read: true, write: false }),
         };
     }
+
+    static initialPermissions(): Permissions {
+        return {
+            data: Permission.create({ read: false, write: false }),
+            metadata: Permission.create({ read: false, write: false }),
+        };
+    }
 }
 
 export type Permissions = { data: Permission; metadata: Permission };

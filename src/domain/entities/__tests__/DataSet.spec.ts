@@ -1,4 +1,5 @@
 import { DataSet, DataSetAttrs } from "$/domain/entities/DataSet";
+import { Permission } from "$/domain/entities/Permission";
 import { Project } from "$/domain/entities/Project";
 import { getErrorMessageFromErrors } from "$/domain/entities/generic/Error";
 import { configTest } from "$/utils/tests";
@@ -13,6 +14,20 @@ const projectTest: Project = Project.create({
     lastUpdated: new Date().toISOString(),
     orgsUnits: [],
     dataSets: [],
+    access: [
+        {
+            id: "",
+            name: "AF_Administrators",
+            type: "groups",
+            permissions: Permission.initialPermissions(),
+        },
+        {
+            id: "",
+            name: "AF_Users",
+            type: "groups",
+            permissions: Permission.initialPermissions(),
+        },
+    ],
 });
 
 describe("DataSet", () => {
@@ -55,7 +70,7 @@ describe("DataSet", () => {
         expectUserGroups(dataSetToSave);
     });
 
-    it("should have access groups from project code", async () => {
+    it("should have access groups from project access groups", async () => {
         const dataSetToSave = createDataSet({
             name: "Test DataSet",
             indicators: [],

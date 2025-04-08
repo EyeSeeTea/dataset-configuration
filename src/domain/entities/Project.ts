@@ -1,8 +1,9 @@
-import { DataSet, OrgUnit } from "$/domain/entities/DataSet";
+import { AccessData, DataSet, OrgUnit } from "$/domain/entities/DataSet";
 import { ISODateString, Id } from "$/domain/entities/Ref";
 import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
+import _ from "$/domain/entities/generic/Collection";
 
 export type ProjectAttrs = {
     id: Id;
@@ -12,9 +13,19 @@ export type ProjectAttrs = {
     dataSets: DataSet[];
     lastUpdated: ISODateString;
     orgsUnits: OrgUnit[];
+    access: AccessData[];
 };
 
 export class Project extends Struct<ProjectAttrs>() {
+    get uniqueAccessCodes() {
+        return _(this.access)
+            .filter(access => access.type === "groups")
+            .map(access => Project.extractCode(access.name))
+            .filter(accessCode => accessCode.length > 0)
+            .uniq()
+            .value();
+    }
+
     static build(data: ProjectAttrs): Project {
         if (!data.id) {
             throw new Error(i18n.t("Project id is required"));

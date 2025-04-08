@@ -26,6 +26,7 @@ import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import isEqual from "lodash/isEqual";
+import { D2ApiSharing } from "$/data/D2ApiSharing";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
@@ -33,10 +34,12 @@ const CUSTOM_FORM_STYLE = "NORMAL" as const;
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
     private D2ApiCategoryCombo: D2ApiCategoryCombo;
+    private d2ApiSharing: D2ApiSharing;
 
     constructor(private api: D2Api, private config: Config) {
         this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
         this.D2ApiCategoryCombo = new D2ApiCategoryCombo(this.api);
+        this.d2ApiSharing = new D2ApiSharing();
     }
 
     getByName(name: string): FutureData<DataSetName[]> {
@@ -657,6 +660,7 @@ export class DataSetD2Repository implements DataSetRepository {
         existingAttributes: Maybe<D2AttributeValue[]>,
         config: D2Config
     ) {
+        const sharingData = this.d2ApiSharing.generateSharingData(dataSet);
         return {
             renderAsTabs: true,
             dataElementDecoration: true,
@@ -668,32 +672,15 @@ export class DataSetD2Repository implements DataSetRepository {
             name: dataSet.name,
             periodType: "Monthly",
             description: dataSet.description,
-            publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
+            publicAccess: sharingData.publicAccess,
             dataSetElements: this.buildDataSetElements(dataSet),
             indicators: _(dataSet.indicators)
                 .filter(indicator => indicator.type === "outcomes")
                 .map(indicator => ({ id: indicator.id }))
                 .uniqBy(indicator => indicator.id)
                 .value(),
-            userAccesses: dataSet.access
-                .filter(access => access.type === "users")
-                .map(access => {
-                    return {
-                        access: this.d2DataSetApi.generateFullPermission(access.permissions),
-                        id: access.id,
-                        displayName: access.name,
-                    };
-                }),
-            userGroupAccesses: _(dataSet.access)
-                .filter(access => access.type === "groups")
-                .map(groupAccess => {
-                    return {
-                        access: this.d2DataSetApi.generateFullPermission(groupAccess.permissions),
-                        id: groupAccess.id,
-                        displayName: groupAccess.name,
-                    };
-                })
-                .value(),
+            userAccesses: sharingData.userAccesses,
+            userGroupAccesses: sharingData.userGroupAccesses,
             organisationUnits: dataSet.orgUnits.map(ou => ({ id: ou.id })),
             attributeValues: this.buildD2Attributes(existingAttributes, dataSet, config.attributes),
             notifyCompletingUser: dataSet.notifyUser,

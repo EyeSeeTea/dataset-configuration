@@ -214,10 +214,14 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
         if (!project || !project.code) return [];
-        const regionCode = extractRegionCode(project.code);
 
-        const region = config.regions.find(region => region.code === regionCode);
-        const userGroups = config.userGroups.filter(userGroup => userGroup.code === region?.code);
+        const regionCodes = config.regions
+            .filter(region => project.uniqueAccessCodes.includes(region.code))
+            .map(region => region.code);
+
+        const userGroups = config.userGroups.filter(userGroup =>
+            regionCodes.includes(userGroup.code)
+        );
 
         return this.buildAccessGroups(userGroups);
     }
