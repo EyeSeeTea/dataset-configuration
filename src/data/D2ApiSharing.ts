@@ -43,16 +43,22 @@ export class D2ApiSharing {
         permissions: Permissions;
     }): D2ApiSharingFieldsSave {
         const { access, permissions } = options;
+
+        const convertToD2AccessRecords = (
+            filteredAccess: AccessData[],
+            type: AccessType
+        ): D2AccessRecords => {
+            return _(filteredAccess)
+                .filter(access => access.type === type)
+                .map(access => [access.id, this.generateD2PermissionFromAccess(access)])
+                .fromPairs()
+                .value();
+        };
+
         return {
-            publicAccess: this.generateFullPermission(permissions),
-            userAccesses: _(access)
-                .filter(access => access.type === "users")
-                .map(access => this.generateD2PermissionFromAccess(access))
-                .value(),
-            userGroupAccesses: _(access)
-                .filter(access => access.type === "groups")
-                .map(access => this.generateD2PermissionFromAccess(access))
-                .value(),
+            public: this.generateFullPermission(permissions),
+            users: convertToD2AccessRecords(access, "users"),
+            userGroups: convertToD2AccessRecords(access, "groups"),
         };
     }
 
@@ -117,9 +123,9 @@ type D2ApiSharingName = {
 };
 
 type D2ApiSharingFieldsSave = {
-    publicAccess: OctalNotationPermission;
-    userAccesses: D2ApiSharingName[];
-    userGroupAccesses: D2ApiSharingName[];
+    public: OctalNotationPermission;
+    users: D2AccessRecords;
+    userGroups: D2AccessRecords;
 };
 
 // example: r------- // rw------

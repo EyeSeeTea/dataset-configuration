@@ -317,10 +317,15 @@ export class DataSetD2Repository implements DataSetRepository {
             }
 
             const existingAttributes = existingDataSet?.attributeValues;
+            const sharingData = this.d2ApiSharing.generateSharingData(dataSet);
 
             const result = {
                 ...(existingDataSet || {}),
                 ...this.buildD2DataSet(dataSet, existingAttributes, config),
+                sharing: {
+                    ...(existingDataSet?.sharing || {}),
+                    ...sharingData,
+                },
             };
 
             const existingDataSetSections = existingSections.filter(
@@ -335,8 +340,7 @@ export class DataSetD2Repository implements DataSetRepository {
                 existingDataSetSections
             );
 
-            const { sharing: _, ...rest } = result;
-            return { ...rest, dataEntryForm: customForm };
+            return { ...result, dataEntryForm: customForm };
         });
     }
 
@@ -660,7 +664,6 @@ export class DataSetD2Repository implements DataSetRepository {
         existingAttributes: Maybe<D2AttributeValue[]>,
         config: D2Config
     ) {
-        const sharingData = this.d2ApiSharing.generateSharingData(dataSet);
         return {
             renderAsTabs: true,
             dataElementDecoration: true,
@@ -672,15 +675,12 @@ export class DataSetD2Repository implements DataSetRepository {
             name: dataSet.name,
             periodType: "Monthly",
             description: dataSet.description,
-            publicAccess: sharingData.publicAccess,
             dataSetElements: this.buildDataSetElements(dataSet),
             indicators: _(dataSet.indicators)
                 .filter(indicator => indicator.type === "outcomes")
                 .map(indicator => ({ id: indicator.id }))
                 .uniqBy(indicator => indicator.id)
                 .value(),
-            userAccesses: sharingData.userAccesses,
-            userGroupAccesses: sharingData.userGroupAccesses,
             organisationUnits: dataSet.orgUnits.map(ou => ({ id: ou.id })),
             attributeValues: this.buildD2Attributes(existingAttributes, dataSet, config.attributes),
             notifyCompletingUser: dataSet.notifyUser,
