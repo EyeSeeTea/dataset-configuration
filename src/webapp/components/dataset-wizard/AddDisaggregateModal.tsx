@@ -187,7 +187,7 @@ export type AddDisaggregateMode = (typeof disaggregationModes)[number]["value"];
 const StickyCloseButton = styled.div`
     position: sticky;
     padding-inline-end: 1em;
-    top: 0;
+    top: 0.5em;
     z-index: 1;
     text-align: right;
 `;
