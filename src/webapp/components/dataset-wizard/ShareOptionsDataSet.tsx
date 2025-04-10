@@ -31,12 +31,11 @@ export const ShareOptionsDataSet_ = React.memo((props: ShareOptionsDataSetProps)
         <div>
             <p>{i18n.t("Please select the regions you want to share this dataSet with")}</p>
             <MultiSelector
-                d2={{}}
-                ordered
                 options={filterRegionsWithoutUserGroups(config).map(region => ({
                     text: region.name,
                     value: region.code,
                 }))}
+                ordered={false}
                 selected={selectedRegions.map(region => region.code)}
                 onChange={updateRegions}
             />
