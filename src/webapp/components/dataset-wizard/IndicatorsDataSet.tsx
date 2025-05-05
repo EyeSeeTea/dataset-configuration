@@ -22,6 +22,8 @@ import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Maybe } from "$/utils/ts-utils";
 import styled from "styled-components";
+import { useGetMasterLogFrameByCodes } from "$/webapp/hooks/useMasterLogFrame";
+import { MasterLogFrame } from "$/domain/entities/MasterLogFrame";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -65,11 +67,19 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [selectedIndicators, setSelectedIndicators] = React.useState<Id[]>(
         dataSet.indicators.map(indicator => indicator.id)
     );
+    const [selectedMLF, setSelectedMLF] = React.useState<string>("");
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
     const [sorting, setSorting] = React.useState<TableSorting<Indicator>>({
         field: "status",
         order: "asc",
     });
+
+    const accessCodes = React.useMemo(() => dataSet.getRegionCodesFromAccess(), [dataSet]);
+    const { error: errorMlf, loading, masterLogFrames } = useGetMasterLogFrameByCodes(accessCodes);
+
+    const currentMlf = React.useMemo(() => {
+        return masterLogFrames.find(mlf => mlf.id === selectedMLF);
+    }, [masterLogFrames, selectedMLF]);
 
     const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
         indicators,
@@ -80,6 +90,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf: currentMlf,
     });
 
     const validateIndicators = useValidateIndicators({
@@ -141,6 +152,9 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             case "measure":
                 setMeasure(singleItemValue);
                 break;
+            case "MLF":
+                setSelectedMLF(singleItemValue);
+                break;
         }
     }, []);
 
@@ -189,6 +203,12 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         onClose={() => setShowFilterModal(false)}
                         indicatorsPerCompetency={indicatorsPerCompetency}
                         indicatorsPerType={indicatorsPerType}
+                        masterLogFrames={{
+                            data: masterLogFrames,
+                            loading,
+                            error: errorMlf,
+                            value: selectedMLF,
+                        }}
                     />
                 </FilterWrapper>
 
@@ -275,6 +295,7 @@ function useFilterIndicators(props: {
     selectedTheme: string;
     selectedFilterValue: Maybe<SelectedFilterValue>;
     selectedIndicators: Id[];
+    selectedMlf: Maybe<MasterLogFrame>;
 }) {
     const {
         indicators,
@@ -285,7 +306,10 @@ function useFilterIndicators(props: {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf,
     } = props;
+
+    const indicatorsByMlf = _(selectedMlf?.indicators || []).keyBy(indicator => indicator.id);
 
     const allThemes = React.useMemo(() => {
         return _(indicators)
@@ -317,8 +341,10 @@ function useFilterIndicators(props: {
 
                 const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
                 const isInMeasure = selectedMeasure ? indicator.measure === selectedMeasure : true;
+                const isInMLF = selectedMlf ? Boolean(indicatorsByMlf.get(indicator.id)?.id) : true;
 
                 return (
+                    isInMLF &&
                     isInMeasure &&
                     isInTheme &&
                     isInCompetency &&
@@ -338,6 +364,8 @@ function useFilterIndicators(props: {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf,
+        indicatorsByMlf,
     ]);
 
     return { allMeasures, allThemes, filteredRows };
