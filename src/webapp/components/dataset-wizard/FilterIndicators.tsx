@@ -34,12 +34,23 @@ export type FilterWrapperProps = {
     mode: FilterMode;
     children: React.JSX.Element;
     showDrawer: boolean;
+    onClose: () => void;
 };
 
 export type FilterMode = "default" | "drawer";
 
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
-    const { children, mode, showDrawer } = props;
+    const { children, mode, showDrawer, onClose } = props;
+
+    const closeOnEscape = React.useCallback(
+        (_event: unknown, reason: "backdropClick" | "escapeKeyDown") => {
+            if (reason === "escapeKeyDown" && onClose) {
+                onClose();
+            }
+        },
+        [onClose]
+    );
+
     switch (mode) {
         case "default":
             return (
@@ -48,7 +59,11 @@ export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
                 </Grid>
             );
         case "drawer":
-            return <Drawer open={showDrawer}>{children}</Drawer>;
+            return (
+                <Drawer onClose={closeOnEscape} open={showDrawer}>
+                    {children}
+                </Drawer>
+            );
         default:
             return null;
     }

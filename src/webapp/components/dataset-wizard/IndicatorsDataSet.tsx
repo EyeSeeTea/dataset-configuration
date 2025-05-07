@@ -172,6 +172,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 <FilterWrapper
                     mode={isLargeDesktop ? "default" : "drawer"}
                     showDrawer={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
                 >
                     <FilterIndicators
                         measures={allMeasures}
