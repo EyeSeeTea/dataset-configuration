@@ -77,9 +77,13 @@ export class MasterLogFrameD2Repository implements MasterLogFrameRepository {
                 ? d2Group.indicators
                 : [];
 
+        const description = this.isDataElementGroup(d2Group)
+            ? d2Group.displayDescription
+            : d2Group.description;
+
         return {
             id: d2Group.id,
-            name: d2Group.displayName,
+            name: description || d2Group.displayName,
             type: indicatorType,
             indicators: _(items)
                 .map(d2DataElement => ({ id: d2DataElement.id }))
@@ -145,8 +149,16 @@ const dataElementGroupFields = {
     displayName: true,
     code: true,
     dataElements: true,
+    displayDescription: true,
 } as const;
-const indicatorGroupFields = { id: true, displayName: true, code: true, indicators: true };
+
+const indicatorGroupFields = {
+    id: true,
+    displayName: true,
+    code: true,
+    indicators: true,
+    description: true,
+};
 
 type D2DataElementGroup = MetadataPick<{
     dataElementGroups: { fields: typeof dataElementGroupFields };

@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-04-02T18:02:53.605Z\n"
+"POT-Creation-Date: 2025-05-07T15:49:30.462Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -88,9 +88,6 @@ msgstr ""
 
 msgid "DataSet not found"
 msgstr "DataSet no encontrado"
-
-msgid "Data set name already exists: {{dataSetName}}"
-msgstr "Ya existe un dataset con el nombre: {{dataSetName}}"
 
 msgid "There has been an error when dataset '{{dataSetName}}' was being saved."
 msgstr ""
@@ -300,6 +297,18 @@ msgid "Origin"
 msgstr ""
 
 msgid "Type"
+msgstr ""
+
+msgid "Error loading MLF's: {{error}}"
+msgstr ""
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Master Log Frames"
+msgstr ""
+
+msgid "No MLF's available for this dataSet"
 msgstr ""
 
 msgid "Additional"
@@ -547,6 +556,3 @@ msgstr ""
 
 msgid "Updating period date"
 msgstr ""
-
-msgid "Loading..."
-msgstr "Cargando..."

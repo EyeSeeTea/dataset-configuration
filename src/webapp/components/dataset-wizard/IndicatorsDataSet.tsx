@@ -1,5 +1,6 @@
 import React from "react";
 import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
+import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import {
     ObjectsTable,
     ObjectsTableProps,
@@ -19,7 +20,6 @@ import { Indicator } from "$/domain/entities/Indicator";
 import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Maybe } from "$/utils/ts-utils";
 import styled from "styled-components";
 import { useGetMasterLogFrameByCodes } from "$/webapp/hooks/useMasterLogFrame";
@@ -145,6 +145,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 break;
             case "outputType":
                 setType(singleItemValue);
+                setSelectedMLF("");
                 break;
             case "theme":
                 setTheme(singleItemValue);
@@ -168,10 +169,20 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             })
             .join(", ");
 
-        return _([scope, selectedType, competencies, selectedTheme])
+        const selectedMLFName = masterLogFrames.find(mlf => mlf.id === selectedMLF)?.name ?? "";
+
+        return _([scope, selectedType, competencies, selectedTheme, selectedMLFName])
             .filter(item => item.length > 0)
             .join(", ");
-    }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedTheme]);
+    }, [
+        coreCompetencies,
+        scope,
+        selectedCompetencies,
+        selectedType,
+        selectedTheme,
+        masterLogFrames,
+        selectedMLF,
+    ]);
 
     const indicatorsPerCompetency = useBuildTotalByKey(
         dataSet.indicators,
