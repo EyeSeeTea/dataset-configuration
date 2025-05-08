@@ -34,12 +34,14 @@ export type FilterWrapperProps = {
     mode: FilterMode;
     children: React.JSX.Element;
     showDrawer: boolean;
+    onClose: () => void;
 };
 
 export type FilterMode = "default" | "drawer";
 
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
-    const { children, mode, showDrawer } = props;
+    const { children, mode, showDrawer, onClose } = props;
+
     switch (mode) {
         case "default":
             return (
@@ -48,7 +50,11 @@ export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
                 </Grid>
             );
         case "drawer":
-            return <Drawer open={showDrawer}>{children}</Drawer>;
+            return (
+                <Drawer onClose={onClose} open={showDrawer}>
+                    {children}
+                </Drawer>
+            );
         default:
             return null;
     }
