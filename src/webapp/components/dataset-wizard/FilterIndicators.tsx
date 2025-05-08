@@ -42,15 +42,6 @@ export type FilterMode = "default" | "drawer";
 export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
     const { children, mode, showDrawer, onClose } = props;
 
-    const closeOnEscape = React.useCallback(
-        (_event: unknown, reason: "backdropClick" | "escapeKeyDown") => {
-            if (reason === "escapeKeyDown" && onClose) {
-                onClose();
-            }
-        },
-        [onClose]
-    );
-
     switch (mode) {
         case "default":
             return (
@@ -60,7 +51,7 @@ export const FilterWrapper = React.memo((props: FilterWrapperProps) => {
             );
         case "drawer":
             return (
-                <Drawer onClose={closeOnEscape} open={showDrawer}>
+                <Drawer onClose={onClose} open={showDrawer}>
                     {children}
                 </Drawer>
             );
