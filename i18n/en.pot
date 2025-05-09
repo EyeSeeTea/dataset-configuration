@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-04-02T18:02:53.605Z\n"
-"PO-Revision-Date: 2025-04-02T18:02:53.605Z\n"
+"POT-Creation-Date: 2025-05-09T22:00:25.109Z\n"
+"PO-Revision-Date: 2025-05-09T22:00:25.109Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -317,10 +317,7 @@ msgstr ""
 msgid "Core competency"
 msgstr ""
 
-msgid "Group"
-msgstr ""
-
-msgid "Disaggregation"
+msgid "Suggested Companion Indicators"
 msgstr ""
 
 msgid "Active Filters"
@@ -333,6 +330,12 @@ msgid "Selected"
 msgstr ""
 
 msgid "No Selected"
+msgstr ""
+
+msgid "There are some suggested companion"
+msgstr ""
+
+msgid "Show them"
 msgstr ""
 
 msgid "Show closed projects"
@@ -392,6 +395,12 @@ msgstr ""
 msgid "Organisation Units"
 msgstr ""
 
+msgid "Not all the mandatory companions are selected: {{codes}}"
+msgstr ""
+
+msgid "One of these optional companion must be selected: {{codes}}"
+msgstr ""
+
 msgid "Data Element"
 msgstr ""
 
@@ -402,6 +411,9 @@ msgid "Setup"
 msgstr ""
 
 msgid "Indicators"
+msgstr ""
+
+msgid "Disaggregation"
 msgstr ""
 
 msgid "Disaggregation options"
@@ -543,6 +555,12 @@ msgid "Removing DataSets"
 msgstr ""
 
 msgid "Updating period date"
+msgstr ""
+
+msgid "Companion"
+msgstr ""
+
+msgid "Group"
 msgstr ""
 
 msgid "Loading..."
