@@ -845,4 +845,4 @@ export type D2SectionWithGreyFields = Omit<D2Section, "greyedFields"> & {
     }>;
 };
 
-type D2Attribute = { attribute: { id: Id }; value: string };
+export type D2Attribute = { attribute: { id: Id }; value: string };

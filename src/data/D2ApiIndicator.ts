@@ -1,15 +1,18 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { Indicator, IndicatorScope } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope, SuggestedIndicator } from "$/domain/entities/Indicator";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
-import { Id, Ref } from "$/domain/entities/Ref";
+import { Code, Id, Ref } from "$/domain/entities/Ref";
 import { Maybe } from "$/utils/ts-utils";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import { convertToCategories } from "$/data/utils";
+import { D2Attribute } from "$/data/repositories/DataSetD2Repository";
 
 export class D2ApiIndicator {
+    private companionSeparator = ",";
+
     constructor(private api: D2Api) {}
 
     getOutcomeIndicators(config: D2Config): FutureData<Indicator[]> {
@@ -204,6 +207,11 @@ export class D2ApiIndicator {
                     attribute => attribute.attribute.id === config.attributes.group.id
                 );
 
+                const suggestedCompanions = this.getSuggestedCompanionCodes(
+                    config.attributes,
+                    indicator.attributeValues
+                );
+
                 return Indicator.create({
                     measure: "",
                     valueType: "",
@@ -223,8 +231,43 @@ export class D2ApiIndicator {
                     disaggregation: undefined,
                     initialDisaggregation: undefined,
                     categories: [],
+                    suggestedCompanions: suggestedCompanions,
                 });
             })
+            .value();
+    }
+
+    private getSuggestedCompanionCodes(
+        attributes: D2Config["attributes"],
+        attributeValues: D2Attribute[]
+    ): SuggestedIndicator[] {
+        const mandatoryIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.mandatoryCompanionIndicator.id
+        );
+
+        const optionalIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.optionalCompanionIndicator.id
+        );
+
+        const mandatoryCodes = this.getCompanionCodesFromAttribute(mandatoryIndicatorsValues);
+        const optionalCodes = this.getCompanionCodesFromAttribute(optionalIndicatorsValues);
+
+        const mandatoryIndicators: Maybe<SuggestedIndicator> =
+            mandatoryCodes.length > 0 ? { codes: mandatoryCodes, type: "mandatory" } : undefined;
+
+        const optionalIndicators: Maybe<SuggestedIndicator> =
+            optionalCodes.length > 0 ? { codes: optionalCodes, type: "optional" } : undefined;
+
+        return _([mandatoryIndicators, optionalIndicators]).compact().value();
+    }
+
+    private getCompanionCodesFromAttribute(attributeValue: Maybe<D2Attribute>): Code[] {
+        if (!attributeValue) return [];
+
+        const mandatoryCodes = attributeValue?.value.split(this.companionSeparator);
+
+        return _(mandatoryCodes)
+            .compactMap(code => code.trim())
             .value();
     }
 
@@ -266,6 +309,11 @@ export class D2ApiIndicator {
               }
             : undefined;
 
+        const suggestedCompanions = this.getSuggestedCompanionCodes(
+            config.attributes,
+            dataElement.attributeValues
+        );
+
         return Indicator.create({
             measure: this.getValueOrEmpty(measure?.displayName),
             valueType: dataElement.valueType,
@@ -285,6 +333,7 @@ export class D2ApiIndicator {
             initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
+            suggestedCompanions: suggestedCompanions,
         });
     }
 }
@@ -296,7 +345,7 @@ type D2IndicatorGroup = {
     indicators: Array<{
         displayDescription: string;
         code: string;
-        attributeValues: Array<{ attribute: { id: Id }; value: string }>;
+        attributeValues: D2Attribute[];
         denominator: string;
         displayName: string;
         id: Id;
@@ -330,7 +379,7 @@ type D2DataElementFromGroup = {
         displayName: string;
         groupSets: Array<{ id: Id; displayName: string }>;
     }>;
-    attributeValues: Array<{ attribute: { id: Id }; value: string }>;
+    attributeValues: D2Attribute[];
 };
 
 type D2DataElementGroup = CoreCompetency & { initialName: string };

@@ -1,11 +1,8 @@
 import React from "react";
+import styled from "styled-components";
+import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
-import {
-    ObjectsTable,
-    ObjectsTableProps,
-    TableSorting,
-    TableState,
-} from "@eyeseetea/d2-ui-components";
+import { ObjectsTable, TableSorting, TableState, useSnackbar } from "@eyeseetea/d2-ui-components";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -19,9 +16,15 @@ import { Indicator } from "$/domain/entities/Indicator";
 import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
-import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Maybe } from "$/utils/ts-utils";
-import styled from "styled-components";
+import { useBooleanState } from "$/webapp/hooks/useBooleanState";
+import { HashMap } from "$/domain/entities/generic/HashMap";
+import { SnackBarAction } from "$/webapp/components/snack-bar-action/SnackBarAction";
+import {
+    IndicatorColumn,
+    useGetCompanionIndicators,
+    useIndicatorsTableColumns,
+} from "$/webapp/hooks/useIndicators";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -66,9 +69,17 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         dataSet.indicators.map(indicator => indicator.id)
     );
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
-    const [sorting, setSorting] = React.useState<TableSorting<Indicator>>({
+    const [sorting, setSorting] = React.useState<TableSorting<IndicatorColumn>>({
         field: "status",
         order: "asc",
+    });
+    const [companionTable, companionTableActions] = useBooleanState(false);
+
+    const indicatorsWithCompanion = useGetCompanionIndicators({
+        indicators,
+        selectedIndicators,
+        dataSet,
+        selectedFilterValue,
     });
 
     const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
@@ -88,40 +99,19 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         onChange,
         setSelectedIndicators,
         setSorting,
+        onShowCompanionIndicator: React.useCallback(
+            () => companionTableActions.enable(),
+            [companionTableActions]
+        ),
+        companionTable,
     });
 
-    const columns: ObjectsTableProps<Indicator>["columns"] = [
-        {
-            name: "id",
-            text: i18n.t("Id"),
-            hidden: true,
-        },
-        {
-            name: "name",
-            text: i18n.t("Name"),
-        },
-        {
-            name: "theme",
-            text: i18n.t("Theme"),
-        },
-        {
-            name: "group",
-            text: i18n.t("Group"),
-        },
-        {
-            name: "status",
-            text: i18n.t("Status"),
-            getValue: indicator => <StatusIndicator status={indicator.status} />,
-        },
-        {
-            name: "disaggregation",
-            text: i18n.t("Disaggregation"),
-        },
-    ];
+    const columns = useIndicatorsTableColumns({
+        showCompanionColumn: companionTable,
+        statusIndicator: indicator => <StatusIndicator status={indicator.status} />,
+    });
 
-    const openFilters = React.useCallback(() => {
-        setShowFilterModal(true);
-    }, []);
+    const openFilters = React.useCallback(() => setShowFilterModal(true), []);
 
     const updateFilter = React.useCallback((value: ChipItem[], filterType: FilterType) => {
         const singleItemValue = value[0]?.value || "";
@@ -166,6 +156,11 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
     const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
 
+    const toggleCompanionTable = React.useCallback(
+        () => companionTableActions.toggle(),
+        [companionTableActions]
+    );
+
     return (
         <form>
             <Grid container spacing={1}>
@@ -174,23 +169,37 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     showDrawer={showFilterModal}
                     onClose={() => setShowFilterModal(false)}
                 >
-                    <FilterIndicators
-                        measures={allMeasures}
-                        measure={selectedMeasure}
-                        scopes={scopes}
-                        scopeValue={[scope]}
-                        onFilterChange={updateFilter}
-                        coreCompetencies={coreCompetencies}
-                        showCloseButton={!isLargeDesktop}
-                        coreValues={selectedCompetencies}
-                        types={types}
-                        selectedType={selectedType}
-                        themes={allThemes}
-                        theme={selectedTheme}
-                        onClose={() => setShowFilterModal(false)}
-                        indicatorsPerCompetency={indicatorsPerCompetency}
-                        indicatorsPerType={indicatorsPerType}
-                    />
+                    <>
+                        <SuggestCompanionContainer>
+                            <Button
+                                variant={companionTable ? "contained" : "text"}
+                                color="primary"
+                                fullWidth
+                                onClick={toggleCompanionTable}
+                                disabled={indicatorsWithCompanion.length === 0}
+                            >
+                                {i18n.t("Suggested Companion Indicators")}
+                            </Button>
+                        </SuggestCompanionContainer>
+                        <FilterIndicators
+                            measures={allMeasures}
+                            measure={selectedMeasure}
+                            scopes={scopes}
+                            scopeValue={[scope]}
+                            onFilterChange={updateFilter}
+                            coreCompetencies={coreCompetencies}
+                            showCloseButton={!isLargeDesktop}
+                            coreValues={selectedCompetencies}
+                            types={types}
+                            selectedType={selectedType}
+                            themes={allThemes}
+                            theme={selectedTheme}
+                            onClose={() => setShowFilterModal(false)}
+                            indicatorsPerCompetency={indicatorsPerCompetency}
+                            indicatorsPerType={indicatorsPerType}
+                            hide={companionTable}
+                        />
+                    </>
                 </FilterWrapper>
 
                 <Grid item xs={1} style={{ flex: 0 }}>
@@ -213,7 +222,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
                     <ObjectsTable
                         columns={columns}
-                        rows={filteredRows}
+                        rows={companionTable ? indicatorsWithCompanion : filteredRows}
                         forceSelectionColumn
                         filterComponents={<FilterTable onChange={setSelectedFilterValue} />}
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
@@ -360,18 +369,52 @@ function useValidateIndicators(props: {
     onChange: (dataSet: DataSet) => void;
     dataSet: DataSet;
     setSelectedIndicators: React.Dispatch<React.SetStateAction<Id[]>>;
-    setSorting: React.Dispatch<React.SetStateAction<TableSorting<Indicator>>>;
+    setSorting: React.Dispatch<React.SetStateAction<TableSorting<IndicatorColumn>>>;
+    onShowCompanionIndicator: () => void;
+    companionTable: boolean;
 }) {
-    const { indicators, onChange, dataSet, setSelectedIndicators, setSorting } = props;
+    const [alertedIndicatorIds, setAlertedIndicatorIds] = React.useState<Set<Id>>(new Set());
+    const snackBar = useSnackbar();
+
+    const {
+        companionTable,
+        indicators,
+        onChange,
+        dataSet,
+        onShowCompanionIndicator,
+        setSelectedIndicators,
+        setSorting,
+    } = props;
+
+    const indicatorsById = React.useMemo(
+        () => _(indicators).keyBy(indicator => indicator.id),
+        [indicators]
+    );
 
     const validateIndicators = React.useCallback(
-        (state: TableState<Indicator>) => {
+        (state: TableState<IndicatorColumn>) => {
             const ids = state.selection.map(row => row.id);
+
+            const { showAlert, newIndicatorIdsToAlert } = getAlertedIndicatorIds(
+                alertedIndicatorIds,
+                ids,
+                indicatorsById
+            );
+
+            if (showAlert && !companionTable) {
+                snackBar.info(
+                    <SnackBarAction
+                        message={i18n.t("There are some suggested companion")}
+                        buttonText={i18n.t("Show them")}
+                        onClick={onShowCompanionIndicator}
+                    />,
+                    { autoHideDuration: 6000 }
+                );
+            }
+
             const currentIndicators = _(ids)
                 .compactMap(indicatorId => {
-                    const indicatorInfo = indicators.find(
-                        indicator => indicator.id === indicatorId
-                    );
+                    const indicatorInfo = indicatorsById.get(indicatorId);
                     if (!indicatorInfo) return undefined;
                     const updatedIndicator = dataSet.indicators.find(
                         indicator => indicator.id === indicatorId
@@ -387,11 +430,23 @@ function useValidateIndicators(props: {
                     });
                 })
                 .value();
+
+            setAlertedIndicatorIds(newIndicatorIdsToAlert);
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
             setSorting(state.sorting);
         },
-        [dataSet, indicators, onChange, setSelectedIndicators, setSorting]
+        [
+            companionTable,
+            dataSet,
+            alertedIndicatorIds,
+            indicatorsById,
+            onChange,
+            setSelectedIndicators,
+            setSorting,
+            snackBar,
+            onShowCompanionIndicator,
+        ]
     );
     return validateIndicators;
 }
@@ -408,13 +463,36 @@ function useBuildTotalByKey(
     }, [indicators, getKey]);
 }
 
+function getAlertedIndicatorIds(
+    existingIndicatorsAlerted: Set<Id>,
+    ids: Id[],
+    indicatorsById: HashMap<Id, Indicator>
+) {
+    const unAlertedIds = ids.filter(id => !existingIndicatorsAlerted.has(id));
+    const showAlert = unAlertedIds
+        .map(id => indicatorsById.get(id))
+        .some(row => row && row.suggestedCompanions.length > 0);
+
+    const newIndicatorIdsToAlert = new Set([
+        ...ids.filter(id => {
+            const indicator = indicatorsById.get(id)?.suggestedCompanions;
+            return indicator && indicator.length > 0;
+        }),
+    ]);
+
+    return { showAlert, newIndicatorIdsToAlert };
+}
+
 const selectedFilterValues = ["selected", "non-selected"] as const;
 
 export type SelectedFilterValue = (typeof selectedFilterValues)[number];
-
 export type IndicatorPerItem = { id: Id; totalIndicators: number };
 
 const ToggleButtonStyled = styled(ToggleButton)`
     backgroundcolor: none;
     border: none !important;
+`;
+
+const SuggestCompanionContainer = styled.div`
+    padding: 0.5em !important;
 `;

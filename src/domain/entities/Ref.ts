@@ -10,7 +10,7 @@ export interface NamedRef extends Ref {
 }
 
 export interface NamedCodeRef extends NamedRef {
-    code: string;
+    code: Code;
 }
 
 export function getRef<Obj extends Ref>(obj: Obj): Ref {
@@ -20,3 +20,5 @@ export function getRef<Obj extends Ref>(obj: Obj): Ref {
 export function getRefs<Obj extends Ref>(objs: Obj[]): Ref[] {
     return objs.map(getRef);
 }
+
+export type Code = string;

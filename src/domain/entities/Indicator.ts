@@ -2,7 +2,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Category } from "$/domain/entities/Category";
 import { COMMENT_SUFIX, DataElement } from "$/domain/entities/DataElement";
 import { CoreCompetency } from "$/domain/entities/DataSet";
-import { Id, NamedRef, Ref } from "$/domain/entities/Ref";
+import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe, UnionFromValues } from "$/utils/ts-utils";
@@ -33,6 +33,12 @@ export type IndicatorAttrs = {
     relatedDataElements: DataElement[];
     categories: Category[];
     valueType: string;
+    suggestedCompanions: SuggestedIndicator[];
+};
+
+export type SuggestedIndicator = {
+    type: "mandatory" | "optional";
+    codes: Code[];
 };
 
 export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
