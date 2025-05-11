@@ -11,7 +11,7 @@ export function useGetMasterLogFrameByCodes(codes: string[]) {
     React.useEffect(() => {
         if (codes.length === 0) return;
         setLoading(true);
-        return compositionRoot.masterLogFrames.getByCode.execute(codes).run(
+        return compositionRoot.masterLogFrames.getByCode.execute({ codes: codes }).run(
             masterLogFrames => {
                 setMasterLogFrames(masterLogFrames);
                 setLoading(false);

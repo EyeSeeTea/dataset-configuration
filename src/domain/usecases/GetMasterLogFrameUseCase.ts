@@ -5,7 +5,7 @@ import { MasterLogFrameRepository } from "$/domain/repositories/MasterLogFrameRe
 export class GetMasterLogFrameUseCase {
     constructor(private masterLogFrameRepository: MasterLogFrameRepository) {}
 
-    execute(codes: string[]): FutureData<MasterLogFrame[]> {
-        return this.masterLogFrameRepository.getByCode(codes);
+    execute(options: { codes: string[] }): FutureData<MasterLogFrame[]> {
+        return this.masterLogFrameRepository.getByCode(options.codes);
     }
 }
