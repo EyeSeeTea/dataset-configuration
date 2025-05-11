@@ -17,11 +17,10 @@ export type ProjectAttrs = {
 };
 
 export class Project extends Struct<ProjectAttrs>() {
-    get uniqueAccessCodes() {
+    get uniqueAccessCodes(): string[] {
         return _(this.access)
             .filter(access => access.type === "groups")
-            .map(access => Project.extractCode(access.name))
-            .filter(accessCode => accessCode.length > 0)
+            .compactMap(access => Project.extractCode(access.name))
             .uniq()
             .value();
     }
@@ -55,7 +54,7 @@ export class Project extends Struct<ProjectAttrs>() {
      * Output: "US"
      *
      */
-    static extractCode(value: string): string {
+    static extractCode(value: string): Maybe<string> {
         return (value.split("_")[0] || "").toUpperCase();
     }
 }

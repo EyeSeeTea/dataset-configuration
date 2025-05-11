@@ -19,13 +19,13 @@ const projectTest: Project = Project.create({
             id: "",
             name: "AF_Administrators",
             type: "groups",
-            permissions: Permission.initialPermissions(),
+            permissions: Permission.noPermissions(),
         },
         {
             id: "",
             name: "AF_Users",
             type: "groups",
-            permissions: Permission.initialPermissions(),
+            permissions: Permission.noPermissions(),
         },
     ],
 });

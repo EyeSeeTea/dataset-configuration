@@ -1,25 +1,13 @@
-import _ from "lodash";
 import { AccessData, AccessType } from "$/domain/entities/DataSet";
 import { Permission, Permissions } from "$/domain/entities/Permission";
+import { Id } from "$/domain/entities/Ref";
+import _ from "$/domain/entities/generic/Collection";
+import { HashMap } from "$/domain/entities/generic/HashMap";
 
 export class D2ApiSharing {
     buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
-        switch (permissionType) {
-            case "metadata": {
-                const { canRead, canWrite } = this.buildPermissionByType(
-                    permissions,
-                    permissionType
-                );
-                return Permission.create({ read: canRead, write: canWrite });
-            }
-            case "data": {
-                const { canWrite, canRead } = this.buildPermissionByType(
-                    permissions,
-                    permissionType
-                );
-                return Permission.create({ read: canRead, write: canWrite });
-            }
-        }
+        const { canRead, canWrite } = this.buildPermissionByType(permissions, permissionType);
+        return Permission.create({ read: canRead, write: canWrite });
     }
 
     generateFullPermission(permissions: Permissions): OctalNotationPermission {
@@ -50,9 +38,8 @@ export class D2ApiSharing {
         ): D2AccessRecords => {
             return _(filteredAccess)
                 .filter(access => access.type === type)
-                .map(access => [access.id, this.generateD2PermissionFromAccess(access)])
-                .fromPairs()
-                .value();
+                .toHashMap(access => [access.id, this.generateD2PermissionFromAccess(access)])
+                .toObject();
         };
 
         return {
@@ -78,7 +65,7 @@ export class D2ApiSharing {
     }
 
     private buildAccessByType(accessData: D2AccessRecords, type: AccessType): AccessData[] {
-        const accessRecords = _(accessData).values().value();
+        const accessRecords = HashMap.fromObject(accessData).values();
         return accessRecords.map((access): AccessData => {
             return {
                 id: access.id,
@@ -107,16 +94,15 @@ export class D2ApiSharing {
 }
 
 export type D2ApiSharingFields = {
-    owner: string;
     external: boolean;
     users: D2AccessRecords;
     userGroups: D2AccessRecords;
     public: string;
 };
 
-type D2AccessRecords = Record<string, D2ApiSharingName>;
+type D2AccessRecords = Record<UserOrGroupId, D2ApiSharingName>;
 
-type D2ApiSharingName = {
+export type D2ApiSharingName = {
     displayName?: string;
     access: string;
     id: string;
@@ -127,6 +113,8 @@ type D2ApiSharingFieldsSave = {
     users: D2AccessRecords;
     userGroups: D2AccessRecords;
 };
+
+type UserOrGroupId = Id;
 
 // example: r------- // rw------
 export type OctalNotationPermission = string;

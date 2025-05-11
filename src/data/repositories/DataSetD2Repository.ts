@@ -26,7 +26,7 @@ import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import isEqual from "lodash/isEqual";
-import { D2ApiSharing } from "$/data/D2ApiSharing";
+import { D2ApiSharing, D2ApiSharingName } from "$/data/D2ApiSharing";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
@@ -319,7 +319,7 @@ export class DataSetD2Repository implements DataSetRepository {
             const existingAttributes = existingDataSet?.attributeValues;
             const sharingData = this.d2ApiSharing.generateSharingData(dataSet);
 
-            const result = {
+            const d2DataSet: D2DataSetToSave = {
                 ...(existingDataSet || {}),
                 ...this.buildD2DataSet(dataSet, existingAttributes, config),
                 sharing: {
@@ -333,14 +333,14 @@ export class DataSetD2Repository implements DataSetRepository {
             );
 
             const customForm = this.buildDataEntryForm(
-                result,
+                d2DataSet,
                 dataSet,
                 ccByDataSet,
                 config,
                 existingDataSetSections
             );
 
-            return { ...result, dataEntryForm: customForm };
+            return { ...d2DataSet, dataEntryForm: customForm };
         });
     }
 
@@ -833,3 +833,33 @@ export type D2SectionWithGreyFields = Omit<D2Section, "greyedFields"> & {
 };
 
 type D2Attribute = { attribute: { id: Id }; value: string };
+
+type D2DataSetToSave = {
+    renderAsTabs: boolean;
+    dataElementDecoration: boolean;
+    categoryCombo: Ref;
+    id: Id;
+    shortName: string;
+    name: string;
+    periodType: string;
+    description: string;
+    dataSetElements: Array<{
+        dataSet: Ref;
+        dataElement: Ref;
+        categoryCombo: { id: Maybe<Id> };
+    }>;
+    indicators: Ref[];
+    organisationUnits: Ref[];
+    attributeValues: Array<{
+        attribute: Ref;
+        value: Maybe<string>;
+    }>;
+    notifyCompletingUser: boolean;
+    openFuturePeriods: number;
+    expiryDays: number;
+    sharing: {
+        public: string;
+        users: Record<Id, D2ApiSharingName>;
+        userGroups: Record<Id, D2ApiSharingName>;
+    };
+};
