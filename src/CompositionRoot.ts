@@ -67,6 +67,9 @@ import { UserRepository } from "./domain/repositories/UserRepository";
 import { GetCurrentUserUseCase } from "./domain/usecases/GetCurrentUserUseCase";
 import { D2Api } from "./types/d2-api";
 import { AddCoreCompetencyUseCase } from "$/domain/usecases/AddCoreCompetencyUseCase";
+import { GetMasterLogFrameUseCase } from "$/domain/usecases/GetMasterLogFrameUseCase";
+import { MasterLogFrameRepository } from "$/domain/repositories/MasterLogFrameRepository";
+import { MasterLogFrameD2Repository } from "$/data/repositories/MasterLogFrameD2Repository";
 
 export type CompositionRoot = ReturnType<typeof getCompositionRoot>;
 
@@ -86,6 +89,7 @@ type Repositories = {
     appSettingsDataRepository: AppSettingsDataRepository;
     notificationRepository: NotificationRepository;
     userGroupRepository: UserGroupRepository;
+    masterLogFrameRepository: MasterLogFrameRepository;
 };
 
 function getCompositionRoot(repositories: Repositories, config: Config) {
@@ -172,6 +176,9 @@ function getCompositionRoot(repositories: Repositories, config: Config) {
             get: new GetIndicatorsUseCase(repositories.indicatorRepository),
             getRelated: new GetRelatedIndicatorsUseCase(repositories.dataElementRepository),
         },
+        masterLogFrames: {
+            getByCode: new GetMasterLogFrameUseCase(repositories.masterLogFrameRepository),
+        },
     };
 }
 
@@ -192,6 +199,7 @@ export function getWebappCompositionRoot(api: D2Api, config: Config) {
         appSettingsDataRepository: new AppSettingsDataD2Repository(api),
         notificationRepository: new NotificationD2Repository(api),
         userGroupRepository: new UserGroupD2Repository(api),
+        masterLogFrameRepository: new MasterLogFrameD2Repository(api),
     };
 
     return getCompositionRoot(repositories, config);
@@ -214,6 +222,7 @@ export function getTestCompositionRoot() {
         appSettingsDataRepository: new AppSettingsDataTestRepository(),
         notificationRepository: new NotificationD2Repository({} as D2Api),
         userGroupRepository: new UserGroupD2Repository({} as D2Api),
+        masterLogFrameRepository: new MasterLogFrameD2Repository({} as D2Api),
     };
 
     return getCompositionRoot(repositories, {} as Config);

@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-04-02T18:02:53.605Z\n"
-"PO-Revision-Date: 2025-04-02T18:02:53.605Z\n"
+"POT-Creation-Date: 2025-05-07T15:49:30.462Z\n"
+"PO-Revision-Date: 2025-05-07T15:49:30.462Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -299,6 +299,18 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+msgid "Error loading MLF's: {{error}}"
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Master Log Frames"
+msgstr ""
+
+msgid "No MLF's available for this dataSet"
+msgstr ""
+
 msgid "Additional"
 msgstr ""
 
@@ -543,7 +555,4 @@ msgid "Removing DataSets"
 msgstr ""
 
 msgid "Updating period date"
-msgstr ""
-
-msgid "Loading..."
 msgstr ""

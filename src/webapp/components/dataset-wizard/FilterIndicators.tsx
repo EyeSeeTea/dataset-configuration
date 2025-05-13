@@ -9,8 +9,10 @@ import { Dropdown, DropdownItem } from "@eyeseetea/d2-ui-components";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import _ from "$/domain/entities/generic/Collection";
 import { IndicatorPerItem } from "$/webapp/components/dataset-wizard/IndicatorsDataSet";
+import { MasterLogFrame } from "$/domain/entities/MasterLogFrame";
+import { Maybe } from "$/utils/ts-utils";
 
-export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "measure";
+export type FilterType = "scope" | "coreCompetency" | "outputType" | "theme" | "measure" | "MLF";
 
 export type FilterIndicatorsProps = {
     indicatorsPerCompetency: IndicatorPerItem[];
@@ -28,6 +30,12 @@ export type FilterIndicatorsProps = {
     theme: string;
     types: string[];
     selectedType: string;
+    masterLogFrames: {
+        data: MasterLogFrame[];
+        error: Maybe<string>;
+        loading: boolean;
+        value: string;
+    };
 };
 
 export type FilterWrapperProps = {
@@ -77,6 +85,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         selectedType,
         indicatorsPerCompetency,
         indicatorsPerType,
+        masterLogFrames,
     } = props;
 
     const coreCompetenciesItems = generateCoreCompetencies(
@@ -122,6 +131,29 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
                 value={[selectedType]}
                 mode="single"
             />
+
+            {masterLogFrames.error ? (
+                <Typography variant="body1" color="error">
+                    {i18n.t("Error loading MLF's: {{error}}", {
+                        error: masterLogFrames.error,
+                        nsSeparator: false,
+                    })}
+                </Typography>
+            ) : (
+                <ChipFilter
+                    items={generateMlfItems(masterLogFrames.data, selectedType)}
+                    label={
+                        masterLogFrames.loading ? i18n.t("Loading...") : i18n.t("Master Log Frames")
+                    }
+                    noItemsMessage={
+                        masterLogFrames.loading ? "" : i18n.t("No MLF's available for this dataSet")
+                    }
+                    onChange={value => onFilterChange(value, "MLF")}
+                    value={[masterLogFrames.value]}
+                    mode="single"
+                    allowEmpty
+                />
+            )}
 
             <BodyFilterContainer>
                 <Typography variant="body1">
@@ -169,6 +201,12 @@ function generateTypesItems(types: string[], indicatorsPerCompetency: IndicatorP
     return types.map(type => createItem(type, type, indicatorsPerCompetency, type.toLowerCase()));
 }
 
+function generateMlfItems(masterLogFrames: MasterLogFrame[], selectedType: string) {
+    return masterLogFrames
+        .filter(mlf => mlf.type.toLowerCase() === selectedType.toLowerCase())
+        .map(mlf => ({ text: mlf.name, value: mlf.id }));
+}
+
 function createItem(
     label: string,
     value: string,
@@ -182,17 +220,27 @@ function createItem(
 }
 
 export type ChipFilterProps = {
+    allowEmpty?: boolean;
     items: ChipItem[];
     label: string;
     onChange: (item: ChipItem[]) => void;
     value: string[];
     mode?: "single" | "multiple";
+    noItemsMessage?: string;
 };
 
 export type ChipItem = { text: string; value: string };
 
 export const ChipFilter = React.memo((props: ChipFilterProps) => {
-    const { items, label, onChange, value: selectedValues, mode = "single" } = props;
+    const {
+        allowEmpty,
+        items,
+        label,
+        onChange,
+        value: selectedValues,
+        mode = "single",
+        noItemsMessage,
+    } = props;
 
     const handleChipClick = (itemValue: string) => {
         const currentItem = items.find(item => item.value === itemValue);
@@ -200,6 +248,10 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
         if (!currentItem) return;
 
         if (mode === "single") {
+            if (allowEmpty && selectedValues.includes(itemValue)) {
+                onChange([]);
+                return;
+            }
             onChange([currentItem]);
         } else {
             const isSelected = selectedValues.includes(itemValue);
@@ -224,7 +276,8 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
             <Typography variant="body1">
                 <strong>{label}</strong>
             </Typography>
-            <ScopeContainer>
+
+            <ScopeContainer className="scope-container">
                 {items.map(item => (
                     <Chip
                         key={item.value}
@@ -234,6 +287,11 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
                         variant="default"
                     />
                 ))}
+                {items.length === 0 && noItemsMessage && (
+                    <TypographyError variant="body2" color="error">
+                        {noItemsMessage}
+                    </TypographyError>
+                )}
             </ScopeContainer>
         </BodyFilterContainer>
     );
@@ -266,4 +324,9 @@ const ScopeContainer = styled.div`
     flex-wrap: wrap;
     gap: 0.5em;
     padding-block: 1em;
+`;
+
+const TypographyError = styled(Typography)`
+    color: red;
+    font-weight: bold;
 `;
