@@ -1,19 +1,11 @@
 import { D2Api, MetadataPick } from "$/types/d2-api";
 import { apiToFuture } from "$/data/api-futures";
-import {
-    AccessData,
-    AccessType,
-    CoreCompetency,
-    DataSet,
-    DisabledField,
-    OrgUnit,
-} from "$/domain/entities/DataSet";
+import { CoreCompetency, DataSet, DisabledField, OrgUnit } from "$/domain/entities/DataSet";
 import { Paginated } from "$/domain/entities/Paginated";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
-import { Permission, Permissions } from "$/domain/entities/Permission";
 import _ from "$/domain/entities/generic/Collection";
 import { Project } from "$/domain/entities/Project";
 import { D2ApiCategoryOption } from "$/data/repositories/D2ApiCategoryOption";
@@ -27,14 +19,17 @@ import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
+import { D2ApiSharing } from "$/data/D2ApiSharing";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
     private d2ApiConfig: D2ApiConfig;
+    private d2ApiSharing: D2ApiSharing;
 
     constructor(private api: D2Api, private config: Config) {
         this.d2ApiCategoryOption = new D2ApiCategoryOption(this.api);
         this.d2ApiConfig = new D2ApiConfig(this.api);
+        this.d2ApiSharing = new D2ApiSharing();
     }
 
     getList(options: GetDataSetOptions): FutureData<Paginated<DataSetList>> {
@@ -66,8 +61,14 @@ export class DataSetD2Api {
                         name: d2DataSet.displayName,
                         lastUpdated: d2DataSet.lastUpdated,
                         permissions: {
-                            data: this.buildPermission(d2DataSet.sharing.public, "data"),
-                            metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
+                            data: this.d2ApiSharing.buildPermission(
+                                d2DataSet.sharing.public,
+                                "data"
+                            ),
+                            metadata: this.d2ApiSharing.buildPermission(
+                                d2DataSet.sharing.public,
+                                "metadata"
+                            ),
                         },
                     });
                 });
@@ -158,6 +159,7 @@ export class DataSetD2Api {
     getProjectsByIds(ids: Id[]): FutureData<Project[]> {
         return this.d2ApiCategoryOption.getByIds(ids).map(categoryOptions => {
             return categoryOptions.map(categoryOption => {
+                const { access } = this.d2ApiSharing.mapSharingToEntity(categoryOption.sharing);
                 return Project.create({
                     id: categoryOption.id,
                     dataSets: [],
@@ -166,6 +168,7 @@ export class DataSetD2Api {
                     isOpen: false,
                     orgsUnits: [],
                     code: categoryOption.code,
+                    access: access,
                 });
             });
         });
@@ -238,6 +241,8 @@ export class DataSetD2Api {
             });
         });
 
+        const { access, permissions } = this.d2ApiSharing.mapSharingToEntity(d2DataSet.sharing);
+
         return DataSet.create({
             canBeUpdated: d2DataSet.access.update,
             periodDate: this.buildPeriodDateFromAttributes(d2DataSet, attributes),
@@ -258,13 +263,8 @@ export class DataSetD2Api {
             name: d2DataSet.displayName,
             shortName: d2DataSet.displayShortName,
             lastUpdated: d2DataSet.lastUpdated,
-            permissions: {
-                data: this.buildPermission(d2DataSet.sharing.public, "data"),
-                metadata: this.buildPermission(d2DataSet.sharing.public, "metadata"),
-            },
-            access: this.buildAccessByType(d2DataSet.userAccesses, "users").concat(
-                this.buildAccessByType(d2DataSet.userGroupAccesses, "groups")
-            ),
+            permissions: permissions,
+            access: access,
             coreCompetencies: _(dataElementGroups)
                 .compactMap(degCode => coreCompetencies.find(cc => cc.code === degCode))
                 .value(),
@@ -304,23 +304,6 @@ export class DataSetD2Api {
         return outputsIndicators.concat(outcomesIndicators);
     }
 
-    private buildAccessByType(
-        accessData: Array<{ id: Id; displayName: string; access: OctalNotationPermission }>,
-        type: AccessType
-    ): AccessData[] {
-        return accessData.map((access): AccessData => {
-            return {
-                id: access.id,
-                name: access.displayName,
-                permissions: {
-                    data: this.buildPermission(access.access, "data"),
-                    metadata: this.buildPermission(access.access, "metadata"),
-                },
-                type,
-            };
-        });
-    }
-
     private extractCompetencyCode(sectionId: Id, sectionCode: string): Maybe<string> {
         if (!sectionCode) {
             console.error(`Section has not code: ${sectionId}`);
@@ -328,46 +311,6 @@ export class DataSetD2Api {
         }
         const [_prefix, _type, ...ccCodeParts] = sectionCode.split("_");
         return ccCodeParts.join("_");
-    }
-
-    buildPermission(permissions: string, permissionType: "data" | "metadata"): Permission {
-        switch (permissionType) {
-            case "metadata": {
-                const { canRead, canWrite } = this.buildPermissionByType(
-                    permissions,
-                    permissionType
-                );
-                return Permission.create({ read: canRead, write: canWrite });
-            }
-            case "data": {
-                const { canWrite, canRead } = this.buildPermissionByType(
-                    permissions,
-                    permissionType
-                );
-                return Permission.create({ read: canRead, write: canWrite });
-            }
-        }
-    }
-
-    private buildPermissionByType(permissions: string, permissionType: "data" | "metadata") {
-        const initialIndex = permissionType === "metadata" ? 0 : 2;
-        const canRead = permissions[initialIndex] === "r";
-        const canWrite = permissions[initialIndex + 1] === "w";
-        return { canRead, canWrite };
-    }
-
-    private convertPermissionToOctal(permission: Permission): OctalNotationPermission {
-        return permission.noAccess()
-            ? "--"
-            : [permission.read ? "r" : "-", permission.write ? "w" : "-"].join("");
-    }
-
-    generateFullPermission(permissions: Permissions): OctalNotationPermission {
-        return [
-            this.convertPermissionToOctal(permissions.metadata),
-            this.convertPermissionToOctal(permissions.data),
-            "----",
-        ].join("");
     }
 
     private buildOutputsIndicators(d2DataSet: D2DataSet) {
@@ -494,7 +437,7 @@ export const dataSetFields = {
     notifyCompletingUser: true,
     id: true,
     lastUpdated: true,
-    sharing: { public: true },
+    sharing: true,
     displayShortName: true,
     sections: {
         id: true,
@@ -506,8 +449,6 @@ export const dataSetFields = {
             categoryOptionCombo: true,
         },
     },
-    userGroupAccesses: { id: true, displayName: true, access: true },
-    userAccesses: { id: true, displayName: true, access: true },
     attributeValues: { value: true, attribute: { id: true } },
     indicators: { id: true, numerator: true, denominator: true, code: true },
     dataSetElements: {
@@ -533,4 +474,3 @@ type D2DataSetFields = MetadataPick<{
 }>["dataSets"][number];
 
 type D2DataSet = { organisationUnits?: D2OrgUnit[] } & D2DataSetFields;
-export type OctalNotationPermission = string;

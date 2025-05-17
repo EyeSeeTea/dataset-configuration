@@ -18,14 +18,17 @@ import { Maybe } from "$/utils/ts-utils";
 import { Config } from "$/domain/entities/Config";
 import { Stats } from "$/domain/entities/Stats";
 import { getErrorFromResponse } from "$/data/utils";
+import { D2ApiSharing } from "$/data/D2ApiSharing";
 
 export class ProjectD2Repository implements ProjectRepository {
     private d2DataSetApi: DataSetD2Api;
     private d2ApiConfig: D2ApiConfig;
+    private d2ApiSharing: D2ApiSharing;
 
     constructor(private api: D2Api, private config: Config) {
         this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
         this.d2ApiConfig = new D2ApiConfig(this.api);
+        this.d2ApiSharing = new D2ApiSharing();
     }
 
     getById(id: Id): FutureData<Project> {
@@ -37,6 +40,7 @@ export class ProjectD2Repository implements ProjectRepository {
                     displayName: true,
                     lastUpdated: true,
                     organisationUnits: { id: true, code: true, path: true, displayName: true },
+                    sharing: true,
                 },
                 filter: { id: { eq: id } },
                 paging: false,
@@ -109,6 +113,7 @@ export class ProjectD2Repository implements ProjectRepository {
                     endDate: true,
                     lastUpdated: true,
                     organisationUnits: { id: true, code: true, displayName: true, path: true },
+                    sharing: true,
                 },
                 filter: { "categories.code": { eq: code }, ...this.buildDateFilter(options) },
                 order: "displayName:asc",
@@ -131,6 +136,7 @@ export class ProjectD2Repository implements ProjectRepository {
 
     private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {
         return categoryOptions.map(d2CategoryOption => {
+            const { access } = this.d2ApiSharing.mapSharingToEntity(d2CategoryOption.sharing);
             return Project.build({
                 dataSets: [],
                 code: d2CategoryOption.code,
@@ -144,6 +150,7 @@ export class ProjectD2Repository implements ProjectRepository {
                     name: orgUnit.displayName,
                     path: orgUnit.path.split("/").slice(1),
                 })),
+                access,
             });
         });
     }
@@ -197,6 +204,7 @@ export class ProjectD2Repository implements ProjectRepository {
                         displayName: true,
                         lastUpdated: true,
                         organisationUnits: { id: true, code: true, path: true, displayName: true },
+                        sharing: true,
                     },
                     order: this.buildOrderParam(options),
                 })
@@ -246,7 +254,9 @@ export class ProjectD2Repository implements ProjectRepository {
     private buildProject(
         d2CategoryOption: D2CategoryOptionType & { organisationUnits: D2OrgUnit[] }
     ): Project {
+        const { access } = this.d2ApiSharing.mapSharingToEntity(d2CategoryOption.sharing);
         return Project.build({
+            access: access,
             code: d2CategoryOption.code,
             id: d2CategoryOption.id,
             name: d2CategoryOption.displayName,
