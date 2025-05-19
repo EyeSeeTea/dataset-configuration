@@ -5,6 +5,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { chunkRequest } from "$/data/utils";
 import { FutureData } from "$/domain/entities/generic/Future";
 import { Maybe } from "$/utils/ts-utils";
+import { D2ApiSharingFields } from "$/data/D2ApiSharing";
 
 export class D2ApiCategoryOption {
     constructor(private api: D2Api) {}
@@ -14,7 +15,13 @@ export class D2ApiCategoryOption {
             return apiToFuture(
                 this.api.models.categoryOptions.get({
                     filter: { id: { in: categoryOptionsIds } },
-                    fields: { id: true, code: true, displayName: true, lastUpdated: true },
+                    fields: {
+                        id: true,
+                        code: true,
+                        displayName: true,
+                        lastUpdated: true,
+                        sharing: true,
+                    },
                     paging: false,
                 })
             ).map(response => response.objects);
@@ -27,7 +34,9 @@ export type D2CategoryOptionType = {
     id: string;
     displayName: string;
     lastUpdated: ISODateString;
+    sharing: D2ApiSharingFields;
 };
+
 export type D2CategoryOptionDates = {
     startDate: Maybe<ISODateString>;
     endDate: Maybe<ISODateString>;

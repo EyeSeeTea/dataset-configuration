@@ -76,37 +76,35 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
     );
 });
 
-export const MissingCompanionAlert = React.memo(
-    (props: { indicator: MissingCompanionIndicator }) => {
-        const { indicator } = props;
+const MissingCompanionAlert = React.memo((props: { indicator: MissingCompanionIndicator }) => {
+    const { indicator } = props;
 
-        const mandatoryMessage = !indicator.mandatoryCompanionsValid
-            ? i18n.t("Not all the mandatory companions are selected: {{codes}}", {
-                  codes: indicator.mandatoryCodes,
-                  nsSeparator: false,
-                  interpolation: { escapeValue: false },
-              })
-            : undefined;
+    const mandatoryMessage = !indicator.mandatoryCompanionsValid
+        ? i18n.t("Not all the mandatory companions are selected: {{codes}}", {
+              codes: indicator.mandatoryCodes,
+              nsSeparator: false,
+              interpolation: { escapeValue: false },
+          })
+        : undefined;
 
-        const optionalMessage = !indicator.optionalCompanionsValid
-            ? i18n.t("One of these optional companion must be selected: {{codes}}", {
-                  codes: indicator.optionalCodes,
-                  nsSeparator: false,
-                  interpolation: { escapeValue: false },
-              })
-            : undefined;
+    const optionalMessage = !indicator.optionalCompanionsValid
+        ? i18n.t("One of these optional companion must be selected: {{codes}}", {
+              codes: indicator.optionalCodes,
+              nsSeparator: false,
+              interpolation: { escapeValue: false },
+          })
+        : undefined;
 
-        const messages = _([mandatoryMessage, optionalMessage]).compact().value();
+    const messages = _([mandatoryMessage, optionalMessage]).compact().value();
 
-        return (
-            <MissingCompanionAlertContainer>
-                {messages.map(message => (
-                    <SummaryItem key={message} label={indicator.code} value={message} />
-                ))}
-            </MissingCompanionAlertContainer>
-        );
-    }
-);
+    return (
+        <MissingCompanionAlertContainer>
+            {messages.map(message => (
+                <SummaryItem key={message} label={indicator.code} value={message} />
+            ))}
+        </MissingCompanionAlertContainer>
+    );
+});
 
 export const SummaryItem = React.memo((props: { label: string; value: string }) => {
     return (
@@ -116,7 +114,7 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
     );
 });
 
-export const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
+const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
     const { dataSet } = props;
 
     const indicatorByCodes = React.useMemo(

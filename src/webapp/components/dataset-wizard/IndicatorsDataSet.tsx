@@ -25,6 +25,8 @@ import {
     useGetCompanionIndicators,
     useIndicatorsTableColumns,
 } from "$/webapp/hooks/useIndicators";
+import { useGetMasterLogFrameByCodes } from "$/webapp/hooks/useMasterLogFrame";
+import { MasterLogFrame } from "$/domain/entities/MasterLogFrame";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -68,6 +70,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [selectedIndicators, setSelectedIndicators] = React.useState<Id[]>(
         dataSet.indicators.map(indicator => indicator.id)
     );
+    const [selectedMLF, setSelectedMLF] = React.useState<string>("");
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
     const [sorting, setSorting] = React.useState<TableSorting<IndicatorColumn>>({
         field: "status",
@@ -82,6 +85,13 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedFilterValue,
     });
 
+    const accessCodes = React.useMemo(() => dataSet.getRegionCodesFromAccess(), [dataSet]);
+    const { error: errorMlf, loading, masterLogFrames } = useGetMasterLogFrameByCodes(accessCodes);
+
+    const currentMlf = React.useMemo(() => {
+        return masterLogFrames.find(mlf => mlf.id === selectedMLF);
+    }, [masterLogFrames, selectedMLF]);
+
     const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
         indicators,
         scope,
@@ -91,6 +101,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf: currentMlf,
     });
 
     const validateIndicators = useValidateIndicators({
@@ -124,12 +135,16 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                 break;
             case "outputType":
                 setType(singleItemValue);
+                setSelectedMLF("");
                 break;
             case "theme":
                 setTheme(singleItemValue);
                 break;
             case "measure":
                 setMeasure(singleItemValue);
+                break;
+            case "MLF":
+                setSelectedMLF(singleItemValue);
                 break;
         }
     }, []);
@@ -144,10 +159,20 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
             })
             .join(", ");
 
-        return _([scope, selectedType, competencies, selectedTheme])
+        const selectedMLFName = masterLogFrames.find(mlf => mlf.id === selectedMLF)?.name ?? "";
+
+        return _([scope, selectedType, competencies, selectedTheme, selectedMLFName])
             .filter(item => item.length > 0)
             .join(", ");
-    }, [coreCompetencies, scope, selectedCompetencies, selectedType, selectedTheme]);
+    }, [
+        coreCompetencies,
+        scope,
+        selectedCompetencies,
+        selectedType,
+        selectedTheme,
+        masterLogFrames,
+        selectedMLF,
+    ]);
 
     const indicatorsPerCompetency = useBuildTotalByKey(
         dataSet.indicators,
@@ -155,11 +180,6 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     );
 
     const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
-
-    const toggleCompanionTable = React.useCallback(
-        () => companionTableActions.toggle(),
-        [companionTableActions]
-    );
 
     return (
         <form>
@@ -175,7 +195,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                                 variant={companionTable ? "contained" : "text"}
                                 color="primary"
                                 fullWidth
-                                onClick={toggleCompanionTable}
+                                onClick={() => companionTableActions.toggle()}
                                 disabled={indicatorsWithCompanion.length === 0}
                             >
                                 {i18n.t("Suggested Companion Indicators")}
@@ -197,7 +217,13 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                             onClose={() => setShowFilterModal(false)}
                             indicatorsPerCompetency={indicatorsPerCompetency}
                             indicatorsPerType={indicatorsPerType}
-                            hide={companionTable}
+                            hidden={companionTable}
+                            masterLogFrames={{
+                                data: masterLogFrames,
+                                loading,
+                                error: errorMlf,
+                                value: selectedMLF,
+                            }}
                         />
                     </>
                 </FilterWrapper>
@@ -285,6 +311,7 @@ function useFilterIndicators(props: {
     selectedTheme: string;
     selectedFilterValue: Maybe<SelectedFilterValue>;
     selectedIndicators: Id[];
+    selectedMlf: Maybe<MasterLogFrame>;
 }) {
     const {
         indicators,
@@ -295,7 +322,10 @@ function useFilterIndicators(props: {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf,
     } = props;
+
+    const indicatorsByMlf = _(selectedMlf?.indicators || []).keyBy(indicator => indicator.id);
 
     const allThemes = React.useMemo(() => {
         return _(indicators)
@@ -327,8 +357,10 @@ function useFilterIndicators(props: {
 
                 const isInTheme = selectedTheme ? indicator.theme === selectedTheme : true;
                 const isInMeasure = selectedMeasure ? indicator.measure === selectedMeasure : true;
+                const isInMLF = selectedMlf ? Boolean(indicatorsByMlf.get(indicator.id)?.id) : true;
 
                 return (
+                    isInMLF &&
                     isInMeasure &&
                     isInTheme &&
                     isInCompetency &&
@@ -348,6 +380,8 @@ function useFilterIndicators(props: {
         selectedFilterValue,
         selectedIndicators,
         selectedMeasure,
+        selectedMlf,
+        indicatorsByMlf,
     ]);
 
     return { allMeasures, allThemes, filteredRows };

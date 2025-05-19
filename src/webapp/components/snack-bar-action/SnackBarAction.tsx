@@ -13,7 +13,7 @@ export const SnackBarAction = React.memo((props: SnackBarActionProps) => {
     return (
         <>
             <span>{message}</span>
-            <SnackBarButton variant="text" onClick={() => onClick()}>
+            <SnackBarButton variant="text" onClick={onClick}>
                 {buttonText}
             </SnackBarButton>
         </>
