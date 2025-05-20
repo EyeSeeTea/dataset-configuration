@@ -8,7 +8,7 @@ import { metadataCodes } from "$/data/repositories/D2ApiMetadata";
 import { D2ApiSettingsCodec } from "$/data/ApiSettingsCodec";
 import { UnitDate } from "$/domain/entities/UnitDate";
 
-export const APP_NAMESPACE = "dataset-configuration";
+export const APP_NAMESPACE = "project-configuration";
 
 export class D2ApiAppSettings {
     private dataStore: DataStore;
