@@ -4,7 +4,6 @@ import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
 import { convertToCategories } from "$/data/utils";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { Config } from "$/domain/entities/Config";
-import { Project } from "$/domain/entities/Project";
 import { Region, extractRegionCode } from "$/domain/entities/Region";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { ConfigRepository } from "$/domain/repositories/ConfigRepository";
@@ -112,12 +111,18 @@ export class ConfigD2Repository implements ConfigRepository {
                 paging: false,
             })
         ).map(d2Response => {
-            return d2Response.objects.map(region => ({
-                id: region.id,
-                name: region.name,
-                // org. unit code includes the region code in the first two letters before the underscore
-                code: Project.extractCode(region.code),
-            }));
+            return _(d2Response.objects)
+                .compactMap(region => {
+                    const regionCode = extractRegionCode(region.code);
+                    if (!regionCode) {
+                        console.warn(
+                            `Region ${region.name} (${region.id}) does not have a valid region code`
+                        );
+                        return undefined;
+                    }
+                    return { ...region, code: regionCode };
+                })
+                .value();
         });
     }
 

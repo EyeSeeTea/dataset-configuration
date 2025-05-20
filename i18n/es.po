@@ -299,6 +299,18 @@ msgstr ""
 msgid "Type"
 msgstr ""
 
+msgid "Error loading MLF's: {{error}}"
+msgstr ""
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Master Log Frames"
+msgstr ""
+
+msgid "No MLF's available for this dataSet"
+msgstr ""
+
 msgid "Additional"
 msgstr ""
 

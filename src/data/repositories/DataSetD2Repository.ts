@@ -26,6 +26,7 @@ import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { Config } from "$/domain/entities/Config";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import isEqual from "lodash/isEqual";
+import { D2ApiSharing, D2ApiSharingName } from "$/data/D2ApiSharing";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
@@ -33,10 +34,12 @@ const CUSTOM_FORM_STYLE = "NORMAL" as const;
 export class DataSetD2Repository implements DataSetRepository {
     private d2DataSetApi: DataSetD2Api;
     private D2ApiCategoryCombo: D2ApiCategoryCombo;
+    private d2ApiSharing: D2ApiSharing;
 
     constructor(private api: D2Api, private config: Config) {
         this.d2DataSetApi = new DataSetD2Api(this.api, this.config);
         this.D2ApiCategoryCombo = new D2ApiCategoryCombo(this.api);
+        this.d2ApiSharing = new D2ApiSharing();
     }
 
     getByName(name: string): FutureData<DataSetName[]> {
@@ -314,10 +317,15 @@ export class DataSetD2Repository implements DataSetRepository {
             }
 
             const existingAttributes = existingDataSet?.attributeValues;
+            const sharingData = this.d2ApiSharing.generateSharingData(dataSet);
 
-            const result = {
+            const d2DataSet: D2DataSetToSave = {
                 ...(existingDataSet || {}),
                 ...this.buildD2DataSet(dataSet, existingAttributes, config),
+                sharing: {
+                    ...(existingDataSet?.sharing || {}),
+                    ...sharingData,
+                },
             };
 
             const existingDataSetSections = existingSections.filter(
@@ -325,15 +333,14 @@ export class DataSetD2Repository implements DataSetRepository {
             );
 
             const customForm = this.buildDataEntryForm(
-                result,
+                d2DataSet,
                 dataSet,
                 ccByDataSet,
                 config,
                 existingDataSetSections
             );
 
-            const { sharing: _, ...rest } = result;
-            return { ...rest, dataEntryForm: customForm };
+            return { ...d2DataSet, dataEntryForm: customForm };
         });
     }
 
@@ -668,31 +675,11 @@ export class DataSetD2Repository implements DataSetRepository {
             name: dataSet.name,
             periodType: "Monthly",
             description: dataSet.description,
-            publicAccess: this.d2DataSetApi.generateFullPermission(dataSet.permissions),
             dataSetElements: this.buildDataSetElements(dataSet),
             indicators: _(dataSet.indicators)
                 .filter(indicator => indicator.type === "outcomes")
                 .map(indicator => ({ id: indicator.id }))
                 .uniqBy(indicator => indicator.id)
-                .value(),
-            userAccesses: dataSet.access
-                .filter(access => access.type === "users")
-                .map(access => {
-                    return {
-                        access: this.d2DataSetApi.generateFullPermission(access.permissions),
-                        id: access.id,
-                        displayName: access.name,
-                    };
-                }),
-            userGroupAccesses: _(dataSet.access)
-                .filter(access => access.type === "groups")
-                .map(groupAccess => {
-                    return {
-                        access: this.d2DataSetApi.generateFullPermission(groupAccess.permissions),
-                        id: groupAccess.id,
-                        displayName: groupAccess.name,
-                    };
-                })
                 .value(),
             organisationUnits: dataSet.orgUnits.map(ou => ({ id: ou.id })),
             attributeValues: this.buildD2Attributes(existingAttributes, dataSet, config.attributes),
@@ -846,3 +833,33 @@ export type D2SectionWithGreyFields = Omit<D2Section, "greyedFields"> & {
 };
 
 export type D2Attribute = { attribute: { id: Id }; value: string };
+
+type D2DataSetToSave = {
+    renderAsTabs: boolean;
+    dataElementDecoration: boolean;
+    categoryCombo: Ref;
+    id: Id;
+    shortName: string;
+    name: string;
+    periodType: string;
+    description: string;
+    dataSetElements: Array<{
+        dataSet: Ref;
+        dataElement: Ref;
+        categoryCombo: { id: Maybe<Id> };
+    }>;
+    indicators: Ref[];
+    organisationUnits: Ref[];
+    attributeValues: Array<{
+        attribute: Ref;
+        value: Maybe<string>;
+    }>;
+    notifyCompletingUser: boolean;
+    openFuturePeriods: number;
+    expiryDays: number;
+    sharing: {
+        public: string;
+        users: Record<Id, D2ApiSharingName>;
+        userGroups: Record<Id, D2ApiSharingName>;
+    };
+};
