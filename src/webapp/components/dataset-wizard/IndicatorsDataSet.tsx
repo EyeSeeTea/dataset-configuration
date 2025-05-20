@@ -2,7 +2,13 @@ import React from "react";
 import styled from "styled-components";
 import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
 import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
-import { ObjectsTable, TableSorting, TableState, useSnackbar } from "@eyeseetea/d2-ui-components";
+import {
+    ObjectsTable,
+    SearchBox,
+    TableSorting,
+    TableState,
+    useSnackbar,
+} from "@eyeseetea/d2-ui-components";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -76,7 +82,8 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         field: "status",
         order: "asc",
     });
-    const [companionTable, companionTableActions] = useBooleanState(false);
+    const [hasCompanionTable, hasCompanionTableActions] = useBooleanState(false);
+    const [search, setSearch] = React.useState<string>("");
 
     const indicatorsWithCompanion = useGetCompanionIndicators({
         indicators,
@@ -93,6 +100,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     }, [masterLogFrames, selectedMLF]);
 
     const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
+        search,
         indicators,
         scope,
         selectedType,
@@ -110,15 +118,15 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         onChange,
         setSelectedIndicators,
         setSorting,
-        onShowCompanionIndicator: React.useCallback(
-            () => companionTableActions.enable(),
-            [companionTableActions]
-        ),
-        companionTable,
+        onShowCompanionIndicator: React.useCallback(() => {
+            hasCompanionTableActions.enable();
+            setSearch("");
+        }, [hasCompanionTableActions]),
+        companionTable: hasCompanionTable,
     });
 
     const columns = useIndicatorsTableColumns({
-        showCompanionColumn: companionTable,
+        showCompanionColumn: hasCompanionTable,
         statusIndicator: indicator => <StatusIndicator status={indicator.status} />,
     });
 
@@ -192,10 +200,10 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     <>
                         <SuggestCompanionContainer>
                             <Button
-                                variant={companionTable ? "contained" : "text"}
+                                variant={hasCompanionTable ? "contained" : "text"}
                                 color="primary"
                                 fullWidth
-                                onClick={() => companionTableActions.toggle()}
+                                onClick={hasCompanionTableActions.toggle}
                                 disabled={indicatorsWithCompanion.length === 0}
                             >
                                 {i18n.t("Suggested Companion Indicators")}
@@ -217,7 +225,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                             onClose={() => setShowFilterModal(false)}
                             indicatorsPerCompetency={indicatorsPerCompetency}
                             indicatorsPerType={indicatorsPerType}
-                            hidden={companionTable}
+                            hidden={hasCompanionTable}
                             masterLogFrames={{
                                 data: masterLogFrames,
                                 loading,
@@ -248,12 +256,16 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
                     <ObjectsTable
                         columns={columns}
-                        rows={companionTable ? indicatorsWithCompanion : filteredRows}
+                        rows={hasCompanionTable ? indicatorsWithCompanion : filteredRows}
                         forceSelectionColumn
-                        filterComponents={<FilterTable onChange={setSelectedFilterValue} />}
+                        filterComponents={
+                            <FilterTable
+                                onSearchChange={setSearch}
+                                onChange={setSelectedFilterValue}
+                                search={search}
+                            />
+                        }
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
-                        searchBoxLabel={i18n.t("Search by name")}
-                        searchBoxColumns={["name"]}
                         onChange={validateIndicators}
                         sorting={sorting}
                     />
@@ -264,8 +276,12 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 });
 
 export const FilterTable = React.memo(
-    (props: { onChange: (value: Maybe<SelectedFilterValue>) => void }) => {
-        const { onChange } = props;
+    (props: {
+        onChange: (value: Maybe<SelectedFilterValue>) => void;
+        onSearchChange: (search: string) => void;
+        search: string;
+    }) => {
+        const { onChange, onSearchChange, search } = props;
         const [value, setValue] = React.useState<SelectedFilterValue>();
 
         const handleAlignment = (
@@ -279,30 +295,39 @@ export const FilterTable = React.memo(
 
         return (
             <>
-                <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
-                    <ToggleButtonStyled value="selected">
-                        <Button
-                            variant={value === "selected" ? "outlined" : "text"}
-                            color="primary"
-                        >
-                            {i18n.t("Selected")}
-                        </Button>
-                    </ToggleButtonStyled>
-                    <ToggleButtonStyled value="non-selected">
-                        <Button
-                            variant={value === "non-selected" ? "outlined" : "text"}
-                            color="primary"
-                        >
-                            {i18n.t("No Selected")}
-                        </Button>
-                    </ToggleButtonStyled>
-                </ToggleButtonGroup>
+                <SearchBox
+                    onChange={onSearchChange}
+                    hintText={i18n.t("Search by name")}
+                    className="search-box-indicators"
+                    value={search}
+                />
+                <section>
+                    <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
+                        <ToggleButtonStyled value="selected">
+                            <Button
+                                variant={value === "selected" ? "outlined" : "text"}
+                                color="primary"
+                            >
+                                {i18n.t("Selected")}
+                            </Button>
+                        </ToggleButtonStyled>
+                        <ToggleButtonStyled value="non-selected">
+                            <Button
+                                variant={value === "non-selected" ? "outlined" : "text"}
+                                color="primary"
+                            >
+                                {i18n.t("No Selected")}
+                            </Button>
+                        </ToggleButtonStyled>
+                    </ToggleButtonGroup>
+                </section>
             </>
         );
     }
 );
 
 function useFilterIndicators(props: {
+    search: string;
     indicators: Indicator[];
     scope: string;
     selectedMeasure: string;
@@ -314,6 +339,7 @@ function useFilterIndicators(props: {
     selectedMlf: Maybe<MasterLogFrame>;
 }) {
     const {
+        search,
         indicators,
         scope,
         selectedType,
@@ -344,6 +370,11 @@ function useFilterIndicators(props: {
     const filteredRows = React.useMemo(() => {
         return indicators
             .filter(indicator => {
+                if (search.length === 0) return true;
+                const name = indicator.name.toLowerCase();
+                return name.includes(search.toLowerCase());
+            })
+            .filter(indicator => {
                 if (!selectedFilterValue) return true;
                 return selectedFilterValue === "selected"
                     ? selectedIndicators.includes(indicator.id)
@@ -372,6 +403,7 @@ function useFilterIndicators(props: {
                 return a.status.localeCompare(b.status);
             });
     }, [
+        search,
         selectedCompetencies,
         selectedTheme,
         indicators,
