@@ -268,6 +268,7 @@ export class D2ApiIndicator {
 
         return _(mandatoryCodes)
             .compactMap(code => code.trim())
+            .filter(code => code.length > 0)
             .value();
     }
 
