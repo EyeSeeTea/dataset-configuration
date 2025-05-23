@@ -200,13 +200,15 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     <>
                         <SuggestCompanionContainer>
                             <Button
-                                variant={hasCompanionTable ? "contained" : "text"}
+                                variant={"contained"}
                                 color="primary"
                                 fullWidth
                                 onClick={hasCompanionTableActions.toggle}
                                 disabled={indicatorsWithCompanion.length === 0}
                             >
-                                {i18n.t("Suggested Companion Indicators")}
+                                {hasCompanionTable
+                                    ? i18n.t("Hide Suggested Companion Indicators")
+                                    : i18n.t("Show Suggested Companion Indicators")}
                             </Button>
                         </SuggestCompanionContainer>
                         <FilterIndicators
@@ -537,16 +539,26 @@ function getAlertedIndicatorIds(
     const unAlertedIds = ids.filter(id => !existingIndicatorsAlerted.has(id));
     const showAlert = unAlertedIds
         .map(id => indicatorsById.get(id))
-        .some(row => row && row.suggestedCompanions.length > 0);
+        .some(row => {
+            if (!row) return false;
+            return thereAreCompanionIndicators(row);
+        });
 
     const newIndicatorIdsToAlert = new Set([
         ...ids.filter(id => {
-            const indicator = indicatorsById.get(id)?.suggestedCompanions;
-            return indicator && indicator.length > 0;
+            const indicator = indicatorsById.get(id);
+            if (!indicator) return false;
+            return thereAreCompanionIndicators(indicator);
         }),
     ]);
 
     return { showAlert, newIndicatorIdsToAlert };
+}
+
+function thereAreCompanionIndicators(indicator: Indicator): boolean {
+    const outcomeCodes = indicator.getCompanionCodesByType("outcome");
+    const outputCodes = indicator.getCompanionCodesByType("output");
+    return outcomeCodes.length > 0 || outputCodes.length > 0;
 }
 
 const selectedFilterValues = ["selected", "non-selected"] as const;

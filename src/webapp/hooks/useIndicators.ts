@@ -31,9 +31,8 @@ export function useGetCompanionIndicators(props: {
         );
 
         return currentIndicators.flatMap((indicator): IndicatorColumn[] => {
-            const companionCodes = indicator.suggestedCompanions.flatMap(
-                suggestedIndicator => suggestedIndicator.codes
-            );
+            const companionCodes = indicator.getCompanionCodesFromRules();
+
             const indicatorCompanion = _(companionCodes)
                 .compactMap(code => {
                     const indicatorDetails = indicatorsByCode.get(code);

@@ -65,7 +65,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                 />
 
                 {missingSelectedCompanion.length > 0 && (
-                    <SummaryItem label="Companion Indicators" value="" />
+                    <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                 )}
 
                 {missingSelectedCompanion.map(indicator => (
@@ -79,23 +79,23 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 const MissingCompanionAlert = React.memo((props: { indicator: MissingCompanionIndicator }) => {
     const { indicator } = props;
 
-    const mandatoryMessage = !indicator.mandatoryCompanionsValid
-        ? i18n.t("Not all the mandatory companions are selected: {{codes}}", {
-              codes: indicator.mandatoryCodes,
+    const outcomeMessage = indicator.outcomeMessage
+        ? i18n.t("Outcome companion rule not satisfied: {{rule}}", {
+              rule: indicator.outcomeMessage,
               nsSeparator: false,
               interpolation: { escapeValue: false },
           })
         : undefined;
 
-    const optionalMessage = !indicator.optionalCompanionsValid
-        ? i18n.t("One of these optional companion must be selected: {{codes}}", {
-              codes: indicator.optionalCodes,
+    const outputMessage = indicator.outputMessage
+        ? i18n.t("Output companion rule not satisfied: {{rule}}", {
+              rule: indicator.outputMessage,
               nsSeparator: false,
               interpolation: { escapeValue: false },
           })
         : undefined;
 
-    const messages = _([mandatoryMessage, optionalMessage]).compact().value();
+    const messages = _([outputMessage, outcomeMessage]).compact().value();
 
     return (
         <MissingCompanionAlertContainer>
@@ -126,47 +126,25 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
     );
 
     const missingSelectedCompanion = React.useMemo(() => {
-        return dataSet.indicators
-            .filter(indicator => indicator.suggestedCompanions.length > 0)
-            .map(indicator => {
-                const mandatoryCompanions = indicator.suggestedCompanions.filter(
-                    companion => companion.type === "mandatory"
-                );
+        return _(dataSet.indicators)
+            .filter(indicator => indicator.getCompanionCodesFromRules().length > 0)
+            .compactMap(indicator => {
+                const { outcomeRuleIsValid, outputRuleIsValid } =
+                    indicator.validateCompanionRules(indicatorByCodes);
 
-                const allMandatoryAreSelected =
-                    mandatoryCompanions.length > 0
-                        ? mandatoryCompanions.every(companion => {
-                              return companion.codes.every(code => indicatorByCodes.get(code));
-                          })
-                        : true;
+                if (outcomeRuleIsValid && outputRuleIsValid) return undefined;
 
-                const optionalCompanions = indicator.suggestedCompanions.filter(
-                    companion => companion.type === "optional"
-                );
-
-                const optionalCompanionsAreSelected =
-                    optionalCompanions.length > 0
-                        ? optionalCompanions.some(companion => {
-                              return companion.codes.some(code => indicatorByCodes.get(code));
-                          })
-                        : true;
+                const { outcomeMessage, outputMessage } = indicator.buildCompanionRuleMessage();
 
                 return {
                     id: indicator.id,
                     name: indicator.name,
                     code: indicator.code,
-                    mandatoryCodes: mandatoryCompanions
-                        .map(companion => companion.codes)
-                        .join(", "),
-                    optionalCodes: optionalCompanions.map(companion => companion.codes).join(", "),
-                    mandatoryCompanionsValid: allMandatoryAreSelected,
-                    optionalCompanionsValid: optionalCompanionsAreSelected,
+                    outcomeMessage: !outcomeRuleIsValid ? outcomeMessage : "",
+                    outputMessage: !outputRuleIsValid ? outputMessage : "",
                 };
             })
-            .filter(
-                indicator =>
-                    !indicator.mandatoryCompanionsValid || !indicator.optionalCompanionsValid
-            );
+            .value();
     }, [dataSet, indicatorByCodes]);
 
     return { missingSelectedCompanion };
@@ -176,10 +154,8 @@ type MissingCompanionIndicator = {
     id: Id;
     name: string;
     code: Code;
-    mandatoryCodes: string;
-    optionalCodes: string;
-    mandatoryCompanionsValid: boolean;
-    optionalCompanionsValid: boolean;
+    outcomeMessage: string;
+    outputMessage: string;
 };
 
 const MissingCompanionAlertContainer = styled("div")`

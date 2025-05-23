@@ -6,6 +6,12 @@ import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Maybe, UnionFromValues } from "$/utils/ts-utils";
+import {
+    CompanionRule,
+    buildCompanionRuleMessage,
+    evaluateRule,
+    getIndicatorCodes,
+} from "$/domain/entities/CompanionRule";
 
 export type Disaggregation = {
     id: Id;
@@ -33,12 +39,10 @@ export type IndicatorAttrs = {
     relatedDataElements: DataElement[];
     categories: Category[];
     valueType: string;
-    suggestedCompanions: SuggestedIndicator[];
-};
-
-export type SuggestedIndicator = {
-    type: "mandatory" | "optional";
-    codes: Code[];
+    companionRules: Maybe<{
+        outcomeRule: Maybe<CompanionRule>;
+        outputRule: Maybe<CompanionRule>;
+    }>;
 };
 
 export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
@@ -269,6 +273,40 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         const idsInDenominator = this.extractId(indicator.denominator, /#{(\w+)/);
         const dataElementCode = indicator.code ? [`${indicator.code}${COMMENT_SUFIX}`] : [];
         return [...idsInNumerator, ...idsInDenominator, ...dataElementCode];
+    }
+
+    getCompanionCodesFromRules(): Code[] {
+        const outcomeCodes = this.getCompanionCodesByType("outcome");
+        const outputCodes = this.getCompanionCodesByType("output");
+        return outcomeCodes.concat(outputCodes);
+    }
+
+    getCompanionCodesByType(type: "output" | "outcome"): Code[] {
+        const rule =
+            type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
+
+        return rule ? getIndicatorCodes(rule) : [];
+    }
+
+    validateCompanionRules(indicatorByCodes: HashMap<string, Indicator>): {
+        outcomeRuleIsValid: boolean;
+        outputRuleIsValid: boolean;
+    } {
+        const outcomeRuleIsValid = this.companionRules?.outcomeRule
+            ? evaluateRule(this.companionRules.outcomeRule, indicatorByCodes)
+            : true;
+
+        const outputRuleIsValid = this.companionRules?.outputRule
+            ? evaluateRule(this.companionRules.outputRule, indicatorByCodes)
+            : true;
+
+        return { outcomeRuleIsValid, outputRuleIsValid };
+    }
+
+    buildCompanionRuleMessage(): { outcomeMessage: string; outputMessage: string } {
+        const outcomeMessage = buildCompanionRuleMessage(this.companionRules?.outcomeRule);
+        const outputMessage = buildCompanionRuleMessage(this.companionRules?.outputRule);
+        return { outcomeMessage, outputMessage };
     }
 
     private static extractId(string: string, re: RegExp): Id[] {
