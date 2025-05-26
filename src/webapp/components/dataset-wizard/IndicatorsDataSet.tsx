@@ -189,6 +189,11 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
     const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
 
+    const toggleCompanionTable = React.useCallback(() => {
+        setSearch("");
+        hasCompanionTableActions.toggle();
+    }, [hasCompanionTableActions]);
+
     return (
         <form>
             <Grid container spacing={1}>
@@ -203,7 +208,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                                 variant={"contained"}
                                 color="primary"
                                 fullWidth
-                                onClick={hasCompanionTableActions.toggle}
+                                onClick={toggleCompanionTable}
                                 disabled={indicatorsWithCompanion.length === 0}
                             >
                                 {hasCompanionTable
