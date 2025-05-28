@@ -111,3 +111,8 @@ tr:has(.MuiAlert-message) {
 li.Mui-selected {
     background-color: rgb(253 90 0 / 50%) !important;
 }
+
+.search-box-indicators {
+    width: 33% !important;
+    max-width: 350px;
+}

@@ -1,18 +1,17 @@
 import { apiToFuture } from "$/data/api-futures";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
-import { Indicator, IndicatorScope, SuggestedIndicator } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope } from "$/domain/entities/Indicator";
 import { D2Api } from "$/types/d2-api";
 import _ from "$/domain/entities/generic/Collection";
-import { Code, Id, Ref } from "$/domain/entities/Ref";
+import { Id, Ref } from "$/domain/entities/Ref";
 import { Maybe } from "$/utils/ts-utils";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import { convertToCategories } from "$/data/utils";
 import { D2Attribute } from "$/data/repositories/DataSetD2Repository";
+import { D2CompanionRuleParser } from "$/data/D2CompanionRuleParser";
 
 export class D2ApiIndicator {
-    private companionSeparator = ",";
-
     constructor(private api: D2Api) {}
 
     getOutcomeIndicators(config: D2Config): FutureData<Indicator[]> {
@@ -207,7 +206,7 @@ export class D2ApiIndicator {
                     attribute => attribute.attribute.id === config.attributes.group.id
                 );
 
-                const suggestedCompanions = this.getSuggestedCompanionCodes(
+                const companionRules = this.buildCompanionRules(
                     config.attributes,
                     indicator.attributeValues
                 );
@@ -231,44 +230,35 @@ export class D2ApiIndicator {
                     disaggregation: undefined,
                     initialDisaggregation: undefined,
                     categories: [],
-                    suggestedCompanions: suggestedCompanions,
+                    companionRules: companionRules,
                 });
             })
             .value();
     }
 
-    private getSuggestedCompanionCodes(
+    private buildCompanionRules(
         attributes: D2Config["attributes"],
         attributeValues: D2Attribute[]
-    ): SuggestedIndicator[] {
-        const mandatoryIndicatorsValues = attributeValues.find(
-            attribute => attribute.attribute.id === attributes.mandatoryCompanionIndicator.id
+    ): Indicator["companionRules"] {
+        const outcomeIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outcomeCompanionIndicator.id
         );
 
-        const optionalIndicatorsValues = attributeValues.find(
-            attribute => attribute.attribute.id === attributes.optionalCompanionIndicator.id
+        const outputIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outputCompanionIndicator.id
         );
 
-        const mandatoryCodes = this.getCompanionCodesFromAttribute(mandatoryIndicatorsValues);
-        const optionalCodes = this.getCompanionCodesFromAttribute(optionalIndicatorsValues);
+        const outputRule = new D2CompanionRuleParser(
+            outcomeIndicatorsValues?.value ?? ""
+        ).buildCompanionRule();
 
-        const mandatoryIndicators: Maybe<SuggestedIndicator> =
-            mandatoryCodes.length > 0 ? { codes: mandatoryCodes, type: "mandatory" } : undefined;
+        const outcomeRule = new D2CompanionRuleParser(
+            outputIndicatorsValues?.value ?? ""
+        ).buildCompanionRule();
 
-        const optionalIndicators: Maybe<SuggestedIndicator> =
-            optionalCodes.length > 0 ? { codes: optionalCodes, type: "optional" } : undefined;
+        if (!outputRule && !outcomeRule) return undefined;
 
-        return _([mandatoryIndicators, optionalIndicators]).compact().value();
-    }
-
-    private getCompanionCodesFromAttribute(attributeValue: Maybe<D2Attribute>): Code[] {
-        if (!attributeValue) return [];
-
-        const mandatoryCodes = attributeValue?.value.split(this.companionSeparator);
-
-        return _(mandatoryCodes)
-            .compactMap(code => code.trim())
-            .value();
+        return { outcomeRule: outcomeRule, outputRule: outputRule };
     }
 
     private buildOutputIndicator(
@@ -309,7 +299,7 @@ export class D2ApiIndicator {
               }
             : undefined;
 
-        const suggestedCompanions = this.getSuggestedCompanionCodes(
+        const companionRules = this.buildCompanionRules(
             config.attributes,
             dataElement.attributeValues
         );
@@ -333,7 +323,7 @@ export class D2ApiIndicator {
             initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
-            suggestedCompanions: suggestedCompanions,
+            companionRules: companionRules,
         });
     }
 }

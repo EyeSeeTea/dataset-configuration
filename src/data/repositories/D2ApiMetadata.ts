@@ -15,8 +15,8 @@ export const metadataCodes = {
         periodDates: "GL_DATASET_PERIOD_DATES",
         outcomeDates: "GL_OUTCOME_DATES",
         outputDates: "GL_OUTPUT_DATES",
-        mandatoryCompanionIndicator: "GL_MANDATORY_COMPANION_INDICATORS",
-        optionalCompanionIndicator: "GL_OPTIONAL_COMPANION_INDICATORS",
+        outcomeCompanionIndicator: "GL_OUTCOME_COMPANION_INDICATORS",
+        outputCompanionIndicator: "GL_OUTPUT_COMPANION_INDICATORS",
     },
     categories: { project: "GL_Project" },
     dataElementGroupSets: {
@@ -209,8 +209,8 @@ export type D2Config = {
         periodDates: D2NamedCodeRef;
         outcomeDates: D2NamedCodeRef;
         outputDates: D2NamedCodeRef;
-        mandatoryCompanionIndicator: D2NamedCodeRef;
-        optionalCompanionIndicator: D2NamedCodeRef;
+        outcomeCompanionIndicator: D2NamedCodeRef;
+        outputCompanionIndicator: D2NamedCodeRef;
     };
     categories: { project: D2NamedCodeRef };
     categoryCombos: { projectTargetActual: D2NamedCodeRef };
