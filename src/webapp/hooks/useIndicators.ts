@@ -21,7 +21,7 @@ export function useGetCompanionIndicators(props: {
         () =>
             _(indicators)
                 .filter(indicator => Boolean(indicator.code))
-                .keyBy(indicator => indicator.code),
+                .keyBy(indicator => indicator.code.toLowerCase()),
         [indicators]
     );
 
@@ -35,7 +35,7 @@ export function useGetCompanionIndicators(props: {
 
             const indicatorCompanion = _(companionCodes)
                 .compactMap(code => {
-                    const indicatorDetails = indicatorsByCode.get(code);
+                    const indicatorDetails = indicatorsByCode.get(code.toLowerCase());
                     if (!indicatorDetails) return undefined;
 
                     return { ...indicatorDetails, parentCompanionName: indicator.name };
