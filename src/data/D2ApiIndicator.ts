@@ -8,6 +8,8 @@ import { Id, Ref } from "$/domain/entities/Ref";
 import { Maybe } from "$/utils/ts-utils";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import { convertToCategories } from "$/data/utils";
+import { D2Attribute } from "$/data/repositories/DataSetD2Repository";
+import { D2CompanionRuleParser } from "$/data/D2CompanionRuleParser";
 
 export class D2ApiIndicator {
     constructor(private api: D2Api) {}
@@ -204,6 +206,11 @@ export class D2ApiIndicator {
                     attribute => attribute.attribute.id === config.attributes.group.id
                 );
 
+                const companionRules = this.buildCompanionRules(
+                    config.attributes,
+                    indicator.attributeValues
+                );
+
                 return Indicator.create({
                     measure: "",
                     valueType: "",
@@ -223,9 +230,35 @@ export class D2ApiIndicator {
                     disaggregation: undefined,
                     initialDisaggregation: undefined,
                     categories: [],
+                    companionRules: companionRules,
                 });
             })
             .value();
+    }
+
+    private buildCompanionRules(
+        attributes: D2Config["attributes"],
+        attributeValues: D2Attribute[]
+    ): Indicator["companionRules"] {
+        const outcomeIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outcomeCompanionIndicator.id
+        );
+
+        const outputIndicatorsValues = attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outputCompanionIndicator.id
+        );
+
+        const outputRule = new D2CompanionRuleParser(
+            outcomeIndicatorsValues?.value ?? ""
+        ).buildCompanionRule();
+
+        const outcomeRule = new D2CompanionRuleParser(
+            outputIndicatorsValues?.value ?? ""
+        ).buildCompanionRule();
+
+        if (!outputRule && !outcomeRule) return undefined;
+
+        return { outcomeRule: outcomeRule, outputRule: outputRule };
     }
 
     private buildOutputIndicator(
@@ -266,6 +299,11 @@ export class D2ApiIndicator {
               }
             : undefined;
 
+        const companionRules = this.buildCompanionRules(
+            config.attributes,
+            dataElement.attributeValues
+        );
+
         return Indicator.create({
             measure: this.getValueOrEmpty(measure?.displayName),
             valueType: dataElement.valueType,
@@ -285,6 +323,7 @@ export class D2ApiIndicator {
             initialDisaggregation: disaggregation,
             relatedDataElements: [],
             categories: [],
+            companionRules: companionRules,
         });
     }
 }
@@ -296,7 +335,7 @@ type D2IndicatorGroup = {
     indicators: Array<{
         displayDescription: string;
         code: string;
-        attributeValues: Array<{ attribute: { id: Id }; value: string }>;
+        attributeValues: D2Attribute[];
         denominator: string;
         displayName: string;
         id: Id;
@@ -330,7 +369,7 @@ type D2DataElementFromGroup = {
         displayName: string;
         groupSets: Array<{ id: Id; displayName: string }>;
     }>;
-    attributeValues: Array<{ attribute: { id: Id }; value: string }>;
+    attributeValues: D2Attribute[];
 };
 
 type D2DataElementGroup = CoreCompetency & { initialName: string };

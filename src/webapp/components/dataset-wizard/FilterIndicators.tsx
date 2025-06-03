@@ -30,6 +30,7 @@ export type FilterIndicatorsProps = {
     theme: string;
     types: string[];
     selectedType: string;
+    hidden: boolean;
     masterLogFrames: {
         data: MasterLogFrame[];
         error: Maybe<string>;
@@ -85,6 +86,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
         selectedType,
         indicatorsPerCompetency,
         indicatorsPerType,
+        hidden: hide,
         masterLogFrames,
     } = props;
 
@@ -94,7 +96,7 @@ export const FilterIndicators = React.memo((props: FilterIndicatorsProps) => {
     );
 
     return (
-        <FilterIndicatorContainer style={{ maxWidth: "300px" }}>
+        <FilterIndicatorContainer $hide={hide}>
             <HeaderFilterContainer>
                 <FilterListIcon />
 
@@ -297,12 +299,14 @@ export const ChipFilter = React.memo((props: ChipFilterProps) => {
     );
 });
 
-const FilterIndicatorContainer = styled.div`
+const FilterIndicatorContainer = styled.div<{ $hide: boolean }>`
     max-width: 350px;
     display: flex;
     flex-direction: column;
     row-gap: 0.5em;
-`;
+    opacity: ${props => (props.$hide ? 0 : 1)};
+    transition: opacity 0.3s;
+)`;
 
 const HeaderFilterContainer = styled.div`
     align-items: center;

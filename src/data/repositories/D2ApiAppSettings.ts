@@ -80,6 +80,8 @@ export class D2ApiAppSettings {
                                     metadataCodes.attributes.outcomeDates,
                                     metadataCodes.attributes.outputDates,
                                     metadataCodes.attributes.project,
+                                    metadataCodes.attributes.outputCompanionIndicator,
+                                    metadataCodes.attributes.outcomeCompanionIndicator,
                                 ]),
                             },
                         },

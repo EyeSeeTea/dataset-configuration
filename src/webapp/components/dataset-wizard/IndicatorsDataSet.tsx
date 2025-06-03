@@ -1,11 +1,13 @@
 import React from "react";
-import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
+import styled from "styled-components";
 import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
+import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
 import {
     ObjectsTable,
-    ObjectsTableProps,
+    SearchBox,
     TableSorting,
     TableState,
+    useSnackbar,
 } from "@eyeseetea/d2-ui-components";
 
 import { DataSet } from "$/domain/entities/DataSet";
@@ -21,7 +23,14 @@ import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetSettings } from "$/domain/entities/DataSetSettings";
 import { Maybe } from "$/utils/ts-utils";
-import styled from "styled-components";
+import { useBooleanState } from "$/webapp/hooks/useBooleanState";
+import { HashMap } from "$/domain/entities/generic/HashMap";
+import { SnackBarAction } from "$/webapp/components/snack-bar-action/SnackBarAction";
+import {
+    IndicatorColumn,
+    useGetCompanionIndicators,
+    useIndicatorsTableColumns,
+} from "$/webapp/hooks/useIndicators";
 import { useGetMasterLogFrameByCodes } from "$/webapp/hooks/useMasterLogFrame";
 import { MasterLogFrame } from "$/domain/entities/MasterLogFrame";
 
@@ -69,9 +78,18 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     );
     const [selectedMLF, setSelectedMLF] = React.useState<string>("");
     const isLargeDesktop = useMediaQuery("(min-width: 1320px)");
-    const [sorting, setSorting] = React.useState<TableSorting<Indicator>>({
+    const [sorting, setSorting] = React.useState<TableSorting<IndicatorColumn>>({
         field: "status",
         order: "asc",
+    });
+    const [hasCompanionTable, hasCompanionTableActions] = useBooleanState(false);
+    const [search, setSearch] = React.useState<string>("");
+
+    const indicatorsWithCompanion = useGetCompanionIndicators({
+        indicators,
+        selectedIndicators,
+        dataSet,
+        selectedFilterValue,
     });
 
     const accessCodes = React.useMemo(() => dataSet.getRegionCodesFromAccess(), [dataSet]);
@@ -82,6 +100,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     }, [masterLogFrames, selectedMLF]);
 
     const { allMeasures, allThemes, filteredRows } = useFilterIndicators({
+        search,
         indicators,
         scope,
         selectedType,
@@ -99,40 +118,19 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
         onChange,
         setSelectedIndicators,
         setSorting,
+        onShowCompanionIndicator: React.useCallback(() => {
+            hasCompanionTableActions.enable();
+            setSearch("");
+        }, [hasCompanionTableActions]),
+        companionTable: hasCompanionTable,
     });
 
-    const columns: ObjectsTableProps<Indicator>["columns"] = [
-        {
-            name: "id",
-            text: i18n.t("Id"),
-            hidden: true,
-        },
-        {
-            name: "name",
-            text: i18n.t("Name"),
-        },
-        {
-            name: "theme",
-            text: i18n.t("Theme"),
-        },
-        {
-            name: "group",
-            text: i18n.t("Group"),
-        },
-        {
-            name: "status",
-            text: i18n.t("Status"),
-            getValue: indicator => <StatusIndicator status={indicator.status} />,
-        },
-        {
-            name: "disaggregation",
-            text: i18n.t("Disaggregation"),
-        },
-    ];
+    const columns = useIndicatorsTableColumns({
+        showCompanionColumn: hasCompanionTable,
+        statusIndicator: indicator => <StatusIndicator status={indicator.status} />,
+    });
 
-    const openFilters = React.useCallback(() => {
-        setShowFilterModal(true);
-    }, []);
+    const openFilters = React.useCallback(() => setShowFilterModal(true), []);
 
     const updateFilter = React.useCallback((value: ChipItem[], filterType: FilterType) => {
         const singleItemValue = value[0]?.value || "";
@@ -191,6 +189,11 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
     const indicatorsPerType = useBuildTotalByKey(dataSet.indicators, indicator => indicator.type);
 
+    const toggleCompanionTable = React.useCallback(() => {
+        setSearch("");
+        hasCompanionTableActions.toggle();
+    }, [hasCompanionTableActions]);
+
     return (
         <form>
             <Grid container spacing={1}>
@@ -199,29 +202,45 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                     showDrawer={showFilterModal}
                     onClose={() => setShowFilterModal(false)}
                 >
-                    <FilterIndicators
-                        measures={allMeasures}
-                        measure={selectedMeasure}
-                        scopes={scopes}
-                        scopeValue={[scope]}
-                        onFilterChange={updateFilter}
-                        coreCompetencies={coreCompetencies}
-                        showCloseButton={!isLargeDesktop}
-                        coreValues={selectedCompetencies}
-                        types={types}
-                        selectedType={selectedType}
-                        themes={allThemes}
-                        theme={selectedTheme}
-                        onClose={() => setShowFilterModal(false)}
-                        indicatorsPerCompetency={indicatorsPerCompetency}
-                        indicatorsPerType={indicatorsPerType}
-                        masterLogFrames={{
-                            data: masterLogFrames,
-                            loading,
-                            error: errorMlf,
-                            value: selectedMLF,
-                        }}
-                    />
+                    <>
+                        <SuggestCompanionContainer>
+                            <Button
+                                variant={"contained"}
+                                color="primary"
+                                fullWidth
+                                onClick={toggleCompanionTable}
+                                disabled={indicatorsWithCompanion.length === 0}
+                            >
+                                {hasCompanionTable
+                                    ? i18n.t("Hide Suggested Companion Indicators")
+                                    : i18n.t("Show Suggested Companion Indicators")}
+                            </Button>
+                        </SuggestCompanionContainer>
+                        <FilterIndicators
+                            measures={allMeasures}
+                            measure={selectedMeasure}
+                            scopes={scopes}
+                            scopeValue={[scope]}
+                            onFilterChange={updateFilter}
+                            coreCompetencies={coreCompetencies}
+                            showCloseButton={!isLargeDesktop}
+                            coreValues={selectedCompetencies}
+                            types={types}
+                            selectedType={selectedType}
+                            themes={allThemes}
+                            theme={selectedTheme}
+                            onClose={() => setShowFilterModal(false)}
+                            indicatorsPerCompetency={indicatorsPerCompetency}
+                            indicatorsPerType={indicatorsPerType}
+                            hidden={hasCompanionTable}
+                            masterLogFrames={{
+                                data: masterLogFrames,
+                                loading,
+                                error: errorMlf,
+                                value: selectedMLF,
+                            }}
+                        />
+                    </>
                 </FilterWrapper>
 
                 <Grid item xs={1} style={{ flex: 0 }}>
@@ -244,12 +263,16 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
                     <ObjectsTable
                         columns={columns}
-                        rows={filteredRows}
+                        rows={hasCompanionTable ? indicatorsWithCompanion : filteredRows}
                         forceSelectionColumn
-                        filterComponents={<FilterTable onChange={setSelectedFilterValue} />}
+                        filterComponents={
+                            <FilterTable
+                                onSearchChange={setSearch}
+                                onChange={setSelectedFilterValue}
+                                search={search}
+                            />
+                        }
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
-                        searchBoxLabel={i18n.t("Search by name")}
-                        searchBoxColumns={["name"]}
                         onChange={validateIndicators}
                         sorting={sorting}
                     />
@@ -260,8 +283,12 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 });
 
 export const FilterTable = React.memo(
-    (props: { onChange: (value: Maybe<SelectedFilterValue>) => void }) => {
-        const { onChange } = props;
+    (props: {
+        onChange: (value: Maybe<SelectedFilterValue>) => void;
+        onSearchChange: (search: string) => void;
+        search: string;
+    }) => {
+        const { onChange, onSearchChange, search } = props;
         const [value, setValue] = React.useState<SelectedFilterValue>();
 
         const handleAlignment = (
@@ -275,30 +302,39 @@ export const FilterTable = React.memo(
 
         return (
             <>
-                <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
-                    <ToggleButtonStyled value="selected">
-                        <Button
-                            variant={value === "selected" ? "outlined" : "text"}
-                            color="primary"
-                        >
-                            {i18n.t("Selected")}
-                        </Button>
-                    </ToggleButtonStyled>
-                    <ToggleButtonStyled value="non-selected">
-                        <Button
-                            variant={value === "non-selected" ? "outlined" : "text"}
-                            color="primary"
-                        >
-                            {i18n.t("No Selected")}
-                        </Button>
-                    </ToggleButtonStyled>
-                </ToggleButtonGroup>
+                <SearchBox
+                    onChange={onSearchChange}
+                    hintText={i18n.t("Search by name")}
+                    className="search-box-indicators"
+                    value={search}
+                />
+                <section>
+                    <ToggleButtonGroup exclusive value={value} onChange={handleAlignment}>
+                        <ToggleButtonStyled value="selected">
+                            <Button
+                                variant={value === "selected" ? "outlined" : "text"}
+                                color="primary"
+                            >
+                                {i18n.t("Selected")}
+                            </Button>
+                        </ToggleButtonStyled>
+                        <ToggleButtonStyled value="non-selected">
+                            <Button
+                                variant={value === "non-selected" ? "outlined" : "text"}
+                                color="primary"
+                            >
+                                {i18n.t("No Selected")}
+                            </Button>
+                        </ToggleButtonStyled>
+                    </ToggleButtonGroup>
+                </section>
             </>
         );
     }
 );
 
 function useFilterIndicators(props: {
+    search: string;
     indicators: Indicator[];
     scope: string;
     selectedMeasure: string;
@@ -310,6 +346,7 @@ function useFilterIndicators(props: {
     selectedMlf: Maybe<MasterLogFrame>;
 }) {
     const {
+        search,
         indicators,
         scope,
         selectedType,
@@ -340,6 +377,11 @@ function useFilterIndicators(props: {
     const filteredRows = React.useMemo(() => {
         return indicators
             .filter(indicator => {
+                if (search.length === 0) return true;
+                const name = indicator.name.toLowerCase();
+                return name.includes(search.toLowerCase());
+            })
+            .filter(indicator => {
                 if (!selectedFilterValue) return true;
                 return selectedFilterValue === "selected"
                     ? selectedIndicators.includes(indicator.id)
@@ -368,6 +410,7 @@ function useFilterIndicators(props: {
                 return a.status.localeCompare(b.status);
             });
     }, [
+        search,
         selectedCompetencies,
         selectedTheme,
         indicators,
@@ -399,18 +442,52 @@ function useValidateIndicators(props: {
     onChange: (dataSet: DataSet) => void;
     dataSet: DataSet;
     setSelectedIndicators: React.Dispatch<React.SetStateAction<Id[]>>;
-    setSorting: React.Dispatch<React.SetStateAction<TableSorting<Indicator>>>;
+    setSorting: React.Dispatch<React.SetStateAction<TableSorting<IndicatorColumn>>>;
+    onShowCompanionIndicator: () => void;
+    companionTable: boolean;
 }) {
-    const { indicators, onChange, dataSet, setSelectedIndicators, setSorting } = props;
+    const [alertedIndicatorIds, setAlertedIndicatorIds] = React.useState<Set<Id>>(new Set());
+    const snackBar = useSnackbar();
+
+    const {
+        companionTable,
+        indicators,
+        onChange,
+        dataSet,
+        onShowCompanionIndicator,
+        setSelectedIndicators,
+        setSorting,
+    } = props;
+
+    const indicatorsById = React.useMemo(
+        () => _(indicators).keyBy(indicator => indicator.id),
+        [indicators]
+    );
 
     const validateIndicators = React.useCallback(
-        (state: TableState<Indicator>) => {
+        (state: TableState<IndicatorColumn>) => {
             const ids = state.selection.map(row => row.id);
+
+            const { showAlert, newIndicatorIdsToAlert } = getAlertedIndicatorIds(
+                alertedIndicatorIds,
+                ids,
+                indicatorsById
+            );
+
+            if (showAlert && !companionTable) {
+                snackBar.info(
+                    <SnackBarAction
+                        message={i18n.t("There are some suggested companion")}
+                        buttonText={i18n.t("Show them")}
+                        onClick={onShowCompanionIndicator}
+                    />,
+                    { autoHideDuration: 6000 }
+                );
+            }
+
             const currentIndicators = _(ids)
                 .compactMap(indicatorId => {
-                    const indicatorInfo = indicators.find(
-                        indicator => indicator.id === indicatorId
-                    );
+                    const indicatorInfo = indicatorsById.get(indicatorId);
                     if (!indicatorInfo) return undefined;
                     const updatedIndicator = dataSet.indicators.find(
                         indicator => indicator.id === indicatorId
@@ -426,11 +503,23 @@ function useValidateIndicators(props: {
                     });
                 })
                 .value();
+
+            setAlertedIndicatorIds(newIndicatorIdsToAlert);
             setSelectedIndicators(ids);
             onChange(dataSet.setIndicators(currentIndicators));
             setSorting(state.sorting);
         },
-        [dataSet, indicators, onChange, setSelectedIndicators, setSorting]
+        [
+            companionTable,
+            dataSet,
+            alertedIndicatorIds,
+            indicatorsById,
+            onChange,
+            setSelectedIndicators,
+            setSorting,
+            snackBar,
+            onShowCompanionIndicator,
+        ]
     );
     return validateIndicators;
 }
@@ -447,13 +536,46 @@ function useBuildTotalByKey(
     }, [indicators, getKey]);
 }
 
+function getAlertedIndicatorIds(
+    existingIndicatorsAlerted: Set<Id>,
+    ids: Id[],
+    indicatorsById: HashMap<Id, Indicator>
+) {
+    const unAlertedIds = ids.filter(id => !existingIndicatorsAlerted.has(id));
+    const showAlert = unAlertedIds
+        .map(id => indicatorsById.get(id))
+        .some(row => {
+            if (!row) return false;
+            return thereAreCompanionIndicators(row);
+        });
+
+    const newIndicatorIdsToAlert = new Set([
+        ...ids.filter(id => {
+            const indicator = indicatorsById.get(id);
+            if (!indicator) return false;
+            return thereAreCompanionIndicators(indicator);
+        }),
+    ]);
+
+    return { showAlert, newIndicatorIdsToAlert };
+}
+
+function thereAreCompanionIndicators(indicator: Indicator): boolean {
+    const outcomeCodes = indicator.getCompanionCodesByType("outcome");
+    const outputCodes = indicator.getCompanionCodesByType("output");
+    return outcomeCodes.length > 0 || outputCodes.length > 0;
+}
+
 const selectedFilterValues = ["selected", "non-selected"] as const;
 
 export type SelectedFilterValue = (typeof selectedFilterValues)[number];
-
 export type IndicatorPerItem = { id: Id; totalIndicators: number };
 
 const ToggleButtonStyled = styled(ToggleButton)`
     backgroundcolor: none;
     border: none !important;
+`;
+
+const SuggestCompanionContainer = styled.div`
+    padding: 0.5em !important;
 `;

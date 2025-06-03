@@ -6,6 +6,8 @@ import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import _ from "$/domain/entities/generic/Collection";
 import { component } from "$/utils/react";
+import { Code, Id } from "$/domain/entities/Ref";
+import styled from "styled-components";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
@@ -44,6 +46,8 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
     const regionsCodes = dataSet.getRegionCodesFromAccess();
     const selectedRegions = config.regions.filter(region => regionsCodes.includes(region.code));
 
+    const { missingSelectedCompanion } = useGetMissingSelectedCompanion({ dataSet });
+
     return (
         <Grid item xs={12}>
             <ul>
@@ -59,8 +63,46 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                     label="Countries"
                     value={selectedRegions.map(region => region.name).join(", ")}
                 />
+
+                {missingSelectedCompanion.length > 0 && (
+                    <SummaryItem label={i18n.t("Companion Indicators")} value="" />
+                )}
+
+                {missingSelectedCompanion.map(indicator => (
+                    <MissingCompanionAlert indicator={indicator} key={indicator.id} />
+                ))}
             </ul>
         </Grid>
+    );
+});
+
+const MissingCompanionAlert = React.memo((props: { indicator: MissingCompanionIndicator }) => {
+    const { indicator } = props;
+
+    const outcomeMessage = indicator.outcomeMessage
+        ? i18n.t("Outcome companion rule not satisfied: {{rule}}", {
+              rule: indicator.outcomeMessage,
+              nsSeparator: false,
+              interpolation: { escapeValue: false },
+          })
+        : undefined;
+
+    const outputMessage = indicator.outputMessage
+        ? i18n.t("Output companion rule not satisfied: {{rule}}", {
+              rule: indicator.outputMessage,
+              nsSeparator: false,
+              interpolation: { escapeValue: false },
+          })
+        : undefined;
+
+    const messages = _([outputMessage, outcomeMessage]).compact().value();
+
+    return (
+        <MissingCompanionAlertContainer>
+            {messages.map(message => (
+                <SummaryItem key={message} label={indicator.code} value={message} />
+            ))}
+        </MissingCompanionAlertContainer>
     );
 });
 
@@ -71,3 +113,51 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
         </li>
     );
 });
+
+const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
+    const { dataSet } = props;
+
+    const indicatorByCodes = React.useMemo(
+        () =>
+            _(dataSet.indicators)
+                .filter(indicator => Boolean(indicator.code))
+                .keyBy(indicator => indicator.code),
+        [dataSet]
+    );
+
+    const missingSelectedCompanion = React.useMemo(() => {
+        return _(dataSet.indicators)
+            .filter(indicator => indicator.getCompanionCodesFromRules().length > 0)
+            .compactMap(indicator => {
+                const { outcomeRuleIsValid, outputRuleIsValid } =
+                    indicator.validateCompanionRules(indicatorByCodes);
+
+                if (outcomeRuleIsValid && outputRuleIsValid) return undefined;
+
+                const { outcomeMessage, outputMessage } = indicator.buildCompanionRuleMessage();
+
+                return {
+                    id: indicator.id,
+                    name: indicator.name,
+                    code: indicator.code,
+                    outcomeMessage: !outcomeRuleIsValid ? outcomeMessage : "",
+                    outputMessage: !outputRuleIsValid ? outputMessage : "",
+                };
+            })
+            .value();
+    }, [dataSet, indicatorByCodes]);
+
+    return { missingSelectedCompanion };
+};
+
+type MissingCompanionIndicator = {
+    id: Id;
+    name: string;
+    code: Code;
+    outcomeMessage: string;
+    outputMessage: string;
+};
+
+const MissingCompanionAlertContainer = styled("div")`
+    padding-inline: 1rem;
+`;

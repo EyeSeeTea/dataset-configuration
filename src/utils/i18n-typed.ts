@@ -20,6 +20,8 @@ interface Options {
     ns: string; // namespace
     nsSeparator: string | boolean; // By default, ":", which breaks strings containing that char
     lng: string; // language
+    // useful to escape special characters in the translation string
+    interpolation: { escapeValue: boolean };
 }
 
 type Interpolations<Str extends string> = Record<ExtractVars<Str>, string | number>;
