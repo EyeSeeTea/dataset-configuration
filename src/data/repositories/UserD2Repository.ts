@@ -35,6 +35,7 @@ export class UserD2Repository implements UserRepository {
                 canCreateDataSets: hasAccess(authorities.dataSets.create),
                 canEditCombinations: hasAccess(authorities.categoryCombo.edit),
             },
+            orgUnits: d2User.organisationUnits,
         });
     }
 }
@@ -47,6 +48,7 @@ const userFields = {
         username: true,
         userRoles: { id: true, name: true, authorities: true },
     },
+    organisationUnits: true,
 } as const;
 
 type D2User = MetadataPick<{ users: { fields: typeof userFields } }>["users"][number];

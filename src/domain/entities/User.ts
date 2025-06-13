@@ -1,5 +1,5 @@
 import { Struct } from "./generic/Struct";
-import { NamedRef } from "./Ref";
+import { NamedRef, Ref } from "./Ref";
 
 export interface UserAttrs {
     id: string;
@@ -13,6 +13,7 @@ export interface UserAttrs {
         canEditCombinations: boolean;
         canDeleteDataSets: boolean;
     };
+    orgUnits: Ref[];
 }
 
 export interface UserRole extends NamedRef {
@@ -20,6 +21,10 @@ export interface UserRole extends NamedRef {
 }
 
 export class User extends Struct<UserAttrs>() {
+    get orgUnitIds() {
+        return this.orgUnits.map(({ id }) => id);
+    }
+
     belongToUserGroup(userGroupUid: string): boolean {
         return this.userGroups.some(({ id }) => id === userGroupUid);
     }
