@@ -1,7 +1,7 @@
 {
-    "name": "d2-dataset-configuration-beta",
-    "description": "Project Configuration app - Beta",
-    "version": "2.7.0-beta.1",
+    "name": "d2-dataset-configuration",
+    "description": "Project Configuration app",
+    "version": "2.7.0",
     "license": "GPL-3.0",
     "author": "EyeSeeTea team",
     "homepage": ".",
