@@ -24,10 +24,12 @@ export function createUserWithGroups(userGroups: NamedRef[] = []): User {
             canCreateDataSets: true,
             canEditCombinations: true,
         },
+        orgUnits: [],
     });
 }
 function createUser(userRoles: UserRole[], userGroups: NamedRef[] = []): User {
     return new User({
+        orgUnits: [],
         id: "kQiwoyMYHBS",
         name: "John Traore",
         username: "user",

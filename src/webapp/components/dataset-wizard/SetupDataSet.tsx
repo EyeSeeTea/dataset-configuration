@@ -31,7 +31,7 @@ export type SetupDataSetProps = {
 };
 
 const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
-    const { api, config, compositionRoot } = useAppContext();
+    const { api, config, compositionRoot, currentUser } = useAppContext();
     const { dataSet, onChange, onValidate, validationStatus } = props;
     const [projectModalOpen, setProjectModalOpen] = React.useState(false);
     const [showClosedProjects, setShowClosedProjects] = React.useState(false);
@@ -174,6 +174,7 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
                     api={api}
                     selected={dataSet.orgUnits.map(orgUnit => `/${orgUnit.path.join("/")}`)}
                     onChange={updateOrgUnits}
+                    rootIds={currentUser.orgUnitIds}
                 />
             </Grid>
 
