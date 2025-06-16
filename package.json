@@ -1,7 +1,7 @@
 {
     "name": "d2-dataset-configuration",
     "description": "Project Configuration app",
-    "version": "2.7.0",
+    "version": "2.6.4",
     "license": "GPL-3.0",
     "author": "EyeSeeTea team",
     "homepage": ".",
@@ -117,8 +117,8 @@
         "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
     },
     "manifest.webapp": {
-        "name": "Project Configuration app - Beta",
-        "description": "Project Configuration app - Beta",
+        "name": "Project Configuration app",
+        "description": "Project Configuration app",
         "icons": {
             "48": "icon.png"
         },
