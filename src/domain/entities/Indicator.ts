@@ -5,7 +5,7 @@ import { CoreCompetency } from "$/domain/entities/DataSet";
 import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
-import { Maybe, UnionFromValues } from "$/utils/ts-utils";
+import { LowercaseString, Maybe, UnionFromValues } from "$/utils/ts-utils";
 import {
     CompanionRule,
     buildCompanionRuleMessage,
@@ -288,7 +288,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return rule ? getIndicatorCodes(rule) : [];
     }
 
-    validateCompanionRules(indicatorByCodes: HashMap<string, Indicator>): {
+    validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
         outcomeRuleIsValid: boolean;
         outputRuleIsValid: boolean;
     } {

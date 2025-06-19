@@ -8,6 +8,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { component } from "$/utils/react";
 import { Code, Id } from "$/domain/entities/Ref";
 import styled from "styled-components";
+import { toLowercaseString } from "$/utils/ts-utils";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
@@ -121,7 +122,7 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
         () =>
             _(dataSet.indicators)
                 .filter(indicator => Boolean(indicator.code))
-                .keyBy(indicator => indicator.code),
+                .keyBy(indicator => toLowercaseString(indicator.code)),
         [dataSet]
     );
 

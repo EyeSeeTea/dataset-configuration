@@ -1,7 +1,7 @@
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Code } from "$/domain/entities/Ref";
-import { Maybe } from "$/utils/ts-utils";
+import { LowercaseString, Maybe, toLowercaseString } from "$/utils/ts-utils";
 
 export type CompanionRule =
     | { type: "atomic"; code: Code }
@@ -10,11 +10,11 @@ export type CompanionRule =
 
 export function evaluateRule(
     rule: CompanionRule,
-    indicatorByCodes: HashMap<string, Indicator>
+    indicatorByCodes: HashMap<LowercaseString, Indicator>
 ): boolean {
     switch (rule.type) {
         case "atomic":
-            return indicatorByCodes.get(rule.code) ? true : false;
+            return indicatorByCodes.hasKey(toLowercaseString(rule.code));
         case "AND":
             return rule.operators.every(sub => evaluateRule(sub, indicatorByCodes));
         case "OR":
