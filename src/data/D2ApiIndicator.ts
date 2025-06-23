@@ -249,11 +249,11 @@ export class D2ApiIndicator {
         );
 
         const outputRule = new D2CompanionRuleParser(
-            outcomeIndicatorsValues?.value ?? ""
+            outputIndicatorsValues?.value ?? ""
         ).buildCompanionRule();
 
         const outcomeRule = new D2CompanionRuleParser(
-            outputIndicatorsValues?.value ?? ""
+            outcomeIndicatorsValues?.value ?? ""
         ).buildCompanionRule();
 
         if (!outputRule && !outcomeRule) return undefined;
