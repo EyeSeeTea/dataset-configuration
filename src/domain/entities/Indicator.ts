@@ -20,6 +20,10 @@ export type Disaggregation = {
     optionsCombos: Array<NamedRef & { categoryCombo: Ref; options: NamedRef[] }>;
 };
 
+export type IndicatorCompanionRule =
+    | { type: "global"; rule: CompanionRule }
+    | { type: "scoped"; rules: { [scope: string]: CompanionRule } };
+
 export type IndicatorAttrs = {
     id: Id;
     description: string;
@@ -40,8 +44,8 @@ export type IndicatorAttrs = {
     categories: Category[];
     valueType: string;
     companionRules: Maybe<{
-        outcomeRule: Maybe<CompanionRule>;
-        outputRule: Maybe<CompanionRule>;
+        outcomeRule: Maybe<IndicatorCompanionRule>;
+        outputRule: Maybe<IndicatorCompanionRule>;
     }>;
 };
 
@@ -281,31 +285,48 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return outcomeCodes.concat(outputCodes);
     }
 
-    getCompanionCodesByType(type: "output" | "outcome"): Code[] {
+    getCompanionCodesByType(type: "output" | "outcome", scope?: string): Code[] {
         const rule =
             type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
 
-        return rule ? getIndicatorCodes(rule) : [];
+        if(!rule) return [];
+
+        return processCompanionRule(rule, getIndicatorCodes, scope).flat();
+    }
+    getCompanionScopes(){
+        const outcomeScopes = this.getCompanionScopesByType("outcome");
+        const outputScopes = this.getCompanionScopesByType("output");
+        return _(outcomeScopes).concat(outputScopes).uniq();
+    }
+
+    getCompanionScopesByType(type: "output" | "outcome"): string[] {
+        const rule =
+            type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
+
+        if (!rule) return [];
+
+        return rule.type === "scoped" ? Object.keys(rule.rules) : ["default"];
     }
 
     validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
         outcomeRuleIsValid: boolean;
         outputRuleIsValid: boolean;
     } {
+        const evaluateIndicatorRule = (rule: CompanionRule) => evaluateRule(rule, indicatorByCodes);
         const outcomeRuleIsValid = this.companionRules?.outcomeRule
-            ? evaluateRule(this.companionRules.outcomeRule, indicatorByCodes)
+            ? processCompanionRule(this.companionRules?.outcomeRule, evaluateIndicatorRule).every(Boolean)
             : true;
 
         const outputRuleIsValid = this.companionRules?.outputRule
-            ? evaluateRule(this.companionRules.outputRule, indicatorByCodes)
+            ? processCompanionRule(this.companionRules?.outputRule, evaluateIndicatorRule).every(Boolean)
             : true;
 
         return { outcomeRuleIsValid, outputRuleIsValid };
     }
 
     buildCompanionRuleMessage(): { outcomeMessage: string; outputMessage: string } {
-        const outcomeMessage = buildCompanionRuleMessage(this.companionRules?.outcomeRule);
-        const outputMessage = buildCompanionRuleMessage(this.companionRules?.outputRule);
+        const outcomeMessage = this.companionRules?.outcomeRule ? processCompanionRule(this.companionRules.outcomeRule, buildCompanionRuleMessage).join("\n") : "";
+        const outputMessage = this.companionRules?.outputRule ? processCompanionRule(this.companionRules.outputRule, buildCompanionRuleMessage).join("\n") : "";
         return { outcomeMessage, outputMessage };
     }
 
@@ -334,3 +355,21 @@ export type DataElementWithCompetency = DataElement & {
 };
 
 type DataElementIndicator = DataElement & { indicator: Indicator };
+
+function processCompanionRule<T>(
+    companionRule: IndicatorCompanionRule,
+    fn: (rule: CompanionRule) => T,
+    scope?: string
+): T[] {
+    if (companionRule.type === "global") {
+        return [fn(companionRule.rule)];
+    } else if (companionRule.type === "scoped") {
+        if (scope !== undefined) {
+            const ruleForScope = companionRule.rules[scope];
+            return ruleForScope ? [fn(ruleForScope)] : [];
+        }
+        return Object.values(companionRule.rules).map(rule => fn(rule));
+    } else {
+        return [];
+    }
+}

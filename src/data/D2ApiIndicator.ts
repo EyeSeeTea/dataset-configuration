@@ -9,7 +9,7 @@ import { Maybe } from "$/utils/ts-utils";
 import { CoreCompetency } from "$/domain/entities/DataSet";
 import { convertToCategories } from "$/data/utils";
 import { D2Attribute } from "$/data/repositories/DataSetD2Repository";
-import { D2CompanionRuleParser } from "$/data/D2CompanionRuleParser";
+import { D2IndicatorCompanionRuleParser } from "$/data/D2IndicatorCompanionRuleParser";
 
 export class D2ApiIndicator {
     constructor(private api: D2Api) {}
@@ -248,13 +248,13 @@ export class D2ApiIndicator {
             attribute => attribute.attribute.id === attributes.outputCompanionIndicator.id
         );
 
-        const outputRule = new D2CompanionRuleParser(
+        const outputRule = new D2IndicatorCompanionRuleParser(
             outputIndicatorsValues?.value ?? ""
-        ).buildCompanionRule();
+        ).parse();
 
-        const outcomeRule = new D2CompanionRuleParser(
+        const outcomeRule = new D2IndicatorCompanionRuleParser(
             outcomeIndicatorsValues?.value ?? ""
-        ).buildCompanionRule();
+        ).parse();
 
         if (!outputRule && !outcomeRule) return undefined;
 
