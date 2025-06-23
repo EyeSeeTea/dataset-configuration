@@ -74,7 +74,11 @@ export class SaveDataSetUseCase {
         return this.projectRepository.getById(dataSet.project.id).flatMap(project => {
             const orgUnitsAreEqual = this.compareOrgUnits(project, dataSet);
             if (orgUnitsAreEqual) return Future.success(Stats.empty());
-            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits));
+            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits))
+                .flatMapError(error => {
+                    console.warn("Error saving project, ignoring updates. \n", String(error))
+                    return Future.success(Stats.empty());
+                });
         });
     }
 
