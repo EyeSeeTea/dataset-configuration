@@ -9,7 +9,8 @@ export type ProjectAttrs = {
     id: Id;
     code: Maybe<string>;
     name: string;
-    isOpen: boolean;
+    startDate: Maybe<ISODateString>;
+    endDate: Maybe<ISODateString>;
     dataSets: DataSet[];
     lastUpdated: ISODateString;
     orgsUnits: OrgUnit[];
@@ -23,6 +24,16 @@ export class Project extends Struct<ProjectAttrs>() {
             .compactMap(access => Project.extractCode(access.name))
             .uniq()
             .value();
+    }
+
+    get isOpen(): boolean {
+        if (!this.startDate || !this.endDate) return false;
+
+        const today = new Date();
+        const startDate = new Date(this.startDate);
+        const endDate = new Date(this.endDate);
+
+        return today >= startDate && today <= endDate;
     }
 
     static build(data: ProjectAttrs): Project {

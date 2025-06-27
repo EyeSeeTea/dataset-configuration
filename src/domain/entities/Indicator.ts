@@ -351,22 +351,22 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return { outcomeRuleIsValid, outputRuleIsValid };
     }
 
-    buildCompanionRuleMessage(): { outcomeMessage: string; outputMessage: string } {
-        const outcomeMessage = this.companionRules?.outcomeRule
+    buildCompanionRuleMessage(): {
+        outcomeMessage: HashMap<IndicatorCompanionScope, string>;
+        outputMessage: HashMap<IndicatorCompanionScope, string>;
+    } {
+        const outcomeMessage: HashMap<IndicatorCompanionScope, string> = this.companionRules
+            ?.outcomeRule
             ? processCompanionRuleByScope(
                   this.companionRules.outcomeRule,
                   buildCompanionRuleMessage
               )
-                  .values()
-                  .flat()
-                  .join("\n")
-            : "";
-        const outputMessage = this.companionRules?.outputRule
+            : HashMap.empty();
+        const outputMessage: HashMap<IndicatorCompanionScope, string> = this.companionRules
+            ?.outputRule
             ? processCompanionRuleByScope(this.companionRules.outputRule, buildCompanionRuleMessage)
-                  .values()
-                  .flat()
-                  .join("\n")
-            : "";
+            : HashMap.empty();
+
         return { outcomeMessage, outputMessage };
     }
 
