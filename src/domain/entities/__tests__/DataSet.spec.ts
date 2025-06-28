@@ -9,7 +9,8 @@ import { getUid } from "$/utils/uid";
 const projectTest: Project = Project.create({
     id: getUid(new Date().getTime().toString()),
     name: "Test Project Afghanistan",
-    isOpen: true,
+    startDate: new Date().toISOString(),
+    endDate: new Date().toISOString(),
     code: "AFFE1507",
     lastUpdated: new Date().toISOString(),
     orgsUnits: [],

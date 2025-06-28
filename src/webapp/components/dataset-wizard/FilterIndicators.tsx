@@ -177,10 +177,6 @@ function createItem(
     return { text: `${label} ${totalIndicators}`, value };
 }
 
-const FilterIndicatorContainer = styled.div<{ $hide: boolean }>`
-    display: ${props => (props.$hide ? "none" : "block")};
-)`;
-
 const BodyFilterContainer = styled.div`
     padding-inline: 1em;
 `;
