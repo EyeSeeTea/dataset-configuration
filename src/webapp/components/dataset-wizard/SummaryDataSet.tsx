@@ -128,7 +128,7 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
 
     const missingSelectedCompanion = React.useMemo(() => {
         return _(dataSet.indicators)
-            .filter(indicator => indicator.getCompanionCodesFromRules().length > 0)
+            .filter(indicator => indicator.getAllCompanionCodesFromRules().length > 0)
             .compactMap(indicator => {
                 const { outcomeRuleIsValid, outputRuleIsValid } =
                     indicator.validateCompanionRules(indicatorByCodes);

@@ -20,9 +20,10 @@ export type Disaggregation = {
     optionsCombos: Array<NamedRef & { categoryCombo: Ref; options: NamedRef[] }>;
 };
 
+type IndicatorCompanionScope = string;
 export type IndicatorCompanionRule =
     | { type: "global"; rule: CompanionRule }
-    | { type: "scoped"; rules: { [scope: string]: CompanionRule } };
+    | { type: "scoped"; rules: { [scope: IndicatorCompanionScope]: CompanionRule } };
 
 export type IndicatorAttrs = {
     id: Id;
@@ -279,33 +280,53 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return [...idsInNumerator, ...idsInDenominator, ...dataElementCode];
     }
 
-    getCompanionCodesFromRules(): Code[] {
+    getAllCompanionCodesFromRules(): Code[] {
         const outcomeCodes = this.getCompanionCodesByType("outcome");
         const outputCodes = this.getCompanionCodesByType("output");
-        return outcomeCodes.concat(outputCodes);
+        return _([...outcomeCodes.values(), ...outputCodes.values()])
+            .flatten()
+            .uniq()
+            .value();
     }
 
-    getCompanionCodesByType(type: "output" | "outcome", scope?: string): Code[] {
+    getCompanionCodesScope(): HashMap<Code, IndicatorCompanionScope[]> {
+        const outcomeCodes = this.getCompanionCodesByType("outcome");
+        const outputCodes = this.getCompanionCodesByType("output");
+        return _([...outcomeCodes.keys(), ...outputCodes.keys()])
+            .uniq()
+            .flatMap(scope => {
+                return _([...(outcomeCodes.get(scope) ?? []), ...(outputCodes.get(scope) ?? [])])
+                    .uniq()
+                    .map(code => [code, scope] as [Code, IndicatorCompanionScope]);
+            })
+            .groupFromMap(([code, scope]) => [code, scope]);
+    }
+
+    getCompanionCodesByType(type: "output" | "outcome"): HashMap<string, Code[]> {
         const rule =
             type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
 
-        if(!rule) return [];
+        if (!rule) return HashMap.empty();
 
-        return processCompanionRule(rule, getIndicatorCodes, scope).flat();
-    }
-    getCompanionScopes(){
-        const outcomeScopes = this.getCompanionScopesByType("outcome");
-        const outputScopes = this.getCompanionScopesByType("output");
-        return _(outcomeScopes).concat(outputScopes).uniq();
+        return processCompanionRuleByScope(rule, getIndicatorCodes);
     }
 
-    getCompanionScopesByType(type: "output" | "outcome"): string[] {
-        const rule =
-            type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
+    getCompanionScopes(): IndicatorCompanionScope[] {
+        const outcomeScopes = this.companionRules?.outcomeRule
+            ? this.getIndicatorCompanionScopes(this.companionRules.outcomeRule)
+            : [];
+        const outputScopes = this.companionRules?.outputRule
+            ? this.getIndicatorCompanionScopes(this.companionRules.outputRule)
+            : [];
+        return _(outcomeScopes).concat(outputScopes).uniq().value();
+    }
 
-        if (!rule) return [];
-
-        return rule.type === "scoped" ? Object.keys(rule.rules) : ["default"];
+    private getIndicatorCompanionScopes(
+        indicatorCompanionRule: IndicatorCompanionRule
+    ): IndicatorCompanionScope[] {
+        return indicatorCompanionRule.type === "scoped"
+            ? Object.keys(indicatorCompanionRule.rules)
+            : ["default"];
     }
 
     validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
@@ -314,19 +335,38 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     } {
         const evaluateIndicatorRule = (rule: CompanionRule) => evaluateRule(rule, indicatorByCodes);
         const outcomeRuleIsValid = this.companionRules?.outcomeRule
-            ? processCompanionRule(this.companionRules?.outcomeRule, evaluateIndicatorRule).every(Boolean)
+            ? processCompanionRuleByScope(this.companionRules.outcomeRule, evaluateIndicatorRule)
+                  .values()
+                  .flat()
+                  .every(Boolean)
             : true;
 
         const outputRuleIsValid = this.companionRules?.outputRule
-            ? processCompanionRule(this.companionRules?.outputRule, evaluateIndicatorRule).every(Boolean)
+            ? processCompanionRuleByScope(this.companionRules.outputRule, evaluateIndicatorRule)
+                  .values()
+                  .flat()
+                  .every(Boolean)
             : true;
 
         return { outcomeRuleIsValid, outputRuleIsValid };
     }
 
     buildCompanionRuleMessage(): { outcomeMessage: string; outputMessage: string } {
-        const outcomeMessage = this.companionRules?.outcomeRule ? processCompanionRule(this.companionRules.outcomeRule, buildCompanionRuleMessage).join("\n") : "";
-        const outputMessage = this.companionRules?.outputRule ? processCompanionRule(this.companionRules.outputRule, buildCompanionRuleMessage).join("\n") : "";
+        const outcomeMessage = this.companionRules?.outcomeRule
+            ? processCompanionRuleByScope(
+                  this.companionRules.outcomeRule,
+                  buildCompanionRuleMessage
+              )
+                  .values()
+                  .flat()
+                  .join("\n")
+            : "";
+        const outputMessage = this.companionRules?.outputRule
+            ? processCompanionRuleByScope(this.companionRules.outputRule, buildCompanionRuleMessage)
+                  .values()
+                  .flat()
+                  .join("\n")
+            : "";
         return { outcomeMessage, outputMessage };
     }
 
@@ -356,20 +396,21 @@ export type DataElementWithCompetency = DataElement & {
 
 type DataElementIndicator = DataElement & { indicator: Indicator };
 
-function processCompanionRule<T>(
+function processCompanionRuleByScope<T>(
     companionRule: IndicatorCompanionRule,
-    fn: (rule: CompanionRule) => T,
-    scope?: string
-): T[] {
+    fn: (rule: CompanionRule) => T
+): HashMap<IndicatorCompanionScope, T> {
     if (companionRule.type === "global") {
-        return [fn(companionRule.rule)];
+        return HashMap.fromObject({
+            default: fn(companionRule.rule),
+        });
     } else if (companionRule.type === "scoped") {
-        if (scope !== undefined) {
-            const ruleForScope = companionRule.rules[scope];
-            return ruleForScope ? [fn(ruleForScope)] : [];
-        }
-        return Object.values(companionRule.rules).map(rule => fn(rule));
-    } else {
-        return [];
+        return _(Object.entries(companionRule.rules))
+            .map(([scope, rule]) => ({ scope, processedRules: fn(rule) }))
+            .toHashMap((result: { scope: string; processedRules: T }) => [
+                result.scope,
+                result.processedRules,
+            ]);
     }
+    return HashMap.empty();
 }

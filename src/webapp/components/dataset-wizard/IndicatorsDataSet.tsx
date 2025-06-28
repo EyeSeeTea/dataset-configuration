@@ -12,12 +12,7 @@ import {
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
-import {
-    ChipItem,
-    FilterIndicators,
-    FilterType,
-    FilterWrapper,
-} from "$/webapp/components/dataset-wizard/FilterIndicators";
+import { FilterIndicators, FilterType } from "$/webapp/components/dataset-wizard/FilterIndicators";
 import { Indicator } from "$/domain/entities/Indicator";
 import _ from "$/domain/entities/generic/Collection";
 import { Id } from "$/domain/entities/Ref";
@@ -33,6 +28,12 @@ import {
 } from "$/webapp/hooks/useIndicators";
 import { useGetMasterLogFrameByCodes } from "$/webapp/hooks/useMasterLogFrame";
 import { MasterLogFrame } from "$/domain/entities/MasterLogFrame";
+import {
+    FilterIndicatorsContainer,
+    FilterWrapper,
+} from "$/webapp/components/dataset-wizard/FilterIndicatorContainer";
+import { ChipItem } from "$/webapp/components/dataset-wizard/ChipFilter";
+import { FilterCompanionIndicators } from "$/webapp/components/dataset-wizard/FilterCompanionIndicators";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -85,11 +86,15 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [hasCompanionTable, hasCompanionTableActions] = useBooleanState(false);
     const [search, setSearch] = React.useState<string>("");
 
-    const indicatorsWithCompanion = useGetCompanionIndicators({
+    const { selectedCompanionScope, updateCompanionFilter, companionScopes, hasCompanionScopes } =
+        useCompanionIndicatorFilter(dataSet);
+
+    const companionIndicators = useGetCompanionIndicators({
         indicators,
         selectedIndicators,
         dataSet,
         selectedFilterValue,
+        selectedCompanionScope,
     });
 
     const accessCodes = React.useMemo(() => dataSet.getRegionCodesFromAccess(), [dataSet]);
@@ -128,6 +133,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const columns = useIndicatorsTableColumns({
         showCompanionColumn: hasCompanionTable,
         statusIndicator: indicator => <StatusIndicator status={indicator.status} />,
+        hasCompanionScopes,
     });
 
     const openFilters = React.useCallback(() => setShowFilterModal(true), []);
@@ -209,37 +215,47 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                                 color="primary"
                                 fullWidth
                                 onClick={toggleCompanionTable}
-                                disabled={indicatorsWithCompanion.length === 0}
+                                disabled={companionIndicators.length === 0}
                             >
                                 {hasCompanionTable
                                     ? i18n.t("Hide Suggested Companion Indicators")
                                     : i18n.t("Show Suggested Companion Indicators")}
                             </Button>
                         </SuggestCompanionContainer>
-                        <FilterIndicators
-                            measures={allMeasures}
-                            measure={selectedMeasure}
-                            scopes={scopes}
-                            scopeValue={[scope]}
-                            onFilterChange={updateFilter}
-                            coreCompetencies={coreCompetencies}
+                        <FilterIndicatorsContainer
                             showCloseButton={!isLargeDesktop}
-                            coreValues={selectedCompetencies}
-                            types={types}
-                            selectedType={selectedType}
-                            themes={allThemes}
-                            theme={selectedTheme}
                             onClose={() => setShowFilterModal(false)}
-                            indicatorsPerCompetency={indicatorsPerCompetency}
-                            indicatorsPerType={indicatorsPerType}
-                            hidden={hasCompanionTable}
-                            masterLogFrames={{
-                                data: masterLogFrames,
-                                loading,
-                                error: errorMlf,
-                                value: selectedMLF,
-                            }}
-                        />
+                            hideFilter={hasCompanionTable && !hasCompanionScopes}
+                        >
+                            <FilterIndicators
+                                measures={allMeasures}
+                                measure={selectedMeasure}
+                                scopes={scopes}
+                                scopeValue={[scope]}
+                                onFilterChange={updateFilter}
+                                coreCompetencies={coreCompetencies}
+                                coreValues={selectedCompetencies}
+                                types={types}
+                                selectedType={selectedType}
+                                themes={allThemes}
+                                theme={selectedTheme}
+                                indicatorsPerCompetency={indicatorsPerCompetency}
+                                indicatorsPerType={indicatorsPerType}
+                                hidden={hasCompanionTable}
+                                masterLogFrames={{
+                                    data: masterLogFrames,
+                                    loading,
+                                    error: errorMlf,
+                                    value: selectedMLF,
+                                }}
+                            />
+                            <FilterCompanionIndicators
+                                onFilterChange={updateCompanionFilter}
+                                scopes={companionScopes}
+                                scopeValue={selectedCompanionScope}
+                                hidden={!hasCompanionTable || !hasCompanionScopes}
+                            />
+                        </FilterIndicatorsContainer>
                     </>
                 </FilterWrapper>
 
@@ -263,7 +279,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
 
                     <ObjectsTable
                         columns={columns}
-                        rows={hasCompanionTable ? indicatorsWithCompanion : filteredRows}
+                        rows={hasCompanionTable ? companionIndicators : filteredRows}
                         forceSelectionColumn
                         filterComponents={
                             <FilterTable
@@ -560,10 +576,33 @@ function getAlertedIndicatorIds(
     return { showAlert, newIndicatorIdsToAlert };
 }
 
+function useCompanionIndicatorFilter(dataSet: DataSet) {
+    const [selectedCompanionScope, setSelectedCompanionScope] = React.useState<string[]>([]);
+
+    const companionScopes = React.useMemo(() => {
+        const companionScopes = dataSet.indicators.flatMap(indicator =>
+            indicator.getCompanionScopes()
+        );
+        return companionScopes.length > 1
+            ? companionScopes.sort().map(scope => ({ text: scope, value: scope }))
+            : [];
+    }, [dataSet]);
+
+    const updateCompanionFilter = React.useCallback((value: ChipItem[]) => {
+        const selectedValues = value.map(item => item.value);
+        setSelectedCompanionScope(selectedValues);
+    }, []);
+
+    return {
+        companionScopes,
+        selectedCompanionScope,
+        updateCompanionFilter,
+        hasCompanionScopes: !!companionScopes.length,
+    };
+}
+
 function thereAreCompanionIndicators(indicator: Indicator): boolean {
-    const outcomeCodes = indicator.getCompanionCodesByType("outcome");
-    const outputCodes = indicator.getCompanionCodesByType("output");
-    return outcomeCodes.length > 0 || outputCodes.length > 0;
+    return indicator.getAllCompanionCodesFromRules().length > 0;
 }
 
 const selectedFilterValues = ["selected", "non-selected"] as const;
