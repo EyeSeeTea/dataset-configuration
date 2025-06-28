@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-05-23T17:44:59.314Z\n"
+"POT-Creation-Date: 2025-06-28T01:28:59.458Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -290,6 +290,9 @@ msgstr "El nombre del dataset ya existe"
 msgid "Validation name in progress"
 msgstr "Validación en progreso"
 
+msgid "Showing suggested indicators for years"
+msgstr ""
+
 msgid "Filters"
 msgstr "Filtros"
 
@@ -413,10 +416,16 @@ msgstr "Unidades organizativas"
 msgid "Companion Indicators"
 msgstr ""
 
-msgid "Outcome companion rule not satisfied: {{rule}}"
+msgid "The companion rules for this year need to be satisfied"
 msgstr ""
 
-msgid "Output companion rule not satisfied: {{rule}}"
+msgid "Outcome companion rule not satisfied"
+msgstr ""
+
+msgid "Output companion rule not satisfied"
+msgstr ""
+
+msgid "All rules satisfied"
 msgstr ""
 
 msgid "Data Element"
@@ -576,6 +585,9 @@ msgid "Updating period date"
 msgstr ""
 
 msgid "Companion"
+msgstr ""
+
+msgid "Suggested year(s)"
 msgstr ""
 
 msgid "Group"
