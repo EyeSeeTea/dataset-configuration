@@ -584,7 +584,11 @@ function useCompanionIndicatorFilter(dataSet: DataSet) {
             indicator.getCompanionScopes()
         );
         return companionScopes.length > 1
-            ? companionScopes.sort().map(scope => ({ text: scope, value: scope }))
+            ? _(companionScopes)
+                  .uniq()
+                  .sort()
+                  .map(scope => ({ text: scope, value: scope }))
+                  .value()
             : [];
     }, [dataSet]);
 
