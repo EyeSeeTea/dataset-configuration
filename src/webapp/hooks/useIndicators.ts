@@ -113,7 +113,7 @@ export function useIndicatorsTableColumns(props: {
                 text: i18n.t("Disaggregation"),
             },
         ];
-    }, [showCompanionColumn, statusIndicator]);
+    }, [showCompanionColumn, statusIndicator, hasCompanionScopes]);
 }
 
 export type IndicatorColumns = ObjectsTableProps<IndicatorColumn>["columns"];

@@ -2,7 +2,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Category } from "$/domain/entities/Category";
 import { COMMENT_SUFIX, DataElement } from "$/domain/entities/DataElement";
 import { CoreCompetency } from "$/domain/entities/DataSet";
-import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
+import { Code, Id, ISODateString, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { LowercaseString, Maybe, UnionFromValues } from "$/utils/ts-utils";
@@ -20,7 +20,7 @@ export type Disaggregation = {
     optionsCombos: Array<NamedRef & { categoryCombo: Ref; options: NamedRef[] }>;
 };
 
-type IndicatorCompanionScope = string;
+export type IndicatorCompanionScope = string;
 export type IndicatorCompanionRule =
     | { type: "global"; rule: CompanionRule }
     | { type: "scoped"; rules: { [scope: IndicatorCompanionScope]: CompanionRule } };
@@ -329,31 +329,32 @@ export class Indicator extends Struct<IndicatorAttrs>() {
             : ["default"];
     }
 
+    static getIndicatorCompanionScope(date: Maybe<ISODateString>): IndicatorCompanionScope {
+        if (!date) return "default";
+        return new Date(date).getFullYear().toString();
+    }
+
     validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
-        outcomeRuleIsValid: boolean;
-        outputRuleIsValid: boolean;
+        outcomeRulesValid: HashMap<IndicatorCompanionScope, boolean>;
+        outputRulesValid: HashMap<IndicatorCompanionScope, boolean>;
     } {
         const evaluateIndicatorRule = (rule: CompanionRule) => evaluateRule(rule, indicatorByCodes);
-        const outcomeRuleIsValid = this.companionRules?.outcomeRule
+        const outcomeRuleIsValid: HashMap<IndicatorCompanionScope, boolean> = this.companionRules
+            ?.outcomeRule
             ? processCompanionRuleByScope(this.companionRules.outcomeRule, evaluateIndicatorRule)
-                  .values()
-                  .flat()
-                  .every(Boolean)
-            : true;
+            : HashMap.empty();
 
-        const outputRuleIsValid = this.companionRules?.outputRule
+        const outputRuleIsValid: HashMap<IndicatorCompanionScope, boolean> = this.companionRules
+            ?.outputRule
             ? processCompanionRuleByScope(this.companionRules.outputRule, evaluateIndicatorRule)
-                  .values()
-                  .flat()
-                  .every(Boolean)
-            : true;
+            : HashMap.empty();
 
-        return { outcomeRuleIsValid, outputRuleIsValid };
+        return { outcomeRulesValid: outcomeRuleIsValid, outputRulesValid: outputRuleIsValid };
     }
 
     buildCompanionRuleMessage(): {
-        outcomeMessage: HashMap<IndicatorCompanionScope, string>;
-        outputMessage: HashMap<IndicatorCompanionScope, string>;
+        outcomeMessages: HashMap<IndicatorCompanionScope, string>;
+        outputMessages: HashMap<IndicatorCompanionScope, string>;
     } {
         const outcomeMessage: HashMap<IndicatorCompanionScope, string> = this.companionRules
             ?.outcomeRule
@@ -367,7 +368,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
             ? processCompanionRuleByScope(this.companionRules.outputRule, buildCompanionRuleMessage)
             : HashMap.empty();
 
-        return { outcomeMessage, outputMessage };
+        return { outcomeMessages: outcomeMessage, outputMessages: outputMessage };
     }
 
     private static extractId(string: string, re: RegExp): Id[] {

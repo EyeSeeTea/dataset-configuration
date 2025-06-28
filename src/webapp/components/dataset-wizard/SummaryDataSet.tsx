@@ -6,9 +6,10 @@ import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 import _ from "$/domain/entities/generic/Collection";
 import { component } from "$/utils/react";
-import { Code, Id } from "$/domain/entities/Ref";
 import styled from "styled-components";
-import { toLowercaseString } from "$/utils/ts-utils";
+import { Maybe, toLowercaseString } from "$/utils/ts-utils";
+import { HashMap } from "$/domain/entities/generic/HashMap";
+import { Indicator, IndicatorCompanionScope } from "$/domain/entities/Indicator";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
@@ -65,47 +66,78 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                     value={selectedRegions.map(region => region.name).join(", ")}
                 />
 
-                {missingSelectedCompanion.length > 0 && (
-                    <SummaryItem label={i18n.t("Companion Indicators")} value="" />
+                {missingSelectedCompanion && (
+                    <>
+                        <SummaryItem label={i18n.t("Companion Indicators")} value="" />
+                        <MissingCompanionAlert
+                            indicator={missingSelectedCompanion}
+                            requiredScope={Indicator.getIndicatorCompanionScope(
+                                dataSet.project?.startDate
+                            )}
+                        />
+                    </>
                 )}
-
-                {missingSelectedCompanion.map(indicator => (
-                    <MissingCompanionAlert indicator={indicator} key={indicator.id} />
-                ))}
             </ul>
         </Grid>
     );
 });
 
-const MissingCompanionAlert = React.memo((props: { indicator: MissingCompanionIndicator }) => {
-    const { indicator } = props;
+const MissingCompanionAlert = React.memo(
+    (props: { indicator: MissingCompanionIndicator; requiredScope: string }) => {
+        const { indicator, requiredScope } = props;
 
-    const outcomeMessage = indicator.outcomeMessage
-        ? i18n.t("Outcome companion rule not satisfied: {{rule}}", {
-              rule: indicator.outcomeMessage,
-              nsSeparator: false,
-              interpolation: { escapeValue: false },
-          })
-        : undefined;
+        const scopes = indicator.keys();
 
-    const outputMessage = indicator.outputMessage
-        ? i18n.t("Output companion rule not satisfied: {{rule}}", {
-              rule: indicator.outputMessage,
-              nsSeparator: false,
-              interpolation: { escapeValue: false },
-          })
-        : undefined;
+        const scopeText = React.useCallback(
+            (scope: string) => {
+                return scope === requiredScope && scope !== "default" ? (
+                    <strong>
+                        {scope}:{i18n.t("The companion rules for this year need to be satisfied")}
+                    </strong>
+                ) : (
+                    scope
+                );
+            },
+            [requiredScope]
+        );
 
-    const messages = _([outputMessage, outcomeMessage]).compact().value();
+        if (scopes.length === 1) {
+            const validationMessages = indicator.get(scopes[0] || "");
+            return (
+                validationMessages && (
+                    <MissingCompanionAlertContainer>
+                        {validationMessages?.map((validationMessage, index) => (
+                            <SummaryItem
+                                label={validationMessage.code}
+                                value={validationMessage.message}
+                                key={index}
+                            />
+                        ))}
+                    </MissingCompanionAlertContainer>
+                )
+            );
+        }
 
-    return (
-        <MissingCompanionAlertContainer>
-            {messages.map(message => (
-                <SummaryItem key={message} label={indicator.code} value={message} />
-            ))}
-        </MissingCompanionAlertContainer>
-    );
-});
+        return (
+            <MissingCompanionAlertContainer>
+                {scopes.map(scope => (
+                    <>
+                        {scopeText(scope)}
+                        <ul key={scope}>
+                            {indicator.get(scope)?.map((validationMessage, index) => (
+                                <SummaryItem
+                                    label={validationMessage.code}
+                                    value={validationMessage.message}
+                                    key={index}
+                                />
+                            ))}
+                        </ul>
+                    </>
+                ))}
+            </MissingCompanionAlertContainer>
+        );
+    }
+);
 
 export const SummaryItem = React.memo((props: { label: string; value: string }) => {
     return (
@@ -126,38 +158,86 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
         [dataSet]
     );
 
-    const missingSelectedCompanion = React.useMemo(() => {
-        return _(dataSet.indicators)
+    const missingSelectedCompanion: Maybe<MissingCompanionIndicator> = React.useMemo(() => {
+        const allIndicatorValidations = _(dataSet.indicators)
             .filter(indicator => indicator.getAllCompanionCodesFromRules().length > 0)
-            .compactMap(indicator => {
-                const { outcomeRuleIsValid, outputRuleIsValid } =
+            .map(indicator => {
+                const { outcomeRulesValid, outputRulesValid } =
                     indicator.validateCompanionRules(indicatorByCodes);
 
-                if (outcomeRuleIsValid && outputRuleIsValid) return undefined;
+                const { outcomeMessages, outputMessages } = indicator.buildCompanionRuleMessage();
 
-                const { outcomeMessage, outputMessage } = indicator.buildCompanionRuleMessage();
-
-                return {
-                    id: indicator.id,
-                    name: indicator.name,
-                    code: indicator.code,
-                    outcomeMessage: !outcomeRuleIsValid ? outcomeMessage : "",
-                    outputMessage: !outputRuleIsValid ? outputMessage : "",
-                };
+                return [
+                    ...outcomeRulesValid.toPairs().map(
+                        ([scope, isValid]): ValidationItem => ({
+                            code: indicator.code,
+                            scope,
+                            type: "outcomes" as const,
+                            isValid,
+                            message: buildValidationMessages(
+                                isValid,
+                                outcomeMessages.get(scope),
+                                "outcomes"
+                            ),
+                        })
+                    ),
+                    ...outputRulesValid.toPairs().map(
+                        ([scope, isValid]): ValidationItem => ({
+                            code: indicator.code,
+                            scope,
+                            type: "outputs" as const,
+                            isValid,
+                            message: buildValidationMessages(
+                                isValid,
+                                outputMessages.get(scope),
+                                "outputs"
+                            ),
+                        })
+                    ),
+                ];
             })
-            .value();
+            .flatten();
+
+        const areAllValid = allIndicatorValidations.every(validation => validation.isValid);
+        if (areAllValid) return undefined;
+
+        return allIndicatorValidations
+            .groupBy(validation => validation.scope)
+            .mapValues(([_scope, validations]) =>
+                validations.map(validation => ({
+                    code: validation.code,
+                    message: validation.message,
+                }))
+            );
     }, [dataSet, indicatorByCodes]);
 
     return { missingSelectedCompanion };
 };
 
-type MissingCompanionIndicator = {
-    id: Id;
-    name: string;
-    code: Code;
-    outcomeMessage: string;
-    outputMessage: string;
+function buildValidationMessages(
+    isValid: boolean,
+    message: Maybe<string>,
+    type: "outcomes" | "outputs"
+) {
+    const prefix =
+        type === "outcomes"
+            ? i18n.t("Outcome companion rule not satisfied")
+            : i18n.t("Output companion rule not satisfied");
+    const allRulesSatisfied = i18n.t("All rules satisfied");
+    return isValid ? allRulesSatisfied : `${prefix}: ${message}`;
+}
+
+type ValidationItem = {
+    code: string;
+    scope: IndicatorCompanionScope;
+    type: "outcomes" | "outputs";
+    isValid: boolean;
+    message: string;
 };
+
+type ValidationMessage = Pick<ValidationItem, "code" | "message">;
+
+type MissingCompanionIndicator = HashMap<IndicatorCompanionScope, Maybe<ValidationMessage[]>>;
 
 const MissingCompanionAlertContainer = styled("div")`
     padding-inline: 1rem;
