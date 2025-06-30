@@ -71,7 +71,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                         <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                         <MissingCompanionAlert
                             indicator={missingSelectedCompanion}
-                            requiredScope={Indicator.getIndicatorCompanionScope(
+                            requiredScope={Indicator.getIndicatorScope(
                                 dataSet.project?.startDate
                             )}
                         />

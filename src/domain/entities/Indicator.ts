@@ -329,7 +329,7 @@ export class Indicator extends Struct<IndicatorAttrs>() {
             : ["default"];
     }
 
-    static getIndicatorCompanionScope(date: Maybe<ISODateString>): IndicatorCompanionScope {
+    static getIndicatorScope(date: Maybe<ISODateString>): IndicatorCompanionScope {
         if (!date) return "default";
         return new Date(date).getFullYear().toString();
     }

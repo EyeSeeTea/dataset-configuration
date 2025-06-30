@@ -48,22 +48,22 @@ export const FilterIndicatorsContainer: React.FC<FilterIndicatorsProps> = React.
 
     return (
         <FilterIndicatorContainer>
-            <HeaderFilterContainer>
-                {!hideFilter && (
-                    <>
+            {!hideFilter && (
+                <>
+                    <HeaderFilterContainer>
                         <FilterListIcon />
                         <Typography variant="body1">{i18n.t("Filters")}</Typography>
-                    </>
-                )}
 
-                {showCloseButton && (
-                    <IconButton className="icon" onClick={onClose}>
-                        <CloseIcon />
-                    </IconButton>
-                )}
-            </HeaderFilterContainer>
+                        {showCloseButton && (
+                            <IconButton className="icon" onClick={onClose}>
+                                <CloseIcon />
+                            </IconButton>
+                        )}
+                    </HeaderFilterContainer>
 
-            <Divider />
+                    <Divider />
+                </>
+            )}
             {children}
         </FilterIndicatorContainer>
     );
