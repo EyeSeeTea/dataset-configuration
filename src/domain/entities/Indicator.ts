@@ -297,12 +297,12 @@ export class Indicator extends Struct<IndicatorAttrs>() {
             .flatMap(scope => {
                 return _([...(outcomeCodes.get(scope) ?? []), ...(outputCodes.get(scope) ?? [])])
                     .uniq()
-                    .map(code => [code, scope] as [Code, IndicatorCompanionScope]);
+                    .map(code => ({ code, scope }));
             })
-            .groupFromMap(([code, scope]) => [code, scope]);
+            .groupFromMap(({ code, scope }) => [code, scope]);
     }
 
-    getCompanionCodesByType(type: "output" | "outcome"): HashMap<string, Code[]> {
+    getCompanionCodesByType(type: "output" | "outcome"): CompanionScopedResult<Code[]> {
         const rule =
             type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
 
@@ -335,38 +335,34 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     }
 
     validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
-        outcomeRulesValid: HashMap<IndicatorCompanionScope, boolean>;
-        outputRulesValid: HashMap<IndicatorCompanionScope, boolean>;
+        outcomeRulesValid: CompanionScopedResult<boolean>;
+        outputRulesValid: CompanionScopedResult<boolean>;
     } {
         const evaluateIndicatorRule = (rule: CompanionRule) => evaluateRule(rule, indicatorByCodes);
-        const outcomeRuleIsValid: HashMap<IndicatorCompanionScope, boolean> = this.companionRules
-            ?.outcomeRule
+        const outcomeRulesValid = this.companionRules?.outcomeRule
             ? processCompanionRuleByScope(this.companionRules.outcomeRule, evaluateIndicatorRule)
-            : HashMap.empty();
+            : emptyCompanionScopedResult<boolean>();
 
-        const outputRuleIsValid: HashMap<IndicatorCompanionScope, boolean> = this.companionRules
-            ?.outputRule
+        const outputRulesValid = this.companionRules?.outputRule
             ? processCompanionRuleByScope(this.companionRules.outputRule, evaluateIndicatorRule)
-            : HashMap.empty();
+            : emptyCompanionScopedResult<boolean>();
 
-        return { outcomeRulesValid: outcomeRuleIsValid, outputRulesValid: outputRuleIsValid };
+        return { outcomeRulesValid, outputRulesValid };
     }
 
     buildCompanionRuleMessage(): {
-        outcomeMessages: HashMap<IndicatorCompanionScope, string>;
-        outputMessages: HashMap<IndicatorCompanionScope, string>;
+        outcomeMessages: CompanionScopedResult<string>;
+        outputMessages: CompanionScopedResult<string>;
     } {
-        const outcomeMessage: HashMap<IndicatorCompanionScope, string> = this.companionRules
-            ?.outcomeRule
+        const outcomeMessage = this.companionRules?.outcomeRule
             ? processCompanionRuleByScope(
                   this.companionRules.outcomeRule,
                   buildCompanionRuleMessage
               )
-            : HashMap.empty();
-        const outputMessage: HashMap<IndicatorCompanionScope, string> = this.companionRules
-            ?.outputRule
+            : emptyCompanionScopedResult<string>();
+        const outputMessage = this.companionRules?.outputRule
             ? processCompanionRuleByScope(this.companionRules.outputRule, buildCompanionRuleMessage)
-            : HashMap.empty();
+            : emptyCompanionScopedResult<string>();
 
         return { outcomeMessages: outcomeMessage, outputMessages: outputMessage };
     }
@@ -396,6 +392,11 @@ export type DataElementWithCompetency = DataElement & {
 };
 
 type DataElementIndicator = DataElement & { indicator: Indicator };
+
+export type CompanionScopedResult<T> = HashMap<IndicatorCompanionScope, T>;
+function emptyCompanionScopedResult<T>(): CompanionScopedResult<T> {
+    return HashMap.empty<IndicatorCompanionScope, T>();
+}
 
 function processCompanionRuleByScope<T>(
     companionRule: IndicatorCompanionRule,

@@ -9,7 +9,11 @@ import { component } from "$/utils/react";
 import styled from "styled-components";
 import { Maybe, toLowercaseString } from "$/utils/ts-utils";
 import { HashMap } from "$/domain/entities/generic/HashMap";
-import { Indicator, IndicatorCompanionScope } from "$/domain/entities/Indicator";
+import {
+    CompanionScopedResult,
+    Indicator,
+    IndicatorCompanionScope,
+} from "$/domain/entities/Indicator";
 
 export type SummaryDataSetProps = { dataSet: DataSet };
 
@@ -71,9 +75,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                         <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                         <MissingCompanionAlert
                             indicator={missingSelectedCompanion}
-                            requiredScope={Indicator.getIndicatorScope(
-                                dataSet.project?.startDate
-                            )}
+                            requiredScope={Indicator.getIndicatorScope(dataSet.project?.startDate)}
                         />
                     </>
                 )}
@@ -92,7 +94,8 @@ const MissingCompanionAlert = React.memo(
             (scope: string) => {
                 return scope === requiredScope && scope !== "default" ? (
                     <strong>
-                        {scope}:{i18n.t("The companion rules for this year need to be satisfied")}
+                        <p>scope</p>:
+                        {i18n.t("The companion rules for this year need to be satisfied")}
                     </strong>
                 ) : (
                     scope
@@ -168,32 +171,18 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
                 const { outcomeMessages, outputMessages } = indicator.buildCompanionRuleMessage();
 
                 return [
-                    ...outcomeRulesValid.toPairs().map(
-                        ([scope, isValid]): ValidationItem => ({
-                            code: indicator.code,
-                            scope,
-                            type: "outcomes" as const,
-                            isValid,
-                            message: buildValidationMessages(
-                                isValid,
-                                outcomeMessages.get(scope),
-                                "outcomes"
-                            ),
-                        })
-                    ),
-                    ...outputRulesValid.toPairs().map(
-                        ([scope, isValid]): ValidationItem => ({
-                            code: indicator.code,
-                            scope,
-                            type: "outputs" as const,
-                            isValid,
-                            message: buildValidationMessages(
-                                isValid,
-                                outputMessages.get(scope),
-                                "outputs"
-                            ),
-                        })
-                    ),
+                    ...buildValidationItemsByType({
+                        companionRulesValid: outcomeRulesValid,
+                        companionRulesMessage: outcomeMessages,
+                        code: indicator.code,
+                        type: "outcomes",
+                    }),
+                    ...buildValidationItemsByType({
+                        companionRulesValid: outputRulesValid,
+                        companionRulesMessage: outputMessages,
+                        code: indicator.code,
+                        type: "outputs",
+                    }),
                 ];
             })
             .flatten();
@@ -213,6 +202,24 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
 
     return { missingSelectedCompanion };
 };
+
+function buildValidationItemsByType(props: {
+    companionRulesValid: CompanionScopedResult<boolean>;
+    companionRulesMessage: CompanionScopedResult<string>;
+    code: string;
+    type: "outcomes" | "outputs";
+}): ValidationItem[] {
+    const { companionRulesValid, companionRulesMessage, code, type } = props;
+    return companionRulesValid.toPairs().map(
+        ([scope, isValid]): ValidationItem => ({
+            code: code,
+            scope,
+            type: type,
+            isValid,
+            message: buildValidationMessages(isValid, companionRulesMessage.get(scope), "outcomes"),
+        })
+    );
+}
 
 function buildValidationMessages(
     isValid: boolean,
