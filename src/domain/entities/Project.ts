@@ -4,6 +4,7 @@ import { Struct } from "$/domain/entities/generic/Struct";
 import i18n from "$/utils/i18n";
 import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
+import { User } from "$/domain/entities/User";
 
 export type ProjectAttrs = {
     id: Id;
@@ -67,5 +68,15 @@ export class Project extends Struct<ProjectAttrs>() {
      */
     static extractCode(value: string): Maybe<string> {
         return (value.split("_")[0] || "").toUpperCase();
+    }
+
+    canEdit(user: User): boolean {
+        return user.userGroups.some(userGroup =>
+            this.access.some(access =>
+                access.type === "groups" &&
+                access.permissions.metadata.write &&
+                access.id === userGroup.id
+            )
+        );
     }
 }

@@ -48,7 +48,7 @@ export class SaveDataSetUseCase {
                     return this.dataSetRepository
                         .save([dataSetToSave])
                         .flatMap(() => {
-                            return this.saveProject(dataSet).flatMap(stats => {
+                            return this.saveProject(dataSet, options.user).flatMap(stats => {
                                 return this.sendNotification(options, stats.errorMessage);
                             });
                         })
@@ -69,12 +69,18 @@ export class SaveDataSetUseCase {
         }
     }
 
-    private saveProject(dataSet: DataSet): FutureData<Stats> {
+    private saveProject(dataSet: DataSet, user: User): FutureData<Stats> {
         if (!dataSet.project) return Future.success(Stats.empty());
         return this.projectRepository.getById(dataSet.project.id).flatMap(project => {
+            if(!project.canEdit(user)) return Future.success(Stats.empty());
+
             const orgUnitsAreEqual = this.compareOrgUnits(project, dataSet);
             if (orgUnitsAreEqual) return Future.success(Stats.empty());
-            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits));
+            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits))
+                .flatMapError(error => {
+                    console.warn("Error saving project, ignoring updates. \n", String(error))
+                    return Future.success(Stats.empty());
+                });
         });
     }
 
