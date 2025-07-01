@@ -12,17 +12,18 @@ export type FilterCompanionIndicatorsProps = {
 
 export const FilterCompanionIndicators = React.memo((props: FilterCompanionIndicatorsProps) => {
     const { onFilterChange, scopes, scopeValue, hidden: hide } = props;
+
+    if (hide) return null;
+
     return (
-        !hide && (
-            <>
-                <ChipFilter
-                    items={scopes}
-                    label={i18n.t("Showing suggested indicators for years")}
-                    onChange={onFilterChange}
-                    value={scopeValue}
-                    mode={"multiple"}
-                />
-            </>
-        )
+        <>
+            <ChipFilter
+                items={scopes}
+                label={i18n.t("Showing suggested indicators for years")}
+                onChange={onFilterChange}
+                value={scopeValue}
+                mode={"multiple"}
+            />
+        </>
     );
 });
