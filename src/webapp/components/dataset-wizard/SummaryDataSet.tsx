@@ -75,7 +75,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                         <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                         <MissingCompanionAlert
                             indicator={missingSelectedCompanion}
-                            requiredScope={Indicator.getIndicatorScope(dataSet.project?.startDate)}
+                            scopeDate={dataSet.project?.startDate}
                         />
                     </>
                 )}
@@ -85,8 +85,12 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 });
 
 const MissingCompanionAlert = React.memo(
-    (props: { indicator: MissingCompanionIndicator; requiredScope: string }) => {
-        const { indicator, requiredScope } = props;
+    (props: { indicator: MissingCompanionIndicator; scopeDate: Maybe<string> }) => {
+        const { indicator, scopeDate } = props;
+
+        const requiredScope = Indicator.buildCompanionScope(
+            scopeDate ? new Date(scopeDate) : undefined
+        );
 
         const scopes = indicator.keys();
 

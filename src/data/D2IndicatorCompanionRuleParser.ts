@@ -1,6 +1,6 @@
 import _ from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
-import { IndicatorCompanionRule, IndicatorCompanionScope } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorCompanionRule } from "$/domain/entities/Indicator";
 import { D2CompanionRuleParser } from "$/data/D2CompanionRuleParser";
 
 const SCOPE_DELIMITER = ";";
@@ -41,11 +41,7 @@ export class D2IndicatorCompanionRuleParser {
 
         if (!parsed) return undefined;
 
-        const scope = this.getDefaultScope();
+        const scope = Indicator.buildCompanionScope();
         return { [scope]: parsed };
-    }
-
-    private getDefaultScope(): IndicatorCompanionScope {
-        return new Date().getFullYear().toString();
     }
 }

@@ -2,7 +2,7 @@ import _ from "$/domain/entities/generic/Collection";
 import { Category } from "$/domain/entities/Category";
 import { COMMENT_SUFIX, DataElement } from "$/domain/entities/DataElement";
 import { CoreCompetency } from "$/domain/entities/DataSet";
-import { Code, Id, ISODateString, NamedRef, Ref } from "$/domain/entities/Ref";
+import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
 import { LowercaseString, Maybe, UnionFromValues } from "$/utils/ts-utils";
@@ -327,9 +327,9 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return scopes.length ? scopes : [defaultScope];
     }
 
-    static getIndicatorScope(date: Maybe<ISODateString>): IndicatorCompanionScope {
-        if (!date) return "default";
-        return new Date(date).getFullYear().toString();
+    static buildCompanionScope(date?: Date): IndicatorCompanionScope {
+        const scopeDate = date ?? new Date();
+        return scopeDate.getFullYear().toString();
     }
 
     validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
