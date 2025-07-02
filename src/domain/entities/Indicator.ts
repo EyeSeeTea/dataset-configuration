@@ -21,9 +21,7 @@ export type Disaggregation = {
 };
 
 export type IndicatorCompanionScope = string;
-export type IndicatorCompanionRule =
-    | { type: "global"; rule: CompanionRule }
-    | { type: "scoped"; rules: { [scope: IndicatorCompanionScope]: CompanionRule } };
+export type IndicatorCompanionRule = Record<IndicatorCompanionScope, CompanionRule>;
 
 export type IndicatorAttrs = {
     id: Id;
@@ -324,9 +322,9 @@ export class Indicator extends Struct<IndicatorAttrs>() {
     private getIndicatorCompanionScopes(
         indicatorCompanionRule: IndicatorCompanionRule
     ): IndicatorCompanionScope[] {
-        return indicatorCompanionRule.type === "scoped"
-            ? Object.keys(indicatorCompanionRule.rules)
-            : ["default"];
+        const scopes = Object.keys(indicatorCompanionRule);
+        const defaultScope = new Date().getFullYear().toString();
+        return scopes.length ? scopes : [defaultScope];
     }
 
     static getIndicatorScope(date: Maybe<ISODateString>): IndicatorCompanionScope {
@@ -402,17 +400,10 @@ function processCompanionRuleByScope<T>(
     companionRule: IndicatorCompanionRule,
     fn: (rule: CompanionRule) => T
 ): HashMap<IndicatorCompanionScope, T> {
-    if (companionRule.type === "global") {
-        return HashMap.fromObject({
-            default: fn(companionRule.rule),
-        });
-    } else if (companionRule.type === "scoped") {
-        return _(Object.entries(companionRule.rules))
-            .map(([scope, rule]) => ({ scope, processedRules: fn(rule) }))
-            .toHashMap((result: { scope: string; processedRules: T }) => [
-                result.scope,
-                result.processedRules,
-            ]);
-    }
-    return HashMap.empty();
+    return _(Object.entries(companionRule))
+        .map(([scope, rule]) => ({ scope, processedRules: fn(rule) }))
+        .toHashMap((result: { scope: string; processedRules: T }) => [
+            result.scope,
+            result.processedRules,
+        ]);
 }

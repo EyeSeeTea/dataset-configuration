@@ -1,6 +1,6 @@
 import _ from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
-import { IndicatorCompanionRule } from "$/domain/entities/Indicator";
+import { IndicatorCompanionRule, IndicatorCompanionScope } from "$/domain/entities/Indicator";
 import { D2CompanionRuleParser } from "$/data/D2CompanionRuleParser";
 
 const SCOPE_DELIMITER = ";";
@@ -17,7 +17,7 @@ export class D2IndicatorCompanionRuleParser {
             : this.parseGlobal();
     }
 
-    private parseScoped(): Maybe<IndicatorCompanionRule> {
+    private parseScoped(): IndicatorCompanionRule {
         const entries = this.ruleText
             .split(SCOPE_DELIMITER)
             .map(s => s.trim())
@@ -33,13 +33,19 @@ export class D2IndicatorCompanionRuleParser {
             })
             .value();
 
-        const rules = Object.fromEntries(parsedEntries);
-
-        return { type: "scoped", rules };
+        return Object.fromEntries(parsedEntries);
     }
 
     private parseGlobal(): Maybe<IndicatorCompanionRule> {
         const parsed = new D2CompanionRuleParser(this.ruleText).buildCompanionRule();
-        return parsed ? { type: "global", rule: parsed } : undefined;
+
+        if (!parsed) return undefined;
+
+        const scope = this.getDefaultScope();
+        return { [scope]: parsed };
+    }
+
+    private getDefaultScope(): IndicatorCompanionScope {
+        return new Date().getFullYear().toString();
     }
 }
