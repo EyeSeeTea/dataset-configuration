@@ -94,8 +94,7 @@ const MissingCompanionAlert = React.memo(
             (scope: string) => {
                 return scope === requiredScope && scope !== "default" ? (
                     <strong>
-                        <span>{scope}</span>:
-                        {i18n.t("The companion rules for this year need to be satisfied")}
+                        <span>{scope}</span> ({i18n.t("The companion rules for this year need to be satisfied")}):
                     </strong>
                 ) : (
                     <span>{scope}</span>
