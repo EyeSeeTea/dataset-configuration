@@ -5,7 +5,7 @@ import { CoreCompetency } from "$/domain/entities/DataSet";
 import { Code, Id, NamedRef, Ref } from "$/domain/entities/Ref";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { Struct } from "$/domain/entities/generic/Struct";
-import { Maybe, UnionFromValues } from "$/utils/ts-utils";
+import { LowercaseString, Maybe, UnionFromValues } from "$/utils/ts-utils";
 import {
     CompanionRule,
     buildCompanionRuleMessage,
@@ -19,6 +19,9 @@ export type Disaggregation = {
     categories: Category[];
     optionsCombos: Array<NamedRef & { categoryCombo: Ref; options: NamedRef[] }>;
 };
+
+export type IndicatorCompanionScope = string;
+export type IndicatorCompanionRule = Record<IndicatorCompanionScope, CompanionRule>;
 
 export type IndicatorAttrs = {
     id: Id;
@@ -40,8 +43,8 @@ export type IndicatorAttrs = {
     categories: Category[];
     valueType: string;
     companionRules: Maybe<{
-        outcomeRule: Maybe<CompanionRule>;
-        outputRule: Maybe<CompanionRule>;
+        outcomeRule: Maybe<IndicatorCompanionRule>;
+        outputRule: Maybe<IndicatorCompanionRule>;
     }>;
 };
 
@@ -275,38 +278,91 @@ export class Indicator extends Struct<IndicatorAttrs>() {
         return [...idsInNumerator, ...idsInDenominator, ...dataElementCode];
     }
 
-    getCompanionCodesFromRules(): Code[] {
+    getAllCompanionCodesFromRules(): Code[] {
         const outcomeCodes = this.getCompanionCodesByType("outcome");
         const outputCodes = this.getCompanionCodesByType("output");
-        return outcomeCodes.concat(outputCodes);
+        return _([...outcomeCodes.values(), ...outputCodes.values()])
+            .flatten()
+            .uniq()
+            .value();
     }
 
-    getCompanionCodesByType(type: "output" | "outcome"): Code[] {
+    getCompanionCodesScope(): HashMap<Code, IndicatorCompanionScope[]> {
+        const outcomeCodes = this.getCompanionCodesByType("outcome");
+        const outputCodes = this.getCompanionCodesByType("output");
+        return _([...outcomeCodes.keys(), ...outputCodes.keys()])
+            .uniq()
+            .flatMap(scope => {
+                return _([...(outcomeCodes.get(scope) ?? []), ...(outputCodes.get(scope) ?? [])])
+                    .uniq()
+                    .map(code => ({ code, scope }));
+            })
+            .groupFromMap(({ code, scope }) => [code, scope]);
+    }
+
+    getCompanionCodesByType(type: "output" | "outcome"): CompanionScopedResult<Code[]> {
         const rule =
             type === "outcome" ? this.companionRules?.outcomeRule : this.companionRules?.outputRule;
 
-        return rule ? getIndicatorCodes(rule) : [];
+        if (!rule) return HashMap.empty();
+
+        return processCompanionRuleByScope(rule, getIndicatorCodes);
     }
 
-    validateCompanionRules(indicatorByCodes: HashMap<string, Indicator>): {
-        outcomeRuleIsValid: boolean;
-        outputRuleIsValid: boolean;
+    getCompanionScopes(): IndicatorCompanionScope[] {
+        const outcomeScopes = this.companionRules?.outcomeRule
+            ? this.getIndicatorCompanionScopes(this.companionRules.outcomeRule)
+            : [];
+        const outputScopes = this.companionRules?.outputRule
+            ? this.getIndicatorCompanionScopes(this.companionRules.outputRule)
+            : [];
+        return _(outcomeScopes).concat(outputScopes).uniq().value();
+    }
+
+    private getIndicatorCompanionScopes(
+        indicatorCompanionRule: IndicatorCompanionRule
+    ): IndicatorCompanionScope[] {
+        const scopes = Object.keys(indicatorCompanionRule);
+        const defaultScope = new Date().getFullYear().toString();
+        return scopes.length ? scopes : [defaultScope];
+    }
+
+    static buildCompanionScope(date?: Date): IndicatorCompanionScope {
+        const scopeDate = date ?? new Date();
+        return scopeDate.getFullYear().toString();
+    }
+
+    validateCompanionRules(indicatorByCodes: HashMap<LowercaseString, Indicator>): {
+        outcomeRulesValid: CompanionScopedResult<boolean>;
+        outputRulesValid: CompanionScopedResult<boolean>;
     } {
-        const outcomeRuleIsValid = this.companionRules?.outcomeRule
-            ? evaluateRule(this.companionRules.outcomeRule, indicatorByCodes)
-            : true;
+        const evaluateIndicatorRule = (rule: CompanionRule) => evaluateRule(rule, indicatorByCodes);
+        const outcomeRulesValid = this.companionRules?.outcomeRule
+            ? processCompanionRuleByScope(this.companionRules.outcomeRule, evaluateIndicatorRule)
+            : emptyCompanionScopedResult<boolean>();
 
-        const outputRuleIsValid = this.companionRules?.outputRule
-            ? evaluateRule(this.companionRules.outputRule, indicatorByCodes)
-            : true;
+        const outputRulesValid = this.companionRules?.outputRule
+            ? processCompanionRuleByScope(this.companionRules.outputRule, evaluateIndicatorRule)
+            : emptyCompanionScopedResult<boolean>();
 
-        return { outcomeRuleIsValid, outputRuleIsValid };
+        return { outcomeRulesValid, outputRulesValid };
     }
 
-    buildCompanionRuleMessage(): { outcomeMessage: string; outputMessage: string } {
-        const outcomeMessage = buildCompanionRuleMessage(this.companionRules?.outcomeRule);
-        const outputMessage = buildCompanionRuleMessage(this.companionRules?.outputRule);
-        return { outcomeMessage, outputMessage };
+    buildCompanionRuleMessage(): {
+        outcomeMessages: CompanionScopedResult<string>;
+        outputMessages: CompanionScopedResult<string>;
+    } {
+        const outcomeMessage = this.companionRules?.outcomeRule
+            ? processCompanionRuleByScope(
+                  this.companionRules.outcomeRule,
+                  buildCompanionRuleMessage
+              )
+            : emptyCompanionScopedResult<string>();
+        const outputMessage = this.companionRules?.outputRule
+            ? processCompanionRuleByScope(this.companionRules.outputRule, buildCompanionRuleMessage)
+            : emptyCompanionScopedResult<string>();
+
+        return { outcomeMessages: outcomeMessage, outputMessages: outputMessage };
     }
 
     private static extractId(string: string, re: RegExp): Id[] {
@@ -334,3 +390,20 @@ export type DataElementWithCompetency = DataElement & {
 };
 
 type DataElementIndicator = DataElement & { indicator: Indicator };
+
+export type CompanionScopedResult<T> = HashMap<IndicatorCompanionScope, T>;
+function emptyCompanionScopedResult<T>(): CompanionScopedResult<T> {
+    return HashMap.empty<IndicatorCompanionScope, T>();
+}
+
+function processCompanionRuleByScope<T>(
+    companionRule: IndicatorCompanionRule,
+    fn: (rule: CompanionRule) => T
+): HashMap<IndicatorCompanionScope, T> {
+    return _(Object.entries(companionRule))
+        .map(([scope, rule]) => ({ scope, processedRules: fn(rule) }))
+        .toHashMap((result: { scope: string; processedRules: T }) => [
+            result.scope,
+            result.processedRules,
+        ]);
+}

@@ -4,9 +4,8 @@ import { Paginated } from "$/domain/entities/Paginated";
 import { Project } from "$/domain/entities/Project";
 import { GetDataSetOptions } from "$/domain/repositories/DataSetRepository";
 import { GetListOptions, ProjectRepository } from "$/domain/repositories/ProjectRepository";
-import _ from "$/domain/entities/generic/Collection";
 import { DataSetD2Api } from "$/data/repositories/DataSetD2Api";
-import { ISODateString, Id } from "$/domain/entities/Ref";
+import { Id } from "$/domain/entities/Ref";
 import { DataSet } from "$/domain/entities/DataSet";
 import {
     D2CategoryOptionType,
@@ -14,7 +13,6 @@ import {
 } from "$/data/repositories/D2ApiCategoryOption";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
-import { Maybe } from "$/utils/ts-utils";
 import { Config } from "$/domain/entities/Config";
 import { Stats } from "$/domain/entities/Stats";
 import { getErrorFromResponse } from "$/data/utils";
@@ -143,7 +141,8 @@ export class ProjectD2Repository implements ProjectRepository {
                 id: d2CategoryOption.id,
                 name: d2CategoryOption.displayName,
                 lastUpdated: d2CategoryOption.lastUpdated,
-                isOpen: this.isProjectOpen(d2CategoryOption.startDate, d2CategoryOption.endDate),
+                startDate: d2CategoryOption.startDate,
+                endDate: d2CategoryOption.endDate,
                 orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
                     id: orgUnit.id,
                     code: orgUnit.code,
@@ -153,16 +152,6 @@ export class ProjectD2Repository implements ProjectRepository {
                 access,
             });
         });
-    }
-
-    private isProjectOpen(date1: Maybe<ISODateString>, date2: Maybe<ISODateString>): boolean {
-        if (!date1 || !date2) return false;
-
-        const today = new Date();
-        const startDate = new Date(date1);
-        const endDate = new Date(date2);
-
-        return today >= startDate && today <= endDate;
     }
 
     private getCategories(): FutureData<D2Config["categories"]> {
@@ -262,7 +251,8 @@ export class ProjectD2Repository implements ProjectRepository {
             name: d2CategoryOption.displayName,
             lastUpdated: d2CategoryOption.lastUpdated,
             dataSets: [],
-            isOpen: false,
+            startDate: undefined,
+            endDate: undefined,
             orgsUnits: d2CategoryOption.organisationUnits.map(orgUnit => ({
                 code: orgUnit.code,
                 id: orgUnit.id,

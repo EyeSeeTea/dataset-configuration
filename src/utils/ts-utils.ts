@@ -62,6 +62,13 @@ export function recordOf<T>() {
     };
 }
 
+export type LowercaseString = string & { __lowercase: true };
+
+export function toLowercaseString(input: string): LowercaseString {
+    const lower = input.toLowerCase();
+    return lower as LowercaseString;
+}
+
 /* Use as default case for exhaustive switch-blocks:
     switch (type) {
         case "active":

@@ -21,5 +21,5 @@ export const SnackBarAction = React.memo((props: SnackBarActionProps) => {
 });
 
 const SnackBarButton = styled(Button)`
-    color: #fff;
+    color: #fff !important;
 `;

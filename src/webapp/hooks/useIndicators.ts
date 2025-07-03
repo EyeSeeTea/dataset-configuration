@@ -14,8 +14,10 @@ export function useGetCompanionIndicators(props: {
     selectedIndicators: Id[];
     dataSet: DataSet;
     selectedFilterValue: Maybe<SelectedFilterValue>;
+    selectedCompanionScope: string[];
 }) {
-    const { dataSet, indicators, selectedIndicators, selectedFilterValue } = props;
+    const { dataSet, indicators, selectedIndicators, selectedFilterValue, selectedCompanionScope } =
+        props;
 
     const indicatorsByCode = React.useMemo(
         () =>
@@ -25,28 +27,40 @@ export function useGetCompanionIndicators(props: {
         [indicators]
     );
 
-    const indicatorsWithCompanion = React.useMemo(() => {
+    const allCompanionIndicators = React.useMemo(() => {
         const currentIndicators = dataSet.indicators.filter(indicator =>
             selectedIndicators.includes(indicator.id)
         );
 
         return currentIndicators.flatMap((indicator): IndicatorColumn[] => {
-            const companionCodes = indicator.getCompanionCodesFromRules();
+            const companionCodesScope = indicator.getCompanionCodesScope();
 
-            const indicatorCompanion = _(companionCodes)
+            const indicatorCompanion = _(companionCodesScope.keys())
                 .compactMap(code => {
                     const indicatorDetails = indicatorsByCode.get(code.toLowerCase());
                     if (!indicatorDetails) return undefined;
 
-                    return { ...indicatorDetails, parentCompanionName: indicator.name };
+                    const indicatorScopes = companionCodesScope.get(code);
+                    const isScopeSelected =
+                        selectedCompanionScope.length === 0 ||
+                        (indicatorScopes &&
+                            selectedCompanionScope.some(scope => indicatorScopes.includes(scope)));
+
+                    if (!isScopeSelected) return null;
+
+                    return {
+                        ...indicatorDetails,
+                        parentCompanionName: indicator.name,
+                        suggestedScope: indicatorScopes?.join(", "),
+                    };
                 })
                 .uniqBy(indicator => indicator.id)
                 .value();
             return indicatorCompanion;
         });
-    }, [indicatorsByCode, selectedIndicators, dataSet]);
+    }, [indicatorsByCode, selectedIndicators, dataSet, selectedCompanionScope]);
 
-    return indicatorsWithCompanion.filter(indicator => {
+    return allCompanionIndicators.filter(indicator => {
         if (!selectedFilterValue) return true;
         return selectedFilterValue === "selected"
             ? selectedIndicators.includes(indicator.id)
@@ -57,8 +71,9 @@ export function useGetCompanionIndicators(props: {
 export function useIndicatorsTableColumns(props: {
     showCompanionColumn: boolean;
     statusIndicator: (indicator: Indicator) => React.ReactNode;
+    hasCompanionScopes: boolean;
 }): IndicatorColumns {
-    const { showCompanionColumn, statusIndicator } = props;
+    const { showCompanionColumn, statusIndicator, hasCompanionScopes } = props;
     return React.useMemo(() => {
         return [
             {
@@ -74,6 +89,11 @@ export function useIndicatorsTableColumns(props: {
                 name: "parentCompanionName",
                 text: i18n.t("Companion"),
                 hidden: !showCompanionColumn,
+            },
+            {
+                name: "suggestedScope",
+                text: i18n.t("Suggested year(s)"),
+                hidden: !showCompanionColumn || !hasCompanionScopes,
             },
             {
                 name: "theme",
@@ -93,7 +113,7 @@ export function useIndicatorsTableColumns(props: {
                 text: i18n.t("Disaggregation"),
             },
         ];
-    }, [showCompanionColumn, statusIndicator]);
+    }, [showCompanionColumn, statusIndicator, hasCompanionScopes]);
 }
 
 export type IndicatorColumns = ObjectsTableProps<IndicatorColumn>["columns"];
@@ -102,4 +122,5 @@ export type IndicatorColumn = Pick<
     "id" | "name" | "theme" | "group" | "status" | "disaggregation"
 > & {
     parentCompanionName?: string;
+    suggestedScope?: string;
 };

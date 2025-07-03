@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-05-23T17:44:59.314Z\n"
-"PO-Revision-Date: 2025-05-23T17:44:59.314Z\n"
+"POT-Creation-Date: 2025-06-28T01:28:59.458Z\n"
+"PO-Revision-Date: 2025-06-28T01:28:59.458Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -290,6 +290,9 @@ msgstr ""
 msgid "Validation name in progress"
 msgstr ""
 
+msgid "Showing suggested indicators for years"
+msgstr ""
+
 msgid "Filters"
 msgstr ""
 
@@ -413,10 +416,16 @@ msgstr ""
 msgid "Companion Indicators"
 msgstr ""
 
-msgid "Outcome companion rule not satisfied: {{rule}}"
+msgid "The companion rules for this year need to be satisfied"
 msgstr ""
 
-msgid "Output companion rule not satisfied: {{rule}}"
+msgid "Outcome companion rule not satisfied"
+msgstr ""
+
+msgid "Output companion rule not satisfied"
+msgstr ""
+
+msgid "All rules satisfied"
 msgstr ""
 
 msgid "Data Element"
@@ -576,6 +585,9 @@ msgid "Updating period date"
 msgstr ""
 
 msgid "Companion"
+msgstr ""
+
+msgid "Suggested year(s)"
 msgstr ""
 
 msgid "Group"
