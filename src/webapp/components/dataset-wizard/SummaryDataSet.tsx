@@ -98,7 +98,8 @@ const MissingCompanionAlert = React.memo(
             (scope: string) => {
                 return scope === requiredScope && scope !== "default" ? (
                     <strong>
-                        <span>{scope}</span> ({i18n.t("The companion rules for this year need to be satisfied")}):
+                        <span>{scope}</span> (
+                        {i18n.t("The companion rules for this year need to be satisfied")}):
                     </strong>
                 ) : (
                     <span>{scope}</span>
@@ -106,23 +107,6 @@ const MissingCompanionAlert = React.memo(
             },
             [requiredScope]
         );
-
-        if (scopes.length === 1) {
-            const validationMessages = indicator.get(scopes[0] || "");
-            return (
-                validationMessages && (
-                    <MissingCompanionAlertContainer>
-                        {validationMessages?.map((validationMessage, index) => (
-                            <SummaryItem
-                                label={validationMessage.code}
-                                value={validationMessage.message}
-                                key={index}
-                            />
-                        ))}
-                    </MissingCompanionAlertContainer>
-                )
-            );
-        }
 
         return (
             <MissingCompanionAlertContainer>

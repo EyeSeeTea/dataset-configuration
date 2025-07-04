@@ -86,7 +86,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const [hasCompanionTable, hasCompanionTableActions] = useBooleanState(false);
     const [search, setSearch] = React.useState<string>("");
 
-    const { selectedCompanionScope, updateCompanionFilter, companionScopes, hasCompanionScopes } =
+    const { selectedCompanionScope, updateCompanionFilter, companionScopes } =
         useCompanionIndicatorFilter(dataSet);
 
     const companionIndicators = useGetCompanionIndicators({
@@ -133,7 +133,6 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const columns = useIndicatorsTableColumns({
         showCompanionColumn: hasCompanionTable,
         statusIndicator: indicator => <StatusIndicator status={indicator.status} />,
-        hasCompanionScopes,
     });
 
     const openFilters = React.useCallback(() => setShowFilterModal(true), []);
@@ -225,7 +224,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         <FilterIndicatorsContainer
                             showCloseButton={!isLargeDesktop}
                             onClose={() => setShowFilterModal(false)}
-                            hideFilter={hasCompanionTable && !hasCompanionScopes}
+                            hideFilter={hasCompanionTable}
                         >
                             <FilterIndicators
                                 measures={allMeasures}
@@ -253,7 +252,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                                 onFilterChange={updateCompanionFilter}
                                 scopes={companionScopes}
                                 scopeValue={selectedCompanionScope}
-                                hidden={!hasCompanionTable || !hasCompanionScopes}
+                                hidden={!hasCompanionTable}
                             />
                         </FilterIndicatorsContainer>
                     </>
@@ -583,13 +582,11 @@ function useCompanionIndicatorFilter(dataSet: DataSet) {
         const companionScopes = dataSet.indicators.flatMap(indicator =>
             indicator.getCompanionScopes()
         );
-        return companionScopes.length > 1
-            ? _(companionScopes)
-                  .uniq()
-                  .sort()
-                  .map(scope => ({ text: scope, value: scope }))
-                  .value()
-            : [];
+        return _(companionScopes)
+            .uniq()
+            .sort()
+            .map(scope => ({ text: scope, value: scope }))
+            .value();
     }, [dataSet]);
 
     const updateCompanionFilter = React.useCallback((value: ChipItem[]) => {
@@ -601,7 +598,6 @@ function useCompanionIndicatorFilter(dataSet: DataSet) {
         companionScopes,
         selectedCompanionScope,
         updateCompanionFilter,
-        hasCompanionScopes: !!companionScopes.length,
     };
 }
 
