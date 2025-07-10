@@ -1,5 +1,6 @@
 import React from "react";
 import { Grid, Typography } from "@material-ui/core";
+import capitalize from "lodash/capitalize";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -51,8 +52,11 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 
     const regionsCodes = dataSet.getRegionCodesFromAccess();
     const selectedRegions = config.regions.filter(region => regionsCodes.includes(region.code));
+    const requiredScope = Indicator.buildCompanionScope(
+        dataSet.project?.startDate ? new Date(dataSet.project.startDate) : undefined
+    );
 
-    const { missingSelectedCompanion } = useGetMissingSelectedCompanion({ dataSet });
+    const { missingSelectedCompanion } = useGetMissingSelectedCompanion({ dataSet, requiredScope });
 
     return (
         <Grid item xs={12}>
@@ -75,7 +79,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                         <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                         <MissingCompanionAlert
                             indicator={missingSelectedCompanion}
-                            scopeDate={dataSet.project?.startDate}
+                            requiredScope={requiredScope}
                         />
                     </>
                 )}
@@ -85,24 +89,18 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 });
 
 const MissingCompanionAlert = React.memo(
-    (props: { indicator: MissingCompanionIndicator; scopeDate: Maybe<string> }) => {
-        const { indicator, scopeDate } = props;
+    (props: { indicator: MissingCompanionIndicator; requiredScope: string }) => {
+        const { indicator, requiredScope } = props;
 
-        const requiredScope = Indicator.buildCompanionScope(
-            scopeDate ? new Date(scopeDate) : undefined
-        );
+        const companionIndicatorTypes = indicator.keys();
 
-        const scopes = indicator.keys();
-
-        const scopeText = React.useCallback(
-            (scope: string) => {
-                return scope === requiredScope && scope !== "default" ? (
+        const typeSectionText = React.useCallback(
+            (type: string) => {
+                return (
                     <strong>
-                        <span>{scope}</span> (
+                        <span>{type}</span> (
                         {i18n.t("The companion rules for this year need to be satisfied")}):
                     </strong>
-                ) : (
-                    <span>{scope}</span>
                 );
             },
             [requiredScope]
@@ -110,17 +108,26 @@ const MissingCompanionAlert = React.memo(
 
         return (
             <MissingCompanionAlertContainer>
-                {scopes.map(scope => (
+                <strong>
+                    <span>
+                        {requiredScope} ({i18n.t("These companion rules need to be satisfied")})
+                    </span>
+                </strong>
+                {companionIndicatorTypes.map(type => (
                     <>
-                        {scopeText(scope)}
-                        <ul key={scope}>
-                            {indicator.get(scope)?.map((validationMessage, index) => (
-                                <SummaryItem
-                                    label={validationMessage.code}
-                                    value={validationMessage.message}
-                                    key={index}
-                                />
-                            ))}
+                        <ul>
+                            <li>
+                                <span>{capitalize(type)}:</span>
+                                <ul key={type}>
+                                    {indicator.get(type)?.map((validationMessage, index) => (
+                                        <SummaryItem
+                                            label={validationMessage.code}
+                                            value={validationMessage.message}
+                                            key={index}
+                                        />
+                                    ))}
+                                </ul>
+                            </li>
                         </ul>
                     </>
                 ))}
@@ -137,8 +144,8 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
     );
 });
 
-const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
-    const { dataSet } = props;
+const useGetMissingSelectedCompanion = (props: { dataSet: DataSet; requiredScope: string }) => {
+    const { dataSet, requiredScope } = props;
 
     const indicatorByCodes = React.useMemo(
         () =>
@@ -149,7 +156,7 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
     );
 
     const missingSelectedCompanion: Maybe<MissingCompanionIndicator> = React.useMemo(() => {
-        const allIndicatorValidations = _(dataSet.indicators)
+        const scopeIndicatorValidations = _(dataSet.indicators)
             .filter(indicator => indicator.getAllCompanionCodesFromRules().length > 0)
             .map(indicator => {
                 const { outcomeRulesValid, outputRulesValid } =
@@ -172,20 +179,21 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
                     }),
                 ];
             })
-            .flatten();
+            .flatten()
+            .filter(validation => validation.scope === requiredScope);
 
-        const areAllValid = allIndicatorValidations.every(validation => validation.isValid);
+        const areAllValid = scopeIndicatorValidations.every(validation => validation.isValid);
         if (areAllValid) return undefined;
 
-        return allIndicatorValidations
-            .groupBy(validation => validation.scope)
+        return scopeIndicatorValidations
+            .groupBy(validation => validation.type)
             .mapValues(([_scope, validations]) =>
                 validations.map(validation => ({
                     code: validation.code,
                     message: validation.message,
                 }))
             );
-    }, [dataSet, indicatorByCodes]);
+    }, [dataSet, indicatorByCodes, requiredScope]);
 
     return { missingSelectedCompanion };
 };
@@ -203,7 +211,7 @@ function buildValidationItemsByType(props: {
             scope,
             type: type,
             isValid,
-            message: buildValidationMessages(isValid, companionRulesMessage.get(scope), "outcomes"),
+            message: buildValidationMessages(isValid, companionRulesMessage.get(scope), type),
         })
     );
 }
@@ -213,12 +221,8 @@ function buildValidationMessages(
     message: Maybe<string>,
     type: "outcomes" | "outputs"
 ) {
-    const prefix =
-        type === "outcomes"
-            ? i18n.t("Outcome companion rule not satisfied")
-            : i18n.t("Output companion rule not satisfied");
-    const allRulesSatisfied = i18n.t("All rules satisfied");
-    return isValid ? allRulesSatisfied : `${prefix}: ${message}`;
+    const allRulesSatisfied = i18n.t("All rules are satisfied");
+    return isValid ? allRulesSatisfied : `${i18n.t("Rules not satisfied")}: ${message}`;
 }
 
 type ValidationItem = {
