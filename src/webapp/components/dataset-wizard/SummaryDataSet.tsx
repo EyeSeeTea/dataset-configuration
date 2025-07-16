@@ -94,6 +94,18 @@ const MissingCompanionAlert = React.memo(
 
         const companionIndicatorTypes = indicator.keys();
 
+        const allAllValid = indicator
+            .values()
+            .every(item => item.every(validation => validation.isValid));
+
+        if (allAllValid) {
+            return (
+                <MissingCompanionAlertContainer>
+                    <strong>{i18n.t("All companions are satisfied")}</strong>
+                </MissingCompanionAlertContainer>
+            );
+        }
+
         return (
             <MissingCompanionAlertContainer>
                 <strong>
@@ -170,20 +182,22 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet; requiredScope
             .flatten()
             .filter(validation => validation.scope === requiredScope);
 
-        const areAllValid = scopeIndicatorValidations.every(validation => validation.isValid);
-        if (areAllValid) return undefined;
-
         return scopeIndicatorValidations
             .groupBy(validation => validation.type)
             .mapValues(([_scope, validations]) =>
                 validations.map(validation => ({
                     code: validation.code,
                     message: validation.message,
+                    isValid: validation.isValid,
                 }))
             );
     }, [dataSet, indicatorByCodes, requiredScope]);
 
-    return { missingSelectedCompanion };
+    if (missingSelectedCompanion.values().length > 0) {
+        return { missingSelectedCompanion };
+    } else {
+        return { missingSelectedCompanion: undefined };
+    }
 };
 
 function buildValidationItemsByType(props: {
@@ -209,17 +223,19 @@ function buildValidationMessages(isValid: boolean, message: Maybe<string>) {
     return isValid ? allRulesSatisfied : `${i18n.t("Rules not satisfied")}: ${message}`;
 }
 
+type CompanionRuleType = "outcomes" | "outputs";
+
 type ValidationItem = {
     code: string;
     scope: IndicatorCompanionScope;
-    type: "outcomes" | "outputs";
+    type: CompanionRuleType;
     isValid: boolean;
     message: string;
 };
 
-type ValidationMessage = Pick<ValidationItem, "code" | "message">;
+type ValidationMessage = Pick<ValidationItem, "code" | "message" | "isValid">;
 
-type MissingCompanionIndicator = HashMap<IndicatorCompanionScope, Maybe<ValidationMessage[]>>;
+type MissingCompanionIndicator = HashMap<CompanionRuleType, ValidationMessage[]>;
 
 const MissingCompanionAlertContainer = styled("div")`
     padding-inline: 1rem;
