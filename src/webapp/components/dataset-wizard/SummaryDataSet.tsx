@@ -94,18 +94,6 @@ const MissingCompanionAlert = React.memo(
 
         const companionIndicatorTypes = indicator.keys();
 
-        const typeSectionText = React.useCallback(
-            (type: string) => {
-                return (
-                    <strong>
-                        <span>{type}</span> (
-                        {i18n.t("The companion rules for this year need to be satisfied")}):
-                    </strong>
-                );
-            },
-            [requiredScope]
-        );
-
         return (
             <MissingCompanionAlertContainer>
                 <strong>
@@ -211,16 +199,12 @@ function buildValidationItemsByType(props: {
             scope,
             type: type,
             isValid,
-            message: buildValidationMessages(isValid, companionRulesMessage.get(scope), type),
+            message: buildValidationMessages(isValid, companionRulesMessage.get(scope)),
         })
     );
 }
 
-function buildValidationMessages(
-    isValid: boolean,
-    message: Maybe<string>,
-    type: "outcomes" | "outputs"
-) {
+function buildValidationMessages(isValid: boolean, message: Maybe<string>) {
     const allRulesSatisfied = i18n.t("All rules are satisfied");
     return isValid ? allRulesSatisfied : `${i18n.t("Rules not satisfied")}: ${message}`;
 }
