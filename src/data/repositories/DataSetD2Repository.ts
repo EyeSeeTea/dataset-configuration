@@ -27,6 +27,7 @@ import { Config } from "$/domain/entities/Config";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import isEqual from "lodash/isEqual";
 import { D2ApiSharing, D2ApiSharingName } from "$/data/D2ApiSharing";
+import { D2IndicatorMatchingParser } from "$/data/D2IndicatorMatchingParser";
 
 const DIMENSITON_TYPE = "DISAGGREGATION" as const;
 const CUSTOM_FORM_STYLE = "NORMAL" as const;
@@ -727,12 +728,14 @@ export class DataSetD2Repository implements DataSetRepository {
         };
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
         const { inputDate, periodDate } = this.parsePeriodDate(dataSet, attributes);
+        const indicatorMatching = this.parseIndicatorMatching(dataSet, attributes);
 
         const attributesToSave = [
             projectAttribute,
             createdByAttribute,
             inputDate,
             periodDate,
+            indicatorMatching,
         ].filter(attribute => attribute.value);
 
         const filteredExisting =
@@ -764,6 +767,18 @@ export class DataSetD2Repository implements DataSetRepository {
                 attribute: { id: attributes.periodDates.id },
                 value: periods.join(","),
             },
+        };
+    }
+
+    private parseIndicatorMatching(
+        dataSetToSave: DataSetToSave,
+        attributes: D2Config["attributes"]
+    ): D2Attribute {
+        return {
+            attribute: { id: attributes.indicatorMatching.id },
+            value: dataSetToSave.indicatorMatching?.length
+                ? D2IndicatorMatchingParser.parseIndicatorMatching(dataSetToSave.indicatorMatching)
+                : "",
         };
     }
 

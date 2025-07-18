@@ -39,4 +39,15 @@ export class D2IndicatorMatchingParser {
             source: expressionPart,
         };
     }
+
+    public static parseIndicatorMatching(indicatorMatching: IndicatorMatch[]): string {
+        return indicatorMatching.reduce((acc, match) => {
+            if (!match.target || !match.source) {
+                console.warn(`Skipping invalid match: ${JSON.stringify(match)}`);
+                return acc;
+            }
+            const expression = `${match.target}=${match.source}`;
+            return acc ? `${acc};${expression}` : expression;
+        }, "");
+    }
 }
