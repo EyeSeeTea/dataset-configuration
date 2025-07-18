@@ -1,8 +1,9 @@
 import { FormControl, InputLabel, MenuItem, MuiThemeProvider, Select } from "@material-ui/core";
 import React from "react";
-import i18n from "../../../utils/i18n";
 import { createTheme } from "@material-ui/core/styles";
 import { cyan } from "@material-ui/core/colors";
+
+import i18n from "../../../utils/i18n";
 
 export type DropdownItem<Value extends string = string> = {
     value: Value;

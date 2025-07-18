@@ -316,12 +316,6 @@ export class DataSetD2Api {
             attribute => attribute.attribute.id === attributes.indicatorMatching.id
         );
 
-        if (indicatorMatching?.value) {
-            console.log(
-                new D2IndicatorMatchingParser(indicatorMatching.value).buildIndicatorMatching()
-            );
-        }
-
         return indicatorMatching?.value
             ? new D2IndicatorMatchingParser(indicatorMatching.value).buildIndicatorMatching()
             : undefined;
