@@ -20,6 +20,8 @@ import { DataSetList } from "$/domain/entities/DataSetList";
 import { COMMENT_SUFIX } from "$/domain/entities/DataElement";
 import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 import { D2ApiSharing } from "$/data/D2ApiSharing";
+import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
+import { D2IndicatorMatchingParser } from "$/data/D2IndicatorMatchingParser";
 
 export class DataSetD2Api {
     private d2ApiCategoryOption: D2ApiCategoryOption;
@@ -274,6 +276,7 @@ export class DataSetD2Api {
             expiryDays: d2DataSet.expiryDays,
             openFuturePeriods: d2DataSet.openFuturePeriods,
             disabledFields: disabledFields,
+            indicatorMatching: this.buildIndicatorMatchingFromAttributes(d2DataSet, attributes),
         });
     }
 
@@ -303,6 +306,25 @@ export class DataSetD2Api {
         const outcomesIndicators = this.buildOutcomesIndicators(d2DataSet);
 
         return outputsIndicators.concat(outcomesIndicators);
+    }
+
+    private buildIndicatorMatchingFromAttributes(
+        d2DataSet: D2DataSet,
+        attributes: D2Config["attributes"]
+    ): Maybe<IndicatorMatch[]> {
+        const indicatorMatching = d2DataSet.attributeValues.find(
+            attribute => attribute.attribute.id === attributes.indicatorMatching.id
+        );
+
+        if (indicatorMatching?.value) {
+            console.log(
+                new D2IndicatorMatchingParser(indicatorMatching.value).buildIndicatorMatching()
+            );
+        }
+
+        return indicatorMatching?.value
+            ? new D2IndicatorMatchingParser(indicatorMatching.value).buildIndicatorMatching()
+            : undefined;
     }
 
     private extractCompetencyCode(sectionId: Id, sectionCode: string): Maybe<string> {

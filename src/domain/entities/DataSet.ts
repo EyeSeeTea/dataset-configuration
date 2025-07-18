@@ -15,6 +15,7 @@ import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { UserGroup } from "$/domain/entities/UserGroup";
 import { User } from "$/domain/entities/User";
 import { DataSetList } from "$/domain/entities/DataSetList";
+import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -35,6 +36,7 @@ export type DataSetAttrs = {
     disabledFields: DisabledField[];
     canBeUpdated: boolean;
     shortName: string;
+    indicatorMatching: Maybe<IndicatorMatch[]>;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -139,6 +141,10 @@ export class DataSet extends Struct<DataSetAttrs>() {
                       value: this.access,
                   },
               ];
+    }
+
+    validateIndicatorMatching(): ValidationError<DataSet>[] {
+        return [];
     }
 
     getRegionCodesFromAccess(): string[] {
@@ -267,6 +273,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             notifyUser: false,
             periodDate: undefined,
             disabledFields: [],
+            indicatorMatching: undefined,
             ...initialData,
         });
     }
