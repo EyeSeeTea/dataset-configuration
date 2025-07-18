@@ -36,7 +36,7 @@ export class D2IndicatorMatchingParser {
 
         return {
             target,
-            expression: expressionPart,
+            source: expressionPart,
         };
     }
 }

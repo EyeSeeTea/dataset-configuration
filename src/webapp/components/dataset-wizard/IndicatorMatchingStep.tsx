@@ -13,15 +13,16 @@ import {
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
 import styled from "styled-components";
-import { Dropdown } from "@eyeseetea/d2-ui-components";
 
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
 import { DataSet } from "$/domain/entities/DataSet";
 import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
 import { generateUid } from "$/utils/uid";
-import { Indicator, IndicatorScope } from "$/domain/entities/Indicator";
+import { IndicatorScope } from "$/domain/entities/Indicator";
 import { Maybe } from "$/utils/ts-utils";
+import Typography from "@material-ui/core/Typography";
+import { Dropdown, DropdownItem } from "$/webapp/components/dropdown/Dropdown";
 
 type IndicatorMatchingStepProps = {
     dataSet: DataSet;
@@ -30,126 +31,202 @@ type IndicatorMatchingStepProps = {
 
 type IndicatorMatchView = IndicatorMatch & {
     id: string;
+    rootOptions: DropdownItem[];
+    matchingOptions: DropdownItem[];
 };
 
-const rootIndicatorType: IndicatorScope[] = ["mandatory", "suggested"];
-const matchingIndicatorType: IndicatorScope[] = ["local", "donor"];
-
 const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) => {
-    const { dataSet, onChange } = props;
-    const [matches, setMatches] = React.useState<IndicatorMatchView[]>(
-        dataSet.indicatorMatching?.map(match => ({
-            ...match,
-            id: generateUid(),
-        })) || []
-    );
-    console.log(dataSet.indicators);
+    const { dataSet } = props;
+    const { matches, addNewRow, deleteRow, changeMatch } = useIndicatorMatching(props);
 
-    const rootOptions = React.useMemo(
-        () => buildIndicatorOptionsByType(dataSet.indicators, rootIndicatorType),
-        [dataSet.indicators]
+    const rootIndicators = React.useMemo(
+        () => buildIndicatorOptionsByType("root", dataSet),
+        [dataSet]
     );
-    const matchingOptions = React.useMemo(
-        () => buildIndicatorOptionsByType(dataSet.indicators, matchingIndicatorType),
-        [dataSet.indicators]
+    const matchingIndicators = React.useMemo(
+        () => buildIndicatorOptionsByType("matching", dataSet).filter(option => !option.disabled),
+        [dataSet]
     );
 
-    const addNewRow = React.useCallback(() => {
-        setMatches(prev => [
-            ...prev,
-            {
-                id: generateUid(),
-                target: "",
-                expression: "",
-            },
-        ]);
-    }, []);
-
-    const deleteRow = React.useCallback((id: string) => {
-        setMatches(prev => prev.filter(match => match.id !== id));
-    }, []);
-
-    const changeMatch = React.useCallback(
-        (id: string, field: keyof IndicatorMatch) => (value: Maybe<string>) => {
-            setMatches(prev =>
-                prev.map(match => (match.id === id ? { ...match, [field]: value } : match))
-            );
-        },
-        []
-    );
+    const disableAddRow = React.useMemo(() => {
+        if (!rootIndicators.length) {
+            return i18n.t("No Global mandatory or Global suggested indicators available.");
+        } else if (!matchingIndicators.length) {
+            return i18n.t("No Local or Donor indicators available.");
+        } else if (matches.some(match => !match.source || !match.target)) {
+            return i18n.t("Please fill in all fields before adding a new matching indicator.");
+        } else {
+            return undefined;
+        }
+    }, [rootIndicators, matchingIndicators, matches]);
 
     return (
         <Grid container spacing={2}>
             <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                    <Table>
+                    <StyledTable>
                         <TableHead>
                             <TableRow>
-                                <TableCell>{i18n.t("Root Indicators")}</TableCell>
-                                <TableCell>{i18n.t("Matched Indicators")}</TableCell>
-                                <TableCell align="right">{i18n.t("Actions")}</TableCell>
+                                <TableCell width="45%">{i18n.t("Root Indicators")}</TableCell>
+                                <TableCell width="45%">{i18n.t("Matched Indicators")}</TableCell>
+                                <TableCell width="10%" align="right">
+                                    {i18n.t("Actions")}
+                                </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {matches.map(match => (
                                 <TableRow key={match.id}>
-                                    <TableCell>
+                                    <Cell>
                                         <Dropdown
                                             className="dropdown"
-                                            items={rootOptions}
-                                            onChange={changeMatch(match.id, "expression")}
-                                            value={match.expression}
+                                            items={match.rootOptions}
+                                            onChange={changeMatch(match.id, "source")}
+                                            value={match.source}
+                                            hideEmpty={true}
                                         />
-                                    </TableCell>
-                                    <TableCell>
+                                    </Cell>
+                                    <Cell width="45%">
                                         <Dropdown
                                             className="dropdown"
-                                            items={matchingOptions}
+                                            items={match.matchingOptions}
                                             onChange={changeMatch(match.id, "target")}
                                             value={match.target}
+                                            hideEmpty={true}
                                         />
-                                    </TableCell>
+                                    </Cell>
                                     <TableCell align="right">
-                                        <IconButton
+                                        <ActionButton
                                             aria-label="delete"
                                             onClick={() => deleteRow(match.id)}
                                         >
                                             <DeleteIcon />
-                                        </IconButton>
+                                        </ActionButton>
                                     </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
-                    </Table>
+                    </StyledTable>
                 </TableContainer>
             </Grid>
             <Grid item xs={12}>
-                <AddButton variant="contained" color="primary" onClick={addNewRow}>
+                <AddButton
+                    variant="contained"
+                    color="primary"
+                    onClick={addNewRow}
+                    disabled={!!disableAddRow}
+                >
                     {i18n.t("Add matching indicator")}
                 </AddButton>
+                <Typography paragraph variant={"caption"}>
+                    {disableAddRow}
+                </Typography>
             </Grid>
         </Grid>
     );
 });
 
-function buildIndicatorOptionsByType(indicators: Indicator[], types: IndicatorScope[]) {
-    return indicators
-        .filter(indicator => types.includes(indicator.scope))
+function useIndicatorMatching(props: IndicatorMatchingStepProps) {
+    const { dataSet, onChange } = props;
+
+    const [matches, setMatches] = React.useState<IndicatorMatchView[]>(
+        dataSet.indicatorMatching?.map(match => ({
+            ...match,
+            id: generateUid(),
+            rootOptions: buildIndicatorOptionsByType("root", dataSet),
+            matchingOptions: buildIndicatorOptionsByType("matching", dataSet),
+        })) || []
+    );
+
+    const updateDatasetMatches = React.useCallback(
+        (matches: IndicatorMatchView[]) =>
+            onChange(
+                dataSet.update(
+                    "indicatorMatching",
+                    matches.map(({ target, source }) => ({ target, source }))
+                )
+            ),
+        [dataSet, onChange]
+    );
+
+    const addNewRow = React.useCallback(() => {
+        const newMatch = {
+            id: generateUid(),
+            target: "",
+            source: "",
+            rootOptions: buildIndicatorOptionsByType("root", dataSet),
+            matchingOptions: buildIndicatorOptionsByType("matching", dataSet),
+        };
+        setMatches(prev => {
+            const updatedMatches = prev.concat(newMatch);
+            updateDatasetMatches(updatedMatches);
+            return updatedMatches;
+        });
+    }, [dataSet, updateDatasetMatches]);
+
+    const deleteRow = React.useCallback(
+        (id: string) => {
+            setMatches(prev => {
+                const updatedMatches = prev.filter(match => match.id !== id);
+                updateDatasetMatches(updatedMatches);
+                return updatedMatches;
+            });
+        },
+        [updateDatasetMatches]
+    );
+
+    const changeMatch = React.useCallback(
+        (id: string, field: keyof IndicatorMatch) => (value: Maybe<string>) => {
+            setMatches(prev => {
+                const updatedMatches = prev.map(match =>
+                    match.id === id ? { ...match, [field]: value } : match
+                );
+                updateDatasetMatches(updatedMatches);
+                return updatedMatches;
+            });
+        },
+        [updateDatasetMatches]
+    );
+
+    return {
+        matches,
+        addNewRow,
+        deleteRow,
+        changeMatch,
+    };
+}
+
+const rootIndicatorType: IndicatorScope[] = ["mandatory", "suggested"];
+const matchingIndicatorType: IndicatorScope[] = ["local", "donor"];
+function buildIndicatorOptionsByType(type: "root" | "matching", dataSet: DataSet) {
+    const options = type === "root" ? rootIndicatorType : matchingIndicatorType;
+
+    return dataSet.indicators
+        .filter(indicator => options.includes(indicator.scope))
         .map(indicator => ({
             text: indicator.name,
             value: indicator.id,
+            //disable matching indicators because it can't have more than 1 value
+            disabled:
+                type !== "root" &&
+                dataSet.indicatorMatching?.some(match => match.target === indicator.id),
         }));
 }
 
-const IndicatorSelect = styled.div`
-    width: 100%;
-    height: 32px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-`;
-
 const AddButton = styled(Button)`
     margin-top: 16px;
+`;
+
+const StyledTable = styled(Table)`
+    table-layout: fixed;
+`;
+
+const Cell = styled(TableCell)`
+    padding: 8px 16px;
+`;
+
+const ActionButton = styled(IconButton)`
+    padding: 4px 12px;
 `;
 
 export const IndicatorMatchingStep = component(IndicatorMatchingStep_);
