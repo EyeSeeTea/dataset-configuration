@@ -144,7 +144,39 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     validateIndicatorMatching(): ValidationError<DataSet>[] {
-        return [];
+        const property = "indicatorMatching" as const;
+        const indicatorMap = new Set(this.indicators.map(indicator => indicator.id));
+        return (
+            this.indicatorMatching?.reduce((acc, { target, source }) => {
+                if (!source) {
+                    return acc.concat({
+                        property,
+                        errors: ["field_cannot_be_blank"],
+                        value: "root indicator",
+                    });
+                } else if (!target) {
+                    return acc.concat({
+                        property,
+                        errors: ["field_cannot_be_blank"],
+                        value: "matched indicator",
+                    });
+                } else if (!indicatorMap.has(source)) {
+                    return acc.concat({
+                        property,
+                        errors: ["not_found"],
+                        value: `root indicator - ${source}`,
+                    });
+                } else if (!indicatorMap.has(target)) {
+                    return acc.concat({
+                        property,
+                        errors: ["not_found"],
+                        value: `matched indicator - ${target}`,
+                    });
+                }
+
+                return acc;
+            }, [] as ValidationError<DataSet>[]) || []
+        );
     }
 
     getRegionCodesFromAccess(): string[] {
