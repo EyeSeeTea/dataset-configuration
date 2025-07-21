@@ -33,7 +33,7 @@ type IndicatorMatchingStepProps = {
     onChange: (dataSet: DataSet) => void;
 };
 
-type IndicatorMatchView = IndicatorMatch & {
+type IndicatorMatchView = IndicatorMatchAttrs & {
     id: string;
     rootOptions: DropdownItem[];
     matchingOptions: DropdownItem[];
@@ -147,7 +147,7 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
             onChange(
                 dataSet.update(
                     "indicatorMatching",
-                    matches.map(({ target, source }) => ({ target, source }))
+                    matches.map(({ target, source }) => IndicatorMatch.create({ target, source }))
                 )
             ),
         [dataSet, onChange]
@@ -180,7 +180,7 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
     );
 
     const changeMatch = React.useCallback(
-        (id: string, field: keyof IndicatorMatch) => (value: Maybe<string>) => {
+        (id: string, field: keyof IndicatorMatchAttrs) => (value: Maybe<string>) => {
             setMatches(prev => {
                 const updatedMatches = prev.map(match =>
                     match.id === id ? { ...match, [field]: value } : match

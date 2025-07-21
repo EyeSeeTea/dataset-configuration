@@ -34,10 +34,10 @@ export class D2IndicatorMatchingParser {
             throw new Error(`Invalid matching format: ${matching}`);
         }
 
-        return {
+        return IndicatorMatch.create({
             target,
             source: expressionPart,
-        };
+        });
     }
 
     public static parseIndicatorMatching(indicatorMatching: IndicatorMatch[]): string {
