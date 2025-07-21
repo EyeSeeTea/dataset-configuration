@@ -145,7 +145,9 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     validateIndicatorMatching(): ValidationError<DataSet>[] {
-        const indicatorMap = _(this.indicators).keyBy(indicator => indicator.id);
+        const indicatorMap = _(this.indicators)
+            .filter(indicator => indicator.type === matchingIndicatorType)
+            .keyBy(indicator => indicator.id);
         return (this.indicatorMatching || []).flatMap(({ source, target }) => [
             ...this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
             ...this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
@@ -158,7 +160,8 @@ export class DataSet extends Struct<DataSetAttrs>() {
         indicatorMap: HashMap<string, Indicator>
     ): ValidationError<DataSet>[] {
         const property = "indicatorMatching" as const;
-        const typeList = role === "source" ? sourceIndicatorType : targetIndicatorType;
+        const typeList =
+            role === "source" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
         const roleMessage = role === "source" ? "root" : "matched";
 
         if (!id) {
@@ -330,5 +333,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 }
 
-export const sourceIndicatorType: IndicatorScope[] = ["mandatory", "suggested"];
-export const targetIndicatorType: IndicatorScope[] = ["local", "donor"];
+export const matchingIndicatorSourceScope: IndicatorScope[] = ["mandatory", "suggested"];
+export const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "donor"];
+export const matchingIndicatorType = "outputs";

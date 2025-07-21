@@ -16,10 +16,14 @@ import styled from "styled-components";
 
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
-import { DataSet, sourceIndicatorType, targetIndicatorType } from "$/domain/entities/DataSet";
-import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
+import {
+    DataSet,
+    matchingIndicatorSourceScope,
+    matchingIndicatorTargetScope,
+    matchingIndicatorType,
+} from "$/domain/entities/DataSet";
+import { IndicatorMatch, IndicatorMatchAttrs } from "$/domain/entities/IndicatorMatch";
 import { generateUid } from "$/utils/uid";
-import { IndicatorScope } from "$/domain/entities/Indicator";
 import { Maybe } from "$/utils/ts-utils";
 import Typography from "@material-ui/core/Typography";
 import { Dropdown, DropdownItem } from "$/webapp/components/dropdown/Dropdown";
@@ -197,10 +201,13 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
 }
 
 function buildIndicatorOptionsByType(type: "root" | "matching", dataSet: DataSet) {
-    const options = type === "root" ? sourceIndicatorType : targetIndicatorType;
+    const options = type === "root" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
 
     return dataSet.indicators
-        .filter(indicator => options.includes(indicator.scope))
+        .filter(
+            indicator =>
+                options.includes(indicator.scope) && indicator.type === matchingIndicatorType
+        )
         .map(indicator => ({
             text: indicator.name,
             value: indicator.id,
