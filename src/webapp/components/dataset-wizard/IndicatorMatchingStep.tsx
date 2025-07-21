@@ -16,7 +16,7 @@ import styled from "styled-components";
 
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
-import { DataSet } from "$/domain/entities/DataSet";
+import { DataSet, sourceIndicatorType, targetIndicatorType } from "$/domain/entities/DataSet";
 import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
 import { generateUid } from "$/utils/uid";
 import { IndicatorScope } from "$/domain/entities/Indicator";
@@ -196,10 +196,8 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
     };
 }
 
-const rootIndicatorType: IndicatorScope[] = ["mandatory", "suggested"];
-const matchingIndicatorType: IndicatorScope[] = ["local", "donor"];
 function buildIndicatorOptionsByType(type: "root" | "matching", dataSet: DataSet) {
-    const options = type === "root" ? rootIndicatorType : matchingIndicatorType;
+    const options = type === "root" ? sourceIndicatorType : targetIndicatorType;
 
     return dataSet.indicators
         .filter(indicator => options.includes(indicator.scope))

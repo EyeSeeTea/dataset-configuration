@@ -7,7 +7,7 @@ import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
-import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope, IndicatorType } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
@@ -16,6 +16,7 @@ import { UserGroup } from "$/domain/entities/UserGroup";
 import { User } from "$/domain/entities/User";
 import { DataSetList } from "$/domain/entities/DataSetList";
 import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
+import { HashMap } from "$/domain/entities/generic/HashMap";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -144,39 +145,52 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     validateIndicatorMatching(): ValidationError<DataSet>[] {
-        const property = "indicatorMatching" as const;
-        const indicatorMap = new Set(this.indicators.map(indicator => indicator.id));
-        return (
-            this.indicatorMatching?.reduce((acc, { target, source }) => {
-                if (!source) {
-                    return acc.concat({
-                        property,
-                        errors: ["field_cannot_be_blank"],
-                        value: "root indicator",
-                    });
-                } else if (!target) {
-                    return acc.concat({
-                        property,
-                        errors: ["field_cannot_be_blank"],
-                        value: "matched indicator",
-                    });
-                } else if (!indicatorMap.has(source)) {
-                    return acc.concat({
-                        property,
-                        errors: ["not_found"],
-                        value: `root indicator - ${source}`,
-                    });
-                } else if (!indicatorMap.has(target)) {
-                    return acc.concat({
-                        property,
-                        errors: ["not_found"],
-                        value: `matched indicator - ${target}`,
-                    });
-                }
+        const indicatorMap = _(this.indicators).keyBy(indicator => indicator.id);
+        return (this.indicatorMatching || []).flatMap(({ source, target }) => [
+            ...this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
+            ...this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
+        ]);
+    }
 
-                return acc;
-            }, [] as ValidationError<DataSet>[]) || []
-        );
+    private validateIndicatorMatchingByRole(
+        id: Maybe<Id>,
+        role: "target" | "source",
+        indicatorMap: HashMap<string, Indicator>
+    ): ValidationError<DataSet>[] {
+        const property = "indicatorMatching" as const;
+        const typeList = role === "source" ? sourceIndicatorType : targetIndicatorType;
+        const roleMessage = role === "source" ? "root" : "matched";
+
+        if (!id) {
+            return [
+                {
+                    property,
+                    errors: ["field_cannot_be_blank"],
+                    value: `${roleMessage} indicator`,
+                },
+            ];
+        }
+
+        const indicator = indicatorMap.get(id);
+        if (!indicator) {
+            return [
+                {
+                    property,
+                    errors: ["not_found"],
+                    value: `${roleMessage} indicator - ${id}`,
+                },
+            ];
+        } else if (typeList.includes(indicator.scope)) {
+            return [
+                {
+                    property,
+                    errors: ["invalid_value"],
+                    value: `${roleMessage} indicator - ${id}`,
+                },
+            ];
+        }
+
+        return [];
     }
 
     getRegionCodesFromAccess(): string[] {
@@ -315,3 +329,6 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return dataSetList.hasPermissionsToUpdate(user);
     }
 }
+
+export const sourceIndicatorType: IndicatorScope[] = ["mandatory", "suggested"];
+export const targetIndicatorType: IndicatorScope[] = ["local", "donor"];

@@ -6,7 +6,8 @@ export type ValidationErrorKey =
     | "org_unit_required"
     | "indicators_required"
     | "regions_required"
-    | "not_found";
+    | "not_found"
+    | "invalid_value";
 
 export const validationErrorMessages: Record<
     ValidationErrorKey,
@@ -28,6 +29,12 @@ export const validationErrorMessages: Record<
     regions_required: () => i18n.t("Select at least one country"),
     not_found: (fieldName: string, value: unknown) =>
         i18n.t(`{{fieldName}} not found: {{value}}`, {
+            fieldName: fieldName,
+            value: String(value),
+            nsSeparator: false,
+        }),
+    invalid_value: (fieldName: string, value: unknown) =>
+        i18n.t(`Invalid value for {{fieldName}}: {{value}}`, {
             fieldName: fieldName,
             value: String(value),
             nsSeparator: false,
