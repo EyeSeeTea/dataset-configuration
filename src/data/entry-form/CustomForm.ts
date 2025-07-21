@@ -376,6 +376,7 @@ const getTemplate = (
     const templateSections = convertToSections(dataSetToSave, categoryCombos, existingSections);
     const { disabledFields } = dataSetToSave;
     const periods = generatePeriods(dataSet, d2Config) ?? {};
+    const indicatorMatchingRef = generateIndicatorMatchingReference(dataSetToSave);
     const context = getContext(dataSet, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
     const view = velocity.render(data.template, context, {}, config);
@@ -384,6 +385,7 @@ const getTemplate = (
         <script>
             ${data.js}
             setPeriodDates(${JSON.stringify(periods)});
+            setIndicatorMatching(${JSON.stringify(indicatorMatchingRef)})
         </script>
         ${view}
     `;
@@ -438,6 +440,16 @@ function generatePeriods(dataSet: DataSetTemplate, d2Config: D2Config): Maybe<Te
     const outPutValidYears = generatePeriodsFromAttributeValues(outPutAttribute);
 
     return { output: outPutValidYears, outcome: outComeValidYears };
+}
+
+function generateIndicatorMatchingReference(dataSet: DataSet) {
+    return (
+        dataSet.indicatorMatching?.map(match => ({
+            target: match.target,
+            sourceIds: match.sourceIds,
+            expression: match.resolvedExpression,
+        })) || []
+    );
 }
 
 function generatePeriodsFromAttributeValues(
