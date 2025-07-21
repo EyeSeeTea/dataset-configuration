@@ -180,7 +180,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
                     value: `${roleMessage} indicator - ${id}`,
                 },
             ];
-        } else if (typeList.includes(indicator.scope)) {
+        } else if (!typeList.includes(indicator.scope)) {
             return [
                 {
                     property,
