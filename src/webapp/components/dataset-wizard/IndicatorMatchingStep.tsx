@@ -80,7 +80,6 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
     );
 
     const addRowBlocker = React.useMemo(() => {
-        console.log(targetIndicators);
         if (!availableSourceIndicators.length) {
             return i18n.t("No Global mandatory or Global suggested indicators available.");
         } else if (!targetIndicators.length) {
