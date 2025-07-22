@@ -80,9 +80,10 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
     );
 
     const addRowBlocker = React.useMemo(() => {
+        console.log(targetIndicators);
         if (!availableSourceIndicators.length) {
             return i18n.t("No Global mandatory or Global suggested indicators available.");
-        } else if (targetIndicators.length === 1 && targetIndicators[0]?.value === "") {
+        } else if (!targetIndicators.length) {
             return i18n.t("No Local or Donor indicators available.");
         } else if (matches.some(match => !match.source || !match.target)) {
             return i18n.t("Please fill in all fields before adding a new matching indicator.");
@@ -220,12 +221,10 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
 
 function initializeMatches(dataSet: DataSet) {
     return (
-        dataSet.indicatorMatching?.map(match => {
-            return {
-                ...match,
-                id: generateUid(),
-            };
-        }) || []
+        dataSet.indicatorMatching?.map(match => ({
+            ...match,
+            id: generateUid(),
+        })) || []
     );
 }
 
