@@ -13,20 +13,18 @@ import {
 } from "@material-ui/core";
 import DeleteIcon from "@material-ui/icons/Delete";
 import styled from "styled-components";
+import Typography from "@material-ui/core/Typography";
+import { Dropdown, DropdownItem } from "@eyeseetea/d2-ui-components";
 
 import { component } from "$/utils/react";
 import i18n from "$/utils/i18n";
-import {
-    DataSet,
-    matchingIndicatorSourceScope,
-    matchingIndicatorTargetScope,
-    matchingIndicatorType,
-} from "$/domain/entities/DataSet";
+import { DataSet } from "$/domain/entities/DataSet";
 import { IndicatorMatch, IndicatorMatchAttrs } from "$/domain/entities/IndicatorMatch";
 import { generateUid } from "$/utils/uid";
 import { Maybe } from "$/utils/ts-utils";
-import Typography from "@material-ui/core/Typography";
-import { Dropdown, DropdownItem } from "$/webapp/components/dropdown/Dropdown";
+import { Id } from "$/domain/entities/Ref";
+import _ from "$/domain/entities/generic/Collection";
+import { Indicator } from "$/domain/entities/Indicator";
 
 type IndicatorMatchingStepProps = {
     dataSet: DataSet;
@@ -35,34 +33,44 @@ type IndicatorMatchingStepProps = {
 
 type IndicatorMatchView = IndicatorMatchAttrs & {
     id: string;
-    rootOptions: DropdownItem[];
-    matchingOptions: DropdownItem[];
+    targetOptions: DropdownItem[];
+};
+
+type IndicatorMatchingSourceOption = DropdownItem & {
+    id: Id;
+    validMatchingIndicators: Indicator[];
 };
 
 const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) => {
     const { dataSet } = props;
-    const { matches, addNewRow, deleteRow, changeMatch } = useIndicatorMatching(props);
 
-    const rootIndicators = React.useMemo(
-        () => buildIndicatorOptionsByType("root", dataSet),
-        [dataSet]
-    );
-    const matchingIndicators = React.useMemo(
-        () => buildIndicatorOptionsByType("matching", dataSet).filter(option => !option.disabled),
+    const sourceIndicators = React.useMemo(() => buildSourceIndicatorOptions(dataSet), [dataSet]);
+
+    const { matches, addNewRow, deleteRow, changeMatch } = useIndicatorMatching({
+        ...props,
+        sourceIndicators: sourceIndicators,
+    });
+
+    const targetIndicators = React.useMemo(
+        () =>
+            buildTargetIndicatorOptions({
+                indicators: dataSet.indicators,
+                dataSet,
+            }),
         [dataSet]
     );
 
     const disableAddRow = React.useMemo(() => {
-        if (!rootIndicators.length) {
+        if (!sourceIndicators.length) {
             return i18n.t("No Global mandatory or Global suggested indicators available.");
-        } else if (!matchingIndicators.length) {
+        } else if (targetIndicators.length === 1 && targetIndicators[0]?.value === "") {
             return i18n.t("No Local or Donor indicators available.");
         } else if (matches.some(match => !match.source || !match.target)) {
             return i18n.t("Please fill in all fields before adding a new matching indicator.");
         } else {
             return undefined;
         }
-    }, [rootIndicators, matchingIndicators, matches]);
+    }, [sourceIndicators, targetIndicators, matches]);
 
     return (
         <Grid container spacing={2}>
@@ -82,18 +90,18 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
                             {matches.map(match => (
                                 <TableRow key={match.id}>
                                     <Cell>
-                                        <Dropdown
+                                        <FullWidthDropdown
                                             className="dropdown"
-                                            items={match.rootOptions}
+                                            items={sourceIndicators}
                                             onChange={changeMatch(match.id, "source")}
                                             value={match.source}
                                             hideEmpty={true}
                                         />
                                     </Cell>
                                     <Cell width="45%">
-                                        <Dropdown
+                                        <FullWidthDropdown
                                             className="dropdown"
-                                            items={match.matchingOptions}
+                                            items={match.targetOptions}
                                             onChange={changeMatch(match.id, "target")}
                                             value={match.target}
                                             hideEmpty={true}
@@ -130,15 +138,24 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
     );
 });
 
-function useIndicatorMatching(props: IndicatorMatchingStepProps) {
-    const { dataSet, onChange } = props;
+function useIndicatorMatching(
+    props: IndicatorMatchingStepProps & { sourceIndicators: IndicatorMatchingSourceOption[] }
+) {
+    const { dataSet, onChange, sourceIndicators } = props;
 
+    const sourceIndicatorsMap = React.useMemo(
+        () => _(sourceIndicators).keyBy(sourceIndicator => sourceIndicator.id),
+        [sourceIndicators]
+    );
     const [matches, setMatches] = React.useState<IndicatorMatchView[]>(
         dataSet.indicatorMatching?.map(match => ({
             ...match,
             id: generateUid(),
-            rootOptions: buildIndicatorOptionsByType("root", dataSet),
-            matchingOptions: buildIndicatorOptionsByType("matching", dataSet),
+            targetOptions: buildTargetIndicatorOptions({
+                targetId: match.target,
+                dataSet,
+                indicators: sourceIndicatorsMap.get(match.source)?.validMatchingIndicators || [],
+            }),
         })) || []
     );
 
@@ -158,15 +175,14 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
             id: generateUid(),
             target: "",
             source: "",
-            rootOptions: buildIndicatorOptionsByType("root", dataSet),
-            matchingOptions: buildIndicatorOptionsByType("matching", dataSet),
+            targetOptions: [noValidTargets],
         };
         setMatches(prev => {
             const updatedMatches = prev.concat(newMatch);
             updateDatasetMatches(updatedMatches);
             return updatedMatches;
         });
-    }, [dataSet, updateDatasetMatches]);
+    }, [updateDatasetMatches]);
 
     const deleteRow = React.useCallback(
         (id: string) => {
@@ -182,14 +198,24 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
     const changeMatch = React.useCallback(
         (id: string, field: keyof IndicatorMatchAttrs) => (value: Maybe<string>) => {
             setMatches(prev => {
-                const updatedMatches = prev.map(match =>
-                    match.id === id ? { ...match, [field]: value } : match
-                );
+                const updatedMatches = prev.map(match => {
+                    const updatedMatch = match.id === id ? { ...match, [field]: value } : match;
+                    return {
+                        ...updatedMatch,
+                        targetOptions: buildTargetIndicatorOptions({
+                            targetId: match.target,
+                            dataSet,
+                            indicators:
+                                sourceIndicatorsMap.get(updatedMatch.source)
+                                    ?.validMatchingIndicators || [],
+                        }),
+                    };
+                });
                 updateDatasetMatches(updatedMatches);
                 return updatedMatches;
             });
         },
-        [updateDatasetMatches]
+        [updateDatasetMatches, sourceIndicatorsMap]
     );
 
     return {
@@ -200,23 +226,43 @@ function useIndicatorMatching(props: IndicatorMatchingStepProps) {
     };
 }
 
-function buildIndicatorOptionsByType(type: "root" | "matching", dataSet: DataSet) {
-    const options = type === "root" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
+function buildSourceIndicatorOptions(dataSet: DataSet): IndicatorMatchingSourceOption[] {
+    const targetByCCMap = _(dataSet.indicators)
+        .filter(DataSet.isIndicatorMatchingTarget)
+        .groupBy(indicator => indicator.disaggregation?.id || "");
 
-    return dataSet.indicators
+    return dataSet.indicators.filter(DataSet.isIndicatorMatchingSource).map(indicator => ({
+        text: indicator.name,
+        value: indicator.id,
+        id: indicator.id,
+        validMatchingIndicators: targetByCCMap.get(indicator.disaggregation?.id || "") || [],
+    }));
+}
+
+function buildTargetIndicatorOptions(params: {
+    indicators: Indicator[];
+    dataSet: DataSet;
+    targetId?: string;
+}): DropdownItem[] {
+    const { targetId, indicators, dataSet } = params;
+    const targetIndicatorOptions = indicators
         .filter(
             indicator =>
-                options.includes(indicator.scope) && indicator.type === matchingIndicatorType
+                (DataSet.isIndicatorMatchingTarget(indicator) &&
+                    !dataSet.indicatorMatching?.some(match => match.target === indicator.id)) ||
+                indicator.id === targetId
         )
         .map(indicator => ({
             text: indicator.name,
             value: indicator.id,
-            //disable matching indicators because it can't have more than 1 value
-            disabled:
-                type !== "root" &&
-                dataSet.indicatorMatching?.some(match => match.target === indicator.id),
         }));
+    return targetIndicatorOptions.length > 0 ? targetIndicatorOptions : [noValidTargets];
 }
+
+const noValidTargets: DropdownItem = {
+    text: "No valid indicators",
+    value: "",
+};
 
 const AddButton = styled(Button)`
     margin-top: 16px;
@@ -232,6 +278,12 @@ const Cell = styled(TableCell)`
 
 const ActionButton = styled(IconButton)`
     padding: 4px 12px;
+`;
+
+const FullWidthDropdown = styled(Dropdown)`
+    .MuiInputBase-root {
+        width: 100%;
+    }
 `;
 
 export const IndicatorMatchingStep = component(IndicatorMatchingStep_);

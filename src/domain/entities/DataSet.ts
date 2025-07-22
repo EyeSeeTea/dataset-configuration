@@ -151,13 +151,14 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return (this.indicatorMatching || []).flatMap(({ source, target }) => [
             ...this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
             ...this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
+            ...this.validateIndicatorMatchingCategoryCombo(source, indicatorMap),
         ]);
     }
 
     private validateIndicatorMatchingByRole(
-        id: Maybe<Id>,
+        id: Id,
         role: "target" | "source",
-        indicatorMap: HashMap<string, Indicator>
+        indicatorMap: HashMap<Id, Indicator>
     ): ValidationError<DataSet>[] {
         const property = "indicatorMatching" as const;
         const typeList =
@@ -193,6 +194,28 @@ export class DataSet extends Struct<DataSetAttrs>() {
             ];
         }
 
+        return [];
+    }
+
+    private validateIndicatorMatchingCategoryCombo(
+        id: Id,
+        indicatorMap: HashMap<Id, Indicator>
+    ): ValidationError<DataSet>[] {
+        const sourceIndicator = indicatorMap.get(id);
+        const targetIndicator = indicatorMap.get(id);
+
+        const sourceCCId = sourceIndicator?.disaggregation?.id;
+        const targetCCId = targetIndicator?.disaggregation?.id;
+
+        if (sourceCCId && targetCCId && sourceCCId !== targetCCId) {
+            return [
+                {
+                    property: "indicatorMatching" as const,
+                    errors: ["invalid_value"],
+                    value: `root and matching indicators must have the same disaggregation`,
+                },
+            ];
+        }
         return [];
     }
 
@@ -331,8 +354,22 @@ export class DataSet extends Struct<DataSetAttrs>() {
         const dataSetList = DataSetList.create({ ...this });
         return dataSetList.hasPermissionsToUpdate(user);
     }
+
+    static isIndicatorMatchingSource(indicator: Indicator): boolean {
+        return (
+            matchingIndicatorSourceScope.includes(indicator.scope) &&
+            indicator.type === matchingIndicatorType
+        );
+    }
+
+    static isIndicatorMatchingTarget(indicator: Indicator): boolean {
+        return (
+            matchingIndicatorTargetScope.includes(indicator.scope) &&
+            indicator.type === matchingIndicatorType
+        );
+    }
 }
 
-export const matchingIndicatorSourceScope: IndicatorScope[] = ["mandatory", "suggested"];
-export const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "donor"];
-export const matchingIndicatorType = "outputs";
+const matchingIndicatorSourceScope: IndicatorScope[] = ["mandatory", "suggested"];
+const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "donor"];
+const matchingIndicatorType = "outputs";
