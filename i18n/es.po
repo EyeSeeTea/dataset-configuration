@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-06-28T01:28:59.458Z\n"
+"POT-Creation-Date: 2025-07-22T10:18:48.406Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -71,7 +71,8 @@ msgstr "El id del proyecto es obligatorio"
 msgid "Project name is required"
 msgstr "El nombre del proyecto es obligatorio"
 
-msgid "Cannot be blank: {{fieldName}}"
+#, fuzzy
+msgid "Cannot be blank: {{fieldName}} {{value}}"
 msgstr "El campo no puede estar vacío: {{fieldName}}"
 
 msgid "{{fieldName}} must be a positive number"
@@ -84,6 +85,12 @@ msgid "At least one indicator is required"
 msgstr "Al menos un indicador es obligatorio"
 
 msgid "Select at least one country"
+msgstr ""
+
+msgid "{{fieldName}} not found: {{value}}"
+msgstr ""
+
+msgid "Invalid value for {{fieldName}}: {{value}}"
 msgstr ""
 
 msgid "DataSet not found"
@@ -332,6 +339,30 @@ msgstr ""
 msgid "Core competency"
 msgstr ""
 
+msgid "No Global mandatory or Global suggested indicators available."
+msgstr ""
+
+msgid "No Local or Donor indicators available."
+msgstr ""
+
+msgid "Please fill in all fields before adding a new matching indicator."
+msgstr ""
+
+#, fuzzy
+msgid "Root Indicators"
+msgstr "Indicadores"
+
+#, fuzzy
+msgid "Matched Indicators"
+msgstr "Indicadores"
+
+#, fuzzy
+msgid "Actions"
+msgstr "Acción"
+
+msgid "Add matching indicator"
+msgstr ""
+
 msgid "Hide Suggested Companion Indicators"
 msgstr ""
 
@@ -448,6 +479,10 @@ msgstr ""
 
 msgid "Share"
 msgstr "Permisos"
+
+#, fuzzy
+msgid "Matching indicators"
+msgstr "Indicadores"
 
 msgid "Summary and Save"
 msgstr "Resumen y guardar"
