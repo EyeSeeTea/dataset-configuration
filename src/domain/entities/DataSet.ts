@@ -148,59 +148,57 @@ export class DataSet extends Struct<DataSetAttrs>() {
         const indicatorMap = _(this.indicators)
             .filter(indicator => indicator.type === matchingIndicatorType)
             .keyBy(indicator => indicator.id);
-        return (this.indicatorMatching || []).flatMap(({ source, target }) => [
-            ...this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
-            ...this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
-            ...this.validateIndicatorMatchingCategoryCombo(source, indicatorMap),
-        ]);
+        return _(this.indicatorMatching || [])
+            .map(({ source, target }) => [
+                this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
+                this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
+                this.validateIndicatorMatchingCategoryCombo(source, indicatorMap),
+            ])
+            .flatten()
+            .compact()
+            .value();
     }
 
     private validateIndicatorMatchingByRole(
         id: Id,
         role: "target" | "source",
         indicatorMap: HashMap<Id, Indicator>
-    ): ValidationError<DataSet>[] {
+    ): ValidationError<DataSet> | undefined {
         const property = "indicatorMatching" as const;
         const typeList =
             role === "source" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
         const roleMessage = role === "source" ? "root" : "matched";
 
         if (!id) {
-            return [
-                {
-                    property,
-                    errors: ["field_cannot_be_blank"],
-                    value: `${roleMessage} indicator`,
-                },
-            ];
+            return {
+                property,
+                errors: ["field_cannot_be_blank"],
+                value: `${roleMessage} indicator`,
+            };
         }
 
         const indicator = indicatorMap.get(id);
         if (!indicator) {
-            return [
-                {
-                    property,
-                    errors: ["not_found"],
-                    value: `${roleMessage} indicator - ${id}`,
-                },
-            ];
+            return {
+                property,
+                errors: ["not_found"],
+                value: `${roleMessage} indicator - ${id}`,
+            };
         } else if (!typeList.includes(indicator.scope)) {
-            return [
-                {
-                    property,
-                    errors: ["invalid_value"],
-                    value: `${roleMessage} indicator - ${id}`,
-                },
-            ];
+            return {
+                property,
+                errors: ["invalid_value"],
+                value: `${roleMessage} indicator - ${id}`,
+            };
         }
 
-        return [];
+        return undefined;
     }
 
     private validateIndicatorMatchingCategoryCombo(
         id: Id,
         indicatorMap: HashMap<Id, Indicator>
-    ): ValidationError<DataSet>[] {
+    ): ValidationError<DataSet> | undefined {
         const sourceIndicator = indicatorMap.get(id);
         const targetIndicator = indicatorMap.get(id);
 
@@ -208,15 +206,13 @@ export class DataSet extends Struct<DataSetAttrs>() {
         const targetCCId = targetIndicator?.disaggregation?.id;
 
         if (sourceCCId && targetCCId && sourceCCId !== targetCCId) {
-            return [
-                {
-                    property: "indicatorMatching" as const,
-                    errors: ["invalid_value"],
-                    value: `root and matching indicators must have the same disaggregation`,
-                },
-            ];
+            return {
+                property: "indicatorMatching" as const,
+                errors: ["invalid_value"],
+                value: `root and matching indicators must have the same disaggregation`,
+            };
         }
-        return [];
+        return undefined;
     }
 
     getRegionCodesFromAccess(): string[] {

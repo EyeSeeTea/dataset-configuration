@@ -23,8 +23,8 @@ export class D2IndicatorMatchingParser {
         return expression
             .split(";")
             .map(matching => matching.trim())
-            .filter(matching => matching.length > 0)
-            .map(this.parseMatching);
+            .filter(matching => matching)
+            .map(matching => this.parseMatching(matching));
     }
 
     private parseMatching(matching: string): IndicatorMatch {
