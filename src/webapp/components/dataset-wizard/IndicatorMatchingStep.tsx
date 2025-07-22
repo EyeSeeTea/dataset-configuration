@@ -25,7 +25,6 @@ import { Id } from "$/domain/entities/Ref";
 import _ from "$/domain/entities/generic/Collection";
 import { Indicator } from "$/domain/entities/Indicator";
 import { Dropdown, DropdownItem } from "$/webapp/components/dropdown/Dropdown";
-import { HashMap } from "$/domain/entities/generic/HashMap";
 
 type IndicatorMatchingStepProps = {
     dataSet: DataSet;
@@ -34,7 +33,6 @@ type IndicatorMatchingStepProps = {
 
 type IndicatorMatchView = IndicatorMatchAttrs & {
     id: string;
-    targetOptions: DropdownItem[];
 };
 
 type IndicatorMatchingSourceOption = DropdownItem & {
@@ -48,18 +46,30 @@ type IndicatorMatchingTargetOption = DropdownItem & {
 
 const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) => {
     const { dataSet } = props;
-    const [allSourceIndicators] = React.useState(buildSourceIndicatorOptions(dataSet));
-
-    const { matches, addNewRow, deleteRow, changeMatch } = useIndicatorMatching({
-        ...props,
-        sourceIndicators: allSourceIndicators,
-    });
+    const { matches, addNewRow, deleteRow, changeMatch } = useIndicatorMatching(props);
 
     const availableSourceIndicators = React.useMemo(
-        () => buildSourceIndicatorOptions(dataSet, true),
+        () =>
+            _(buildSourceIndicatorOptions(dataSet))
+                .sortBy(sourceIndicator => sourceIndicator.text)
+                .value(),
         [dataSet]
     );
-
+    const availableSourceIndicatorsMap = React.useMemo(
+        () => _(availableSourceIndicators).keyBy(sourceIndicator => sourceIndicator.indicator.id),
+        [availableSourceIndicators]
+    );
+    const getValidTargetsFromSource = React.useCallback(
+        (sourceId: Id) => {
+            const validTargets = availableSourceIndicatorsMap.get(sourceId)?.validTargetIndicators;
+            return validTargets?.length
+                ? _(validTargets)
+                      .sortBy(indicator => indicator.text)
+                      .value()
+                : [getNoValidTargets()];
+        },
+        [availableSourceIndicatorsMap]
+    );
     const targetIndicators = React.useMemo(
         () =>
             buildTargetIndicatorOptions({
@@ -79,7 +89,7 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
         } else {
             return undefined;
         }
-    }, [allSourceIndicators, targetIndicators, matches]);
+    }, [availableSourceIndicators, targetIndicators, matches]);
 
     return (
         <Grid container spacing={2}>
@@ -110,7 +120,7 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
                                     <Cell width="45%">
                                         <FullWidthDropdown
                                             className="dropdown"
-                                            items={match.targetOptions}
+                                            items={getValidTargetsFromSource(match.source)}
                                             onChange={changeMatch(match.id, "target")}
                                             value={match.target}
                                             hideEmpty={true}
@@ -147,18 +157,10 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
     );
 });
 
-function useIndicatorMatching(
-    props: IndicatorMatchingStepProps & { sourceIndicators: IndicatorMatchingSourceOption[] }
-) {
-    const { dataSet, onChange, sourceIndicators } = props;
+function useIndicatorMatching(props: IndicatorMatchingStepProps) {
+    const { dataSet, onChange } = props;
 
-    const sourceIndicatorsMap = React.useMemo(
-        () => _(sourceIndicators).keyBy(sourceIndicator => sourceIndicator.indicator.id),
-        [sourceIndicators]
-    );
-    const [matches, setMatches] = React.useState<IndicatorMatchView[]>(
-        initializeMatches(dataSet, sourceIndicatorsMap)
-    );
+    const [matches, setMatches] = React.useState<IndicatorMatchView[]>(initializeMatches(dataSet));
 
     const updateDatasetMatches = React.useCallback(
         (matches: IndicatorMatchView[]) =>
@@ -176,7 +178,6 @@ function useIndicatorMatching(
             id: generateUid(),
             target: "",
             source: "",
-            targetOptions: [getNoValidTargets()],
         };
         setMatches(prev => {
             const updatedMatches = prev.concat(newMatch);
@@ -199,27 +200,14 @@ function useIndicatorMatching(
     const changeMatch = React.useCallback(
         (id: string, field: keyof IndicatorMatchAttrs) => (value: Maybe<string>) => {
             setMatches(prev => {
-                const updatedMatches = prev.map(match => {
-                    const updatedMatch = match.id === id ? { ...match, [field]: value } : match;
-                    const validTargetIndicators =
-                        sourceIndicatorsMap.get(updatedMatch.source)?.validTargetIndicators || [];
-                    return field === "target" || match.id === id
-                        ? {
-                              ...updatedMatch,
-                              targetOptions: buildTargetIndicatorOptions({
-                                  dataSet,
-                                  indicators: _(validTargetIndicators)
-                                      .compactMap(({ indicator }) => indicator)
-                                      .value(),
-                              }),
-                          }
-                        : updatedMatch;
-                });
+                const updatedMatches = prev.map(match =>
+                    match.id === id ? { ...match, [field]: value } : match
+                );
                 updateDatasetMatches(updatedMatches);
                 return updatedMatches;
             });
         },
-        [updateDatasetMatches, sourceIndicatorsMap]
+        [updateDatasetMatches]
     );
 
     return {
@@ -230,38 +218,22 @@ function useIndicatorMatching(
     };
 }
 
-function initializeMatches(
-    dataSet: DataSet,
-    sourceIndicatorsMap: HashMap<Id, IndicatorMatchingSourceOption>
-) {
+function initializeMatches(dataSet: DataSet) {
     return (
         dataSet.indicatorMatching?.map(match => {
-            const validTargetIndicators =
-                sourceIndicatorsMap.get(match.source)?.validTargetIndicators || [];
             return {
                 ...match,
                 id: generateUid(),
-                targetOptions: buildTargetIndicatorOptions({
-                    dataSet,
-                    indicators: _(validTargetIndicators)
-                        .compactMap(({ indicator }) => indicator)
-                        .value(),
-                    filterUsed: true,
-                }),
             };
         }) || []
     );
 }
 
-function buildSourceIndicatorOptions(
-    dataSet: DataSet,
-    filterUsed = false
-): IndicatorMatchingSourceOption[] {
+function buildSourceIndicatorOptions(dataSet: DataSet): IndicatorMatchingSourceOption[] {
     const targetByCCMap = _(
         buildTargetIndicatorOptions({
             indicators: dataSet.indicators,
             dataSet,
-            filterUsed: true,
         })
     ).groupBy(indicatorOption => indicatorOption.indicator?.disaggregation?.id || "");
 
@@ -271,32 +243,24 @@ function buildSourceIndicatorOptions(
             indicator: indicator,
             text: indicator.name,
             value: indicator.id,
-            disabled: filterUsed
-                ? validTargetIndicators.every(targetIndicator => targetIndicator.disabled)
-                : false,
+            disabled: validTargetIndicators.every(targetIndicator => targetIndicator.disabled),
             validTargetIndicators: validTargetIndicators,
         };
     });
 }
 
-type BuildTargetIndicatorOptionsParams = {
+function buildTargetIndicatorOptions(params: {
     indicators: Indicator[];
     dataSet: DataSet;
-    filterUsed?: boolean;
-};
-function buildTargetIndicatorOptions(
-    params: BuildTargetIndicatorOptionsParams
-): IndicatorMatchingTargetOption[] {
-    const { indicators, dataSet, filterUsed = true } = params;
+}): IndicatorMatchingTargetOption[] {
+    const { indicators, dataSet } = params;
     return indicators
         .filter(indicator => DataSet.isIndicatorMatchingTarget(indicator))
         .map(indicator => ({
             indicator: indicator,
             text: indicator.name,
             value: indicator.id,
-            disabled: filterUsed
-                ? dataSet.indicatorMatching?.some(match => match.target === indicator.id)
-                : false,
+            disabled: dataSet.indicatorMatching?.some(match => match.target === indicator.id),
         }));
 }
 
