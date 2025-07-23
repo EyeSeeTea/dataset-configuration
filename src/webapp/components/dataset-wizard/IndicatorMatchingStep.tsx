@@ -80,9 +80,11 @@ const IndicatorMatchingStep_ = React.memo((props: IndicatorMatchingStepProps) =>
     );
 
     const addRowBlocker = React.useMemo(() => {
-        if (!availableSourceIndicators.length) {
+        const noSource = availableSourceIndicators.every(indicator => indicator.disabled);
+        const noTarget = targetIndicators.every(indicator => indicator.disabled);
+        if (noSource) {
             return i18n.t("No Global mandatory or Global suggested indicators available.");
-        } else if (!targetIndicators.length) {
+        } else if (noTarget) {
             return i18n.t("No Local or Donor indicators available.");
         } else if (matches.some(match => !match.source || !match.target)) {
             return i18n.t("Please fill in all fields before adding a new matching indicator.");
