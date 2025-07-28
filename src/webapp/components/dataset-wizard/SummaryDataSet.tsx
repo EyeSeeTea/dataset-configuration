@@ -1,5 +1,6 @@
 import React from "react";
 import { Grid, Typography } from "@material-ui/core";
+import capitalize from "lodash/capitalize";
 
 import { DataSet } from "$/domain/entities/DataSet";
 import i18n from "$/utils/i18n";
@@ -51,8 +52,11 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 
     const regionsCodes = dataSet.getRegionCodesFromAccess();
     const selectedRegions = config.regions.filter(region => regionsCodes.includes(region.code));
+    const requiredScope = Indicator.buildCompanionScope(
+        dataSet.project?.startDate ? new Date(dataSet.project.startDate) : undefined
+    );
 
-    const { missingSelectedCompanion } = useGetMissingSelectedCompanion({ dataSet });
+    const { missingSelectedCompanion } = useGetMissingSelectedCompanion({ dataSet, requiredScope });
 
     return (
         <Grid item xs={12}>
@@ -75,7 +79,7 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
                         <SummaryItem label={i18n.t("Companion Indicators")} value="" />
                         <MissingCompanionAlert
                             indicator={missingSelectedCompanion}
-                            scopeDate={dataSet.project?.startDate}
+                            requiredScope={requiredScope}
                         />
                     </>
                 )}
@@ -85,58 +89,45 @@ export const SummaryList = React.memo((props: { dataSet: DataSet }) => {
 });
 
 const MissingCompanionAlert = React.memo(
-    (props: { indicator: MissingCompanionIndicator; scopeDate: Maybe<string> }) => {
-        const { indicator, scopeDate } = props;
+    (props: { indicator: MissingCompanionIndicator; requiredScope: string }) => {
+        const { indicator, requiredScope } = props;
 
-        const requiredScope = Indicator.buildCompanionScope(
-            scopeDate ? new Date(scopeDate) : undefined
-        );
+        const companionIndicatorTypes = indicator.keys();
 
-        const scopes = indicator.keys();
+        const allAllValid = indicator
+            .values()
+            .every(item => item.every(validation => validation.isValid));
 
-        const scopeText = React.useCallback(
-            (scope: string) => {
-                return scope === requiredScope && scope !== "default" ? (
-                    <strong>
-                        <span>{scope}</span> ({i18n.t("The companion rules for this year need to be satisfied")}):
-                    </strong>
-                ) : (
-                    <span>{scope}</span>
-                );
-            },
-            [requiredScope]
-        );
-
-        if (scopes.length === 1) {
-            const validationMessages = indicator.get(scopes[0] || "");
+        if (allAllValid) {
             return (
-                validationMessages && (
-                    <MissingCompanionAlertContainer>
-                        {validationMessages?.map((validationMessage, index) => (
-                            <SummaryItem
-                                label={validationMessage.code}
-                                value={validationMessage.message}
-                                key={index}
-                            />
-                        ))}
-                    </MissingCompanionAlertContainer>
-                )
+                <MissingCompanionAlertContainer>
+                    <strong>{i18n.t("All companions are satisfied")}</strong>
+                </MissingCompanionAlertContainer>
             );
         }
 
         return (
             <MissingCompanionAlertContainer>
-                {scopes.map(scope => (
+                <strong>
+                    <span>
+                        {requiredScope} ({i18n.t("These companion rules need to be satisfied")})
+                    </span>
+                </strong>
+                {companionIndicatorTypes.map(type => (
                     <>
-                        {scopeText(scope)}
-                        <ul key={scope}>
-                            {indicator.get(scope)?.map((validationMessage, index) => (
-                                <SummaryItem
-                                    label={validationMessage.code}
-                                    value={validationMessage.message}
-                                    key={index}
-                                />
-                            ))}
+                        <ul>
+                            <li>
+                                <span>{capitalize(type)}:</span>
+                                <ul key={type}>
+                                    {indicator.get(type)?.map((validationMessage, index) => (
+                                        <SummaryItem
+                                            label={validationMessage.code}
+                                            value={validationMessage.message}
+                                            key={index}
+                                        />
+                                    ))}
+                                </ul>
+                            </li>
                         </ul>
                     </>
                 ))}
@@ -153,8 +144,8 @@ export const SummaryItem = React.memo((props: { label: string; value: string }) 
     );
 });
 
-const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
-    const { dataSet } = props;
+const useGetMissingSelectedCompanion = (props: { dataSet: DataSet; requiredScope: string }) => {
+    const { dataSet, requiredScope } = props;
 
     const indicatorByCodes = React.useMemo(
         () =>
@@ -165,7 +156,7 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
     );
 
     const missingSelectedCompanion: Maybe<MissingCompanionIndicator> = React.useMemo(() => {
-        const allIndicatorValidations = _(dataSet.indicators)
+        const scopeIndicatorValidations = _(dataSet.indicators)
             .filter(indicator => indicator.getAllCompanionCodesFromRules().length > 0)
             .map(indicator => {
                 const { outcomeRulesValid, outputRulesValid } =
@@ -188,22 +179,25 @@ const useGetMissingSelectedCompanion = (props: { dataSet: DataSet }) => {
                     }),
                 ];
             })
-            .flatten();
+            .flatten()
+            .filter(validation => validation.scope === requiredScope);
 
-        const areAllValid = allIndicatorValidations.every(validation => validation.isValid);
-        if (areAllValid) return undefined;
-
-        return allIndicatorValidations
-            .groupBy(validation => validation.scope)
+        return scopeIndicatorValidations
+            .groupBy(validation => validation.type)
             .mapValues(([_scope, validations]) =>
                 validations.map(validation => ({
                     code: validation.code,
                     message: validation.message,
+                    isValid: validation.isValid,
                 }))
             );
-    }, [dataSet, indicatorByCodes]);
+    }, [dataSet, indicatorByCodes, requiredScope]);
 
-    return { missingSelectedCompanion };
+    if (missingSelectedCompanion.values().length > 0) {
+        return { missingSelectedCompanion };
+    } else {
+        return { missingSelectedCompanion: undefined };
+    }
 };
 
 function buildValidationItemsByType(props: {
@@ -219,35 +213,29 @@ function buildValidationItemsByType(props: {
             scope,
             type: type,
             isValid,
-            message: buildValidationMessages(isValid, companionRulesMessage.get(scope), "outcomes"),
+            message: buildValidationMessages(isValid, companionRulesMessage.get(scope)),
         })
     );
 }
 
-function buildValidationMessages(
-    isValid: boolean,
-    message: Maybe<string>,
-    type: "outcomes" | "outputs"
-) {
-    const prefix =
-        type === "outcomes"
-            ? i18n.t("Outcome companion rule not satisfied")
-            : i18n.t("Output companion rule not satisfied");
-    const allRulesSatisfied = i18n.t("All rules satisfied");
-    return isValid ? allRulesSatisfied : `${prefix}: ${message}`;
+function buildValidationMessages(isValid: boolean, message: Maybe<string>) {
+    const allRulesSatisfied = i18n.t("All rules are satisfied");
+    return isValid ? allRulesSatisfied : `${i18n.t("Rules not satisfied")}: ${message}`;
 }
+
+type CompanionRuleType = "outcomes" | "outputs";
 
 type ValidationItem = {
     code: string;
     scope: IndicatorCompanionScope;
-    type: "outcomes" | "outputs";
+    type: CompanionRuleType;
     isValid: boolean;
     message: string;
 };
 
-type ValidationMessage = Pick<ValidationItem, "code" | "message">;
+type ValidationMessage = Pick<ValidationItem, "code" | "message" | "isValid">;
 
-type MissingCompanionIndicator = HashMap<IndicatorCompanionScope, Maybe<ValidationMessage[]>>;
+type MissingCompanionIndicator = HashMap<CompanionRuleType, ValidationMessage[]>;
 
 const MissingCompanionAlertContainer = styled("div")`
     padding-inline: 1rem;

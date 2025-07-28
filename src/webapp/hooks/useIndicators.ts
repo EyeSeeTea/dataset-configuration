@@ -71,9 +71,8 @@ export function useGetCompanionIndicators(props: {
 export function useIndicatorsTableColumns(props: {
     showCompanionColumn: boolean;
     statusIndicator: (indicator: Indicator) => React.ReactNode;
-    hasCompanionScopes: boolean;
 }): IndicatorColumns {
-    const { showCompanionColumn, statusIndicator, hasCompanionScopes } = props;
+    const { showCompanionColumn, statusIndicator } = props;
     return React.useMemo(() => {
         return [
             {
@@ -93,7 +92,7 @@ export function useIndicatorsTableColumns(props: {
             {
                 name: "suggestedScope",
                 text: i18n.t("Suggested year(s)"),
-                hidden: !showCompanionColumn || !hasCompanionScopes,
+                hidden: !showCompanionColumn,
             },
             {
                 name: "theme",
@@ -113,7 +112,7 @@ export function useIndicatorsTableColumns(props: {
                 text: i18n.t("Disaggregation"),
             },
         ];
-    }, [showCompanionColumn, statusIndicator, hasCompanionScopes]);
+    }, [showCompanionColumn, statusIndicator]);
 }
 
 export type IndicatorColumns = ObjectsTableProps<IndicatorColumn>["columns"];
