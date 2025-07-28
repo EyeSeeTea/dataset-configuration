@@ -3,7 +3,7 @@ import React from "react";
 import { createTheme } from "@material-ui/core/styles";
 import { cyan } from "@material-ui/core/colors";
 
-import i18n from "../../../utils/i18n";
+import i18n from "$/utils/i18n";
 
 export type DropdownItem<Value extends string = string> = {
     value: Value;
