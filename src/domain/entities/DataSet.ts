@@ -163,7 +163,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
         id: Id,
         role: "target" | "source",
         indicatorMap: HashMap<Id, Indicator>
-    ): ValidationError<DataSet> | undefined {
+    ): Maybe<ValidationError<DataSet>> {
         const property = "indicatorMatching" as const;
         const typeList =
             role === "source" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
@@ -198,7 +198,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
     private validateIndicatorMatchingCategoryCombo(
         id: Id,
         indicatorMap: HashMap<Id, Indicator>
-    ): ValidationError<DataSet> | undefined {
+    ): Maybe<ValidationError<DataSet>> {
         const sourceIndicator = indicatorMap.get(id);
         const targetIndicator = indicatorMap.get(id);
 
