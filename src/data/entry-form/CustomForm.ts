@@ -9,8 +9,6 @@ import { DataSet, DisabledField } from "$/domain/entities/DataSet";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { D2ApiCategoryComboType } from "$/data/D2ApiCategoryCombo";
 import i18n from "$/utils/i18n";
-import { template, jsTemplate } from "$/data/entry-form/custom-template";
-import { cssTemplate } from "$/data/entry-form/css-template";
 import { Indicator, IndicatorAttrs } from "$/domain/entities/Indicator";
 import { Maybe } from "$/utils/ts-utils";
 import { NamedRef, Ref } from "$/domain/entities/Ref";
@@ -18,12 +16,9 @@ import { HashMap } from "$/domain/entities/generic/HashMap";
 import { D2Config } from "$/data/repositories/D2ApiMetadata";
 import { D2Section } from "$/data/repositories/DataSetD2Repository";
 import { convertAttributeValueToDate } from "$/data/utils";
-
-const data = {
-    template: atob(template),
-    css: cssTemplate,
-    js: atob(jsTemplate),
-};
+import templateVelocity from "$/data/entry-form/template.vm?raw";
+import templateJs from "$/data/entry-form/template.js?raw";
+import templateCss from "$/data/entry-form/template.css?raw";
 
 function getCategoryCombo(dataSetElement: DataSetTemplate["dataSetElements"][0]) {
     const { categoryCombo } = dataSetElement;
@@ -376,14 +371,16 @@ const getTemplate = (
     const templateSections = convertToSections(dataSetToSave, categoryCombos, existingSections);
     const { disabledFields } = dataSetToSave;
     const periods = generatePeriods(dataSet, d2Config) ?? {};
+    const indicatorMatchingRef = generateIndicatorMatchingReference(dataSetToSave);
     const context = getContext(dataSet, templateSections, categoryCombos, disabledFields);
     const config = { env: "development", escape: false };
-    const view = velocity.render(data.template, context, {}, config);
+    const view = velocity.render(templateVelocity, context, {}, config);
     return `
-        <style>${data.css}</style>
+        <style>${templateCss}</style>
         <script>
-            ${data.js}
+            ${templateJs}
             setPeriodDates(${JSON.stringify(periods)});
+            setIndicatorMatching(${JSON.stringify(indicatorMatchingRef)})
         </script>
         ${view}
     `;
@@ -438,6 +435,16 @@ function generatePeriods(dataSet: DataSetTemplate, d2Config: D2Config): Maybe<Te
     const outPutValidYears = generatePeriodsFromAttributeValues(outPutAttribute);
 
     return { output: outPutValidYears, outcome: outComeValidYears };
+}
+
+function generateIndicatorMatchingReference(dataSet: DataSet) {
+    return (
+        dataSet.indicatorMatching?.map(match => ({
+            target: match.target,
+            sourceIds: match.sourceIds,
+            expression: match.resolvedExpression,
+        })) || []
+    );
 }
 
 function generatePeriodsFromAttributeValues(

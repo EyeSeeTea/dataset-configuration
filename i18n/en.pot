@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-06-28T01:28:59.458Z\n"
-"PO-Revision-Date: 2025-06-28T01:28:59.458Z\n"
+"POT-Creation-Date: 2025-07-22T10:18:48.406Z\n"
+"PO-Revision-Date: 2025-07-22T10:18:48.406Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -71,7 +71,7 @@ msgstr ""
 msgid "Project name is required"
 msgstr ""
 
-msgid "Cannot be blank: {{fieldName}}"
+msgid "Cannot be blank: {{fieldName}} {{value}}"
 msgstr ""
 
 msgid "{{fieldName}} must be a positive number"
@@ -84,6 +84,12 @@ msgid "At least one indicator is required"
 msgstr ""
 
 msgid "Select at least one country"
+msgstr ""
+
+msgid "{{fieldName}} not found: {{value}}"
+msgstr ""
+
+msgid "Invalid value for {{fieldName}}: {{value}}"
 msgstr ""
 
 msgid "DataSet not found"
@@ -332,6 +338,27 @@ msgstr ""
 msgid "Core competency"
 msgstr ""
 
+msgid "No Global mandatory or Global suggested indicators available."
+msgstr ""
+
+msgid "No Local or Donor indicators available."
+msgstr ""
+
+msgid "Please fill in all fields before adding a new matching indicator."
+msgstr ""
+
+msgid "Root Indicators"
+msgstr ""
+
+msgid "Matched Indicators"
+msgstr ""
+
+msgid "Actions"
+msgstr ""
+
+msgid "Add matching indicator"
+msgstr ""
+
 msgid "Hide Suggested Companion Indicators"
 msgstr ""
 
@@ -447,6 +474,9 @@ msgid "Disaggregation options"
 msgstr ""
 
 msgid "Share"
+msgstr ""
+
+msgid "Matching indicators"
 msgstr ""
 
 msgid "Summary and Save"

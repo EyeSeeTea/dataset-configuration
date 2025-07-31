@@ -17,6 +17,7 @@ export const metadataCodes = {
         outputDates: "GL_OUTPUT_DATES",
         outcomeCompanionIndicator: "GL_OUTCOME_COMPANION_INDICATORS",
         outputCompanionIndicator: "GL_OUTPUT_COMPANION_INDICATORS",
+        indicatorMatching: "GL_INDICATOR_MATCHING",
     },
     categories: { project: "GL_Project" },
     dataElementGroupSets: {
@@ -211,6 +212,7 @@ export type D2Config = {
         outputDates: D2NamedCodeRef;
         outcomeCompanionIndicator: D2NamedCodeRef;
         outputCompanionIndicator: D2NamedCodeRef;
+        indicatorMatching: D2NamedCodeRef;
     };
     categories: { project: D2NamedCodeRef };
     categoryCombos: { projectTargetActual: D2NamedCodeRef };

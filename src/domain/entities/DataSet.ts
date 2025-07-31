@@ -7,7 +7,7 @@ import { Maybe } from "$/utils/ts-utils";
 import _ from "$/domain/entities/generic/Collection";
 import { ValidationError } from "$/domain/entities/generic/Error";
 import { validateOrgUnits, validateRequired } from "$/domain/entities/generic/Validation";
-import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorScope, IndicatorType } from "$/domain/entities/Indicator";
 import { Config } from "$/domain/entities/Config";
 import { DataSetToSave } from "$/domain/entities/DataSetToSave";
 import { extractRegionCode } from "$/domain/entities/Region";
@@ -15,6 +15,8 @@ import { DatePeriod } from "$/domain/entities/DatePeriod";
 import { UserGroup } from "$/domain/entities/UserGroup";
 import { User } from "$/domain/entities/User";
 import { DataSetList } from "$/domain/entities/DataSetList";
+import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
+import { HashMap } from "$/domain/entities/generic/HashMap";
 
 export type DataSetAttrs = {
     created: ISODateString;
@@ -35,6 +37,7 @@ export type DataSetAttrs = {
     disabledFields: DisabledField[];
     canBeUpdated: boolean;
     shortName: string;
+    indicatorMatching: Maybe<IndicatorMatch[]>;
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -139,6 +142,77 @@ export class DataSet extends Struct<DataSetAttrs>() {
                       value: this.access,
                   },
               ];
+    }
+
+    validateIndicatorMatching(): ValidationError<DataSet>[] {
+        const indicatorMap = _(this.indicators)
+            .filter(indicator => indicator.type === matchingIndicatorType)
+            .keyBy(indicator => indicator.id);
+        return _(this.indicatorMatching || [])
+            .map(({ source, target }) => [
+                this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
+                this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
+                this.validateIndicatorMatchingCategoryCombo(source, indicatorMap),
+            ])
+            .flatten()
+            .compact()
+            .value();
+    }
+
+    private validateIndicatorMatchingByRole(
+        id: Id,
+        role: "target" | "source",
+        indicatorMap: HashMap<Id, Indicator>
+    ): Maybe<ValidationError<DataSet>> {
+        const property = "indicatorMatching" as const;
+        const typeList =
+            role === "source" ? matchingIndicatorSourceScope : matchingIndicatorTargetScope;
+        const roleMessage = role === "source" ? "root" : "matched";
+
+        if (!id) {
+            return {
+                property,
+                errors: ["field_cannot_be_blank"],
+                value: `${roleMessage} indicator`,
+            };
+        }
+
+        const indicator = indicatorMap.get(id);
+        if (!indicator) {
+            return {
+                property,
+                errors: ["not_found"],
+                value: `${roleMessage} indicator - ${id}`,
+            };
+        } else if (!typeList.includes(indicator.scope)) {
+            return {
+                property,
+                errors: ["invalid_value"],
+                value: `${roleMessage} indicator - ${id}`,
+            };
+        }
+
+        return undefined;
+    }
+
+    private validateIndicatorMatchingCategoryCombo(
+        id: Id,
+        indicatorMap: HashMap<Id, Indicator>
+    ): Maybe<ValidationError<DataSet>> {
+        const sourceIndicator = indicatorMap.get(id);
+        const targetIndicator = indicatorMap.get(id);
+
+        const sourceCCId = sourceIndicator?.disaggregation?.id;
+        const targetCCId = targetIndicator?.disaggregation?.id;
+
+        if (sourceCCId && targetCCId && sourceCCId !== targetCCId) {
+            return {
+                property: "indicatorMatching" as const,
+                errors: ["invalid_value"],
+                value: `root and matching indicators must have the same disaggregation`,
+            };
+        }
+        return undefined;
     }
 
     getRegionCodesFromAccess(): string[] {
@@ -267,6 +341,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             notifyUser: false,
             periodDate: undefined,
             disabledFields: [],
+            indicatorMatching: undefined,
             ...initialData,
         });
     }
@@ -275,4 +350,22 @@ export class DataSet extends Struct<DataSetAttrs>() {
         const dataSetList = DataSetList.create({ ...this });
         return dataSetList.hasPermissionsToUpdate(user);
     }
+
+    static isIndicatorMatchingSource(indicator: Indicator): boolean {
+        return (
+            matchingIndicatorSourceScope.includes(indicator.scope) &&
+            indicator.type === matchingIndicatorType
+        );
+    }
+
+    static isIndicatorMatchingTarget(indicator: Indicator): boolean {
+        return (
+            matchingIndicatorTargetScope.includes(indicator.scope) &&
+            indicator.type === matchingIndicatorType
+        );
+    }
 }
+
+const matchingIndicatorSourceScope: IndicatorScope[] = ["mandatory", "suggested"];
+const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "donor"];
+const matchingIndicatorType = "outputs";
