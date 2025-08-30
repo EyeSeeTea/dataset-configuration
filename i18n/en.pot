@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-07-22T10:18:48.406Z\n"
-"PO-Revision-Date: 2025-07-22T10:18:48.406Z\n"
+"POT-Creation-Date: 2025-08-29T06:27:59.255Z\n"
+"PO-Revision-Date: 2025-08-29T06:27:59.255Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -443,16 +443,16 @@ msgstr ""
 msgid "Companion Indicators"
 msgstr ""
 
-msgid "The companion rules for this year need to be satisfied"
+msgid "All companions are satisfied"
 msgstr ""
 
-msgid "Outcome companion rule not satisfied"
+msgid "These companion rules need to be satisfied"
 msgstr ""
 
-msgid "Output companion rule not satisfied"
+msgid "All rules are satisfied"
 msgstr ""
 
-msgid "All rules satisfied"
+msgid "Rules not satisfied"
 msgstr ""
 
 msgid "Data Element"
