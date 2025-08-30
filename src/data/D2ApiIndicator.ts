@@ -274,6 +274,12 @@ export class D2ApiIndicator {
         const scope = this.getScope(dataElement.dataElementGroups, config, "dataElementGroups");
         if (!scope) return undefined;
 
+        const hideInApp = dataElement.attributeValues.find(
+            attribute => attribute.attribute.id === config.attributes.hideInApp.id
+        );
+        if (hideInApp) console.log(hideInApp, dataElement);
+        if (hideInApp && hideInApp.value === "true") return undefined;
+
         const theme = dataElement.dataElementGroups.find(deg =>
             deg.groupSets.find(gs => gs.id === config.dataElementGroupSets.theme.id)
         );

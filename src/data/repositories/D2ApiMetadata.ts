@@ -18,6 +18,7 @@ export const metadataCodes = {
         outcomeCompanionIndicator: "GL_OUTCOME_COMPANION_INDICATORS",
         outputCompanionIndicator: "GL_OUTPUT_COMPANION_INDICATORS",
         indicatorMatching: "GL_INDICATOR_MATCHING",
+        hideInApp: "Hide in data set app",
     },
     categories: { project: "GL_Project" },
     dataElementGroupSets: {
@@ -213,6 +214,7 @@ export type D2Config = {
         outcomeCompanionIndicator: D2NamedCodeRef;
         outputCompanionIndicator: D2NamedCodeRef;
         indicatorMatching: D2NamedCodeRef;
+        hideInApp: D2NamedCodeRef;
     };
     categories: { project: D2NamedCodeRef };
     categoryCombos: { projectTargetActual: D2NamedCodeRef };
