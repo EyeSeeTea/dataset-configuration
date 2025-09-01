@@ -2,6 +2,7 @@ import { ISODateString } from "$/domain/entities/Ref";
 import { UnitDate } from "$/domain/entities/UnitDate";
 import i18n from "$/utils/i18n";
 import { DropdownItem } from "@eyeseetea/d2-ui-components";
+import { Maybe } from "$/utils/ts-utils";
 
 export function toLongDateString(isoDate: ISODateString, options?: Intl.DateTimeFormatOptions) {
     return new Date(isoDate).toLocaleString("default", {
@@ -66,4 +67,9 @@ export function getDaysPerMonthYear(
         text: String(index + 1),
         value: String(index + 1),
     }));
+}
+
+export function stringToTime(dateStr: Maybe<string>): Maybe<number> {
+    const time = dateStr ? new Date(dateStr).getTime() : NaN;
+    return isNaN(time) ? undefined : time;
 }

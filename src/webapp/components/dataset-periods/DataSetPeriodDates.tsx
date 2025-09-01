@@ -5,8 +5,7 @@ import { Typography } from "@material-ui/core";
 
 import { Id } from "$/domain/entities/Ref";
 import { useGetDataSetsByIds } from "$/webapp/hooks/useDataSets";
-import { addToDate } from "$/utils/date";
-import { DatePeriod, PeriodDetailsAttrs } from "$/domain/entities/DatePeriod";
+import { DatePeriod, YearlyPeriodDetailsAttrs } from "$/domain/entities/DatePeriod";
 import i18n from "$/utils/i18n";
 import { useAppContext } from "$/webapp/contexts/app-context";
 
@@ -19,36 +18,8 @@ export type DataSetPeriodDatesProps = {
 function useGetYears(props: { period: DatePeriod }) {
     const { config } = useAppContext();
     const { period } = props;
-    const { startDate, endDate, periods, years } = period;
 
-    const lastYear = years[years.length - 1];
-
-    const periodsByYear = React.useMemo(() => {
-        if (!startDate || !endDate) return [];
-
-        return years.map((year): DatePeriod["periods"][number] => {
-            const month = config.periodEndDateMonth;
-            const day = config.periodEndDateDay;
-            const units = config.periodLastYearUnits;
-            const unitValue = config.periodLastYearEndDate;
-            const currentPeriod = periods.find(period => period.year === year);
-
-            const defaultEndDate = new Date(year + 1, month - 1, day, 0, 0, 0).toISOString();
-
-            const lastYearEndDate =
-                units && unitValue ? addToDate(endDate ?? "", units, unitValue) : endDate;
-
-            const endM = year === lastYear ? lastYearEndDate : defaultEndDate;
-
-            return {
-                year,
-                startDate: currentPeriod?.startDate ?? startDate ?? "",
-                endDate: currentPeriod?.endDate ?? endM ?? "",
-            };
-        });
-    }, [years, startDate, endDate, lastYear, periods, config]);
-
-    return periodsByYear;
+    return React.useMemo(() => period.generatePeriods(config), [period, config]);
 }
 
 const emptyPeriodDate = DatePeriod.create({
@@ -76,7 +47,7 @@ export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) =>
     });
 
     const updatePeriod = (
-        period: PeriodDetailsAttrs,
+        period: YearlyPeriodDetailsAttrs,
         value: string,
         fieldName: "startDate" | "endDate"
     ) => {
