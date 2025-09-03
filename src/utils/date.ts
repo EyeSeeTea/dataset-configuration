@@ -100,7 +100,7 @@ export function getDaysPerMonthYear(
     }));
 }
 
-export function formatDateToISO(date: Date) {
+export function toISODateWithoutTimezone(date: Date) {
     const dateParts = [
         date.getFullYear(),
         String(date.getMonth() + 1).padStart(2, "0"),

@@ -1,6 +1,6 @@
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Config } from "$/domain/entities/Config";
-import { addToDate, formatDateToISO, getDiff, stringToTime } from "$/utils/date";
+import { addToDate, toISODateWithoutTimezone, getDiff, stringToTime } from "$/utils/date";
 import _, { Collection } from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
 
@@ -71,8 +71,8 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
                 return MonthlyPeriodDetails.create({
                     year: targetYear,
                     month: targetMonth,
-                    startDate: formatDateToISO(openingDate),
-                    endDate: formatDateToISO(closingDate),
+                    startDate: toISODateWithoutTimezone(openingDate),
+                    endDate: toISODateWithoutTimezone(closingDate),
                 });
             })
             .value();
@@ -113,7 +113,7 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
     private buildShortFormat(date: string) {
         if (!date) return "";
 
-        const datePart = formatDateToISO(new Date(date)).split("T")[0];
+        const datePart = toISODateWithoutTimezone(new Date(date)).split("T")[0];
         if (!datePart) return "";
         return datePart.replace(/-/g, "");
     }
