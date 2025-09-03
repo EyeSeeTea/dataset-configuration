@@ -146,7 +146,6 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         const monthsDiff =
             (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
 
-        console.log("test", end, now, monthsDiff);
         return Math.max(monthsDiff + 1, DEFAULT_FUTURE_PERIODS);
     }
 }
