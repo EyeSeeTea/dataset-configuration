@@ -687,14 +687,7 @@ export class DataSetD2Repository implements DataSetRepository {
             notifyCompletingUser: dataSet.notifyUser,
             openFuturePeriods: dataSet.openFuturePeriods,
             expiryDays: dataSet.expiryDays,
-            dataInputPeriods:
-                dataSet.periodDate?.dataInputPeriods.map(p => ({
-                    closingDate: p.endDate,
-                    openingDate: p.startDate,
-                    period: {
-                        id: p.period,
-                    },
-                })) ?? [],
+            dataInputPeriods: this.buildDataInputPeriod(dataSet),
         };
     }
 
@@ -752,6 +745,18 @@ export class DataSetD2Repository implements DataSetRepository {
             ) || [];
 
         return [...filteredExisting, ...attributesToSave];
+    }
+
+    private buildDataInputPeriod(dataSet: DataSetToSave): D2DataSetToSave["dataInputPeriods"] {
+        return (
+            dataSet.periodDate?.dataInputPeriods.map(p => ({
+                closingDate: p.endDate,
+                openingDate: p.startDate,
+                period: {
+                    id: p.period,
+                },
+            })) ?? []
+        );
     }
 
     private parsePeriodDate(
