@@ -73,6 +73,15 @@ export class DataSet extends Struct<DataSetAttrs>() {
         const orgsUnits = project ? project.orgsUnits : this.orgUnits;
 
         const accessGroupsFromProject = this.getAccessFromProject(project, config);
+        //TODO: confirm period data value when project updates
+        const periodDate =
+            project?.startDate && project?.endDate
+                ? DatePeriod.create({
+                      startDate: project.startDate,
+                      endDate: project.endDate,
+                      periods: [],
+                  }).initializePeriods(config)
+                : undefined;
 
         return this._update({
             access: accessGroupsFromProject,
@@ -80,6 +89,8 @@ export class DataSet extends Struct<DataSetAttrs>() {
             project,
             name,
             orgUnits: orgsUnits,
+            periodDate,
+            openFuturePeriods: DatePeriod.getFuturePeriods(periodDate?.endDate),
         });
     }
 

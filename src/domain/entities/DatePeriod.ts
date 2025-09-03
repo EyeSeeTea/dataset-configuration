@@ -2,6 +2,9 @@ import { Struct } from "$/domain/entities/generic/Struct";
 import { Config } from "$/domain/entities/Config";
 import { addToDate, stringToTime } from "$/utils/date";
 import _, { Collection } from "$/domain/entities/generic/Collection";
+import { Maybe } from "$/utils/ts-utils";
+
+const DEFAULT_FUTURE_PERIODS = 1;
 
 export type YearlyPeriodDetailsAttrs = {
     year: number;
@@ -32,15 +35,16 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         }));
     }
 
-    get monthlyPeriod(): MonthlyPeriodDetails[] {
-        if (!this.periods || this.periods.length === 0) {
+    get dataInputPeriods(): MonthlyPeriodDetails[] {
+        const { periods, startDate: startDateStr, endDate: endDateStr } = this;
+        if (!periods.length) {
             return [];
         }
 
-        const allStartTimes = _(this.periods)
+        const allStartTimes = _(periods)
             .compactMap(p => stringToTime(p.startDate))
             .value();
-        const allEndTime = _(this.periods)
+        const allEndTime = _(periods)
             .compactMap(p => stringToTime(p.endDate))
             .value();
 
@@ -48,22 +52,30 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
             return [];
         }
 
-        const minStartDate = new Date(Math.min(...allStartTimes));
-        const maxEndDate = new Date(Math.max(...allEndTime));
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
 
-        const months = Collection.range(0, 12);
+        const openingDate = new Date(Math.min(...allStartTimes, startDate.getTime()));
+        const closingDate = new Date(Math.max(...allEndTime, endDate.getTime()));
 
-        return _(this.periods)
-            .flatMap(yearPeriod =>
-                months.map(month =>
-                    MonthlyPeriodDetails.create({
-                        year: yearPeriod.year,
-                        month: month + 1,
-                        startDate: minStartDate.toISOString(),
-                        endDate: maxEndDate.toISOString(),
-                    })
-                )
-            )
+        const startYear = startDate.getFullYear();
+        const startMonth = startDate.getMonth();
+
+        const totalMonths =
+            (endDate.getFullYear() - startYear) * 12 + (endDate.getMonth() - startMonth) + 1;
+
+        return Collection.range(0, totalMonths)
+            .map(monthOffset => {
+                const targetYear = startYear + Math.floor((startMonth + monthOffset) / 12);
+                const targetMonth = ((startMonth + monthOffset) % 12) + 1;
+
+                return MonthlyPeriodDetails.create({
+                    year: targetYear,
+                    month: targetMonth,
+                    startDate: openingDate.toISOString(),
+                    endDate: closingDate.toISOString(),
+                });
+            })
             .value();
     }
 
@@ -94,6 +106,11 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         });
     }
 
+    initializePeriods(config: DataPeriodConfig): DatePeriod {
+        const periods = this.generatePeriods(config);
+        return this.updatedPeriods(periods);
+    }
+
     private buildShortFormat(date: string) {
         if (!date) return "";
 
@@ -118,6 +135,19 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
 
     updatedPeriods(periods: YearlyPeriodDetailsAttrs[]): DatePeriod {
         return this._update({ periods });
+    }
+
+    static getFuturePeriods(endDateStr: Maybe<string>): number {
+        if (!endDateStr) return DEFAULT_FUTURE_PERIODS;
+
+        const end = new Date(endDateStr);
+        const now = new Date();
+
+        const monthsDiff =
+            (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
+
+        console.log("test", end, now, monthsDiff);
+        return Math.max(monthsDiff + 1, DEFAULT_FUTURE_PERIODS);
     }
 }
 

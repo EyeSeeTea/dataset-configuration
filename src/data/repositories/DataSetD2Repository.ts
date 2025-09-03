@@ -687,6 +687,14 @@ export class DataSetD2Repository implements DataSetRepository {
             notifyCompletingUser: dataSet.notifyUser,
             openFuturePeriods: dataSet.openFuturePeriods,
             expiryDays: dataSet.expiryDays,
+            dataInputPeriods:
+                dataSet.periodDate?.dataInputPeriods.map(p => ({
+                    closingDate: p.endDate,
+                    openingDate: p.startDate,
+                    period: {
+                        id: p.period,
+                    },
+                })) ?? [],
         };
     }
 
@@ -877,4 +885,5 @@ type D2DataSetToSave = {
         users: Record<Id, D2ApiSharingName>;
         userGroups: Record<Id, D2ApiSharingName>;
     };
+    dataInputPeriods: { closingDate: string; openingDate: string; period: Ref }[];
 };

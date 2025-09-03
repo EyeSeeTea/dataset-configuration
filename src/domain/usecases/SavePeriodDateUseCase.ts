@@ -22,7 +22,11 @@ export class SavePeriodDateUseCase {
         return this.getDataSetsByIds(options.dataSetsIds).flatMap(dataSets => {
             return this.userUtils.checkDataSetAccess(dataSets).flatMap(() => {
                 const dataSetsToSave = dataSets.map(dataSet => {
-                    return DataSet.create({ ...dataSet, periodDate: options.periodDate });
+                    return DataSet.create({
+                        ...dataSet,
+                        periodDate: options.periodDate,
+                        openFuturePeriods: DatePeriod.getFuturePeriods(options.periodDate.endDate),
+                    });
                 });
                 return this.dataSetRepository
                     .save(dataSetsToSave)
