@@ -74,6 +74,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
         const accessGroupsFromProject = this.getAccessFromProject(project, config);
         //TODO: confirm period data value when project updates
+        // should default be current periodDate or undefined?
         const periodDate =
             project?.startDate && project?.endDate
                 ? DatePeriod.create({
