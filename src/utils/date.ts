@@ -38,6 +38,36 @@ export function addToDate(date: string, units: UnitDate, unitValue: number): str
     return newDate.toISOString();
 }
 
+export function getDiff(dateA: Date, dateB: Date, unit: UnitDate): number {
+    const diffTime = dateB.getTime() - dateA.getTime();
+
+    switch (unit) {
+        case "day":
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        case "month":
+            let monthDiff =
+                12 * (dateB.getFullYear() - dateA.getFullYear()) +
+                dateB.getMonth() -
+                dateA.getMonth();
+            if (dateA !== dateB) {
+                const dateADay = dateA.getDate();
+                const dateBDay = dateB.getDate();
+                const daysInCurrentMonth = new Date(
+                    dateA.getFullYear(),
+                    dateA.getMonth() + 1,
+                    0
+                ).getDate();
+                const dayFraction = (dateBDay - dateADay) / daysInCurrentMonth;
+                monthDiff += dayFraction;
+            }
+            return monthDiff;
+        case "week":
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+        default:
+            throw new Error("Invalid Date Unit");
+    }
+}
+
 export function getMonths() {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 12 }, (_, i) => ({
