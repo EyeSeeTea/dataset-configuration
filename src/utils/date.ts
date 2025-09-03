@@ -44,7 +44,7 @@ export function getDiff(dateA: Date, dateB: Date, unit: UnitDate): number {
     switch (unit) {
         case "day":
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        case "month":
+        case "month": {
             let monthDiff =
                 12 * (dateB.getFullYear() - dateA.getFullYear()) +
                 dateB.getMonth() -
@@ -61,6 +61,7 @@ export function getDiff(dateA: Date, dateB: Date, unit: UnitDate): number {
                 monthDiff += dayFraction;
             }
             return monthDiff;
+        }
         case "week":
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
         default:
@@ -97,6 +98,15 @@ export function getDaysPerMonthYear(
         text: String(index + 1),
         value: String(index + 1),
     }));
+}
+
+export function formatDateToISO(date: Date) {
+    const dateParts = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+    ];
+    return dateParts.join("-") + "T00:00:00.000";
 }
 
 export function stringToTime(dateStr: Maybe<string>): Maybe<number> {
