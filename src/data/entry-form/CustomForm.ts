@@ -423,18 +423,14 @@ function mapDataElementRefs(
 }
 
 function generatePeriods(dataSet: DataSetTemplate, d2Config: D2Config): Maybe<TemplatePeriodDate> {
-    const outComeAttribute = dataSet.attributeValues.find(
-        attr => attr.attribute.id === d2Config.attributes.outcomeDates.id
+    const periodDates = dataSet.attributeValues.find(
+        attr => attr.attribute.id === d2Config.attributes.periodDates.id
     );
-    const outPutAttribute = dataSet.attributeValues.find(
-        attr => attr.attribute.id === d2Config.attributes.outputDates.id
-    );
-    if (!outComeAttribute || !outPutAttribute) return undefined;
+    if (!periodDates) return undefined;
 
-    const outComeValidYears = generatePeriodsFromAttributeValues(outComeAttribute);
-    const outPutValidYears = generatePeriodsFromAttributeValues(outPutAttribute);
+    const periodDateValidYears = generatePeriodsFromAttributeValues(periodDates);
 
-    return { output: outPutValidYears, outcome: outComeValidYears };
+    return { output: periodDateValidYears, outcome: periodDateValidYears };
 }
 
 function generateIndicatorMatchingReference(dataSet: DataSet) {
