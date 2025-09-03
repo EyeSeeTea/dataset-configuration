@@ -1,6 +1,6 @@
 import { Struct } from "$/domain/entities/generic/Struct";
 import { Config } from "$/domain/entities/Config";
-import { addToDate, stringToTime } from "$/utils/date";
+import { addToDate, getDiff, stringToTime } from "$/utils/date";
 import _, { Collection } from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
 
@@ -61,8 +61,7 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         const startYear = startDate.getFullYear();
         const startMonth = startDate.getMonth();
 
-        const totalMonths =
-            (endDate.getFullYear() - startYear) * 12 + (endDate.getMonth() - startMonth) + 1;
+        const totalMonths = Math.round(getDiff(startDate, endDate, "month"));
 
         return Collection.range(0, totalMonths)
             .map(monthOffset => {
@@ -143,8 +142,7 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         const end = new Date(endDateStr);
         const now = new Date();
 
-        const monthsDiff =
-            (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
+        const monthsDiff = Math.ceil(getDiff(now, end, "month"));
 
         return Math.max(monthsDiff + 1, DEFAULT_FUTURE_PERIODS);
     }
