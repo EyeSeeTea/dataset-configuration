@@ -41,14 +41,10 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
             return [];
         }
 
-        const allStartTimes = _(periods)
-            .compactMap(p => stringToTime(p.startDate))
-            .value();
-        const allEndTime = _(periods)
-            .compactMap(p => stringToTime(p.endDate))
-            .value();
+        const allStartTimes = this.extractPeriodDateAsTimes("startDate");
+        const allEndTimes = this.extractPeriodDateAsTimes("endDate");
 
-        if (!allStartTimes.length || !allEndTime.length) {
+        if (!allStartTimes.length || !allEndTimes.length) {
             return [];
         }
 
@@ -56,7 +52,7 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         const endDate = new Date(endDateStr);
 
         const openingDate = new Date(Math.min(...allStartTimes, startDate.getTime()));
-        const closingDate = new Date(Math.max(...allEndTime, endDate.getTime()));
+        const closingDate = new Date(Math.max(...allEndTimes, endDate.getTime()));
 
         const startYear = startDate.getFullYear();
         const startMonth = startDate.getMonth();
@@ -75,6 +71,12 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
                     endDate: toISODateWithoutTimezone(closingDate),
                 });
             })
+            .value();
+    }
+
+    private extractPeriodDateAsTimes<K extends "startDate" | "endDate">(field: K) {
+        return _(this.periods)
+            .compactMap(p => stringToTime(p[field]))
             .value();
     }
 
