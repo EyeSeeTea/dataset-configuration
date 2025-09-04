@@ -45,22 +45,23 @@ export function getDiff(dateA: Date, dateB: Date, unit: UnitDate): number {
         case "day":
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         case "month": {
-            let monthDiff =
+            const monthDiff =
                 12 * (dateB.getFullYear() - dateA.getFullYear()) +
                 dateB.getMonth() -
                 dateA.getMonth();
-            if (dateA !== dateB) {
+            if (dateA.getTime() !== dateB.getTime()) {
                 const dateADay = dateA.getDate();
                 const dateBDay = dateB.getDate();
-                const daysInCurrentMonth = new Date(
-                    dateA.getFullYear(),
-                    dateA.getMonth() + 1,
+                const daysInMonth = new Date(
+                    dateB.getFullYear(),
+                    dateB.getMonth() + 1,
                     0
                 ).getDate();
-                const dayFraction = (dateBDay - dateADay) / daysInCurrentMonth;
-                monthDiff += dayFraction;
+                const dayFraction = (dateBDay - dateADay) / daysInMonth;
+                return monthDiff + dayFraction;
+            } else {
+                return monthDiff;
             }
-            return monthDiff;
         }
         case "week":
             return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
