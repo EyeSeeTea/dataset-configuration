@@ -2,6 +2,7 @@ import { ISODateString } from "$/domain/entities/Ref";
 import { UnitDate } from "$/domain/entities/UnitDate";
 import i18n from "$/utils/i18n";
 import { DropdownItem } from "@eyeseetea/d2-ui-components";
+import { Maybe } from "$/utils/ts-utils";
 
 export function toLongDateString(isoDate: ISODateString, options?: Intl.DateTimeFormatOptions) {
     return new Date(isoDate).toLocaleString("default", {
@@ -37,6 +38,38 @@ export function addToDate(date: string, units: UnitDate, unitValue: number): str
     return newDate.toISOString();
 }
 
+export function getDiff(dateA: Date, dateB: Date, unit: UnitDate): number {
+    const diffTime = dateB.getTime() - dateA.getTime();
+
+    switch (unit) {
+        case "day":
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        case "month": {
+            const monthDiff =
+                12 * (dateB.getFullYear() - dateA.getFullYear()) +
+                dateB.getMonth() -
+                dateA.getMonth();
+            if (dateA.getTime() !== dateB.getTime()) {
+                const dateADay = dateA.getDate();
+                const dateBDay = dateB.getDate();
+                const daysInMonth = new Date(
+                    dateB.getFullYear(),
+                    dateB.getMonth() + 1,
+                    0
+                ).getDate();
+                const dayFraction = (dateBDay - dateADay) / daysInMonth;
+                return monthDiff + dayFraction;
+            } else {
+                return monthDiff;
+            }
+        }
+        case "week":
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+        default:
+            throw new Error("Invalid Date Unit");
+    }
+}
+
 export function getMonths() {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 12 }, (_, i) => ({
@@ -66,4 +99,18 @@ export function getDaysPerMonthYear(
         text: String(index + 1),
         value: String(index + 1),
     }));
+}
+
+export function toISODateWithoutTimezone(date: Date) {
+    const dateParts = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, "0"),
+        String(date.getDate()).padStart(2, "0"),
+    ];
+    return dateParts.join("-") + "T00:00:00.000";
+}
+
+export function stringToTime(dateStr: Maybe<string>): Maybe<number> {
+    const time = dateStr ? new Date(dateStr).getTime() : NaN;
+    return isNaN(time) ? undefined : time;
 }

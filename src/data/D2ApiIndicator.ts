@@ -277,7 +277,6 @@ export class D2ApiIndicator {
         const hideInApp = dataElement.attributeValues.find(
             attribute => attribute.attribute.id === config.attributes.hideInApp.id
         );
-        if (hideInApp) console.log(hideInApp, dataElement);
         if (hideInApp && hideInApp.value === "true") return undefined;
 
         const theme = dataElement.dataElementGroups.find(deg =>

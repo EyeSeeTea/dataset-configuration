@@ -2,7 +2,6 @@ import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataSet } from "$/domain/entities/DataSet";
 import { Id } from "$/domain/entities/Ref";
 import { DataSetRepository } from "$/domain/repositories/DataSetRepository";
-import _ from "$/domain/entities/generic/Collection";
 import { LogRepository } from "$/domain/repositories/LogRepository";
 import { UserUtils } from "$/domain/usecases/common/UserUtils";
 import { UserRepository } from "$/domain/repositories/UserRepository";
@@ -22,7 +21,11 @@ export class SavePeriodDateUseCase {
         return this.getDataSetsByIds(options.dataSetsIds).flatMap(dataSets => {
             return this.userUtils.checkDataSetAccess(dataSets).flatMap(() => {
                 const dataSetsToSave = dataSets.map(dataSet => {
-                    return DataSet.create({ ...dataSet, periodDate: options.periodDate });
+                    return DataSet.create({
+                        ...dataSet,
+                        periodDate: options.periodDate,
+                        openFuturePeriods: DatePeriod.getFuturePeriods(options.periodDate.endDate),
+                    });
                 });
                 return this.dataSetRepository
                     .save(dataSetsToSave)
