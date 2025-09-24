@@ -454,7 +454,12 @@ export const dataSetFields = {
     notifyCompletingUser: true,
     id: true,
     lastUpdated: true,
-    sharing: true,
+    sharing: {
+        external: true,
+        users: { id: true, displayName: true },
+        userGroups: { id: true, displayName: true },
+        public: true,
+    },
     displayShortName: true,
     sections: {
         id: true,
