@@ -1,6 +1,5 @@
 import differenceBy from "lodash/differenceBy";
-import { D2AttributeValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
-import { D2Api, MetadataResponse } from "$/types/d2-api";
+import { D2AttributeValue, MetadataPick, D2Api, MetadataResponse } from "$/types/d2-api";
 
 import { apiToFuture } from "$/data/api-futures";
 import { DataSet } from "$/domain/entities/DataSet";

@@ -9,7 +9,7 @@ import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
 import _ from "$/domain/entities/generic/Collection";
 import { chunkRequest, getStatsFromD2Response } from "$/data/utils";
-import { D2AttributeValue } from "@eyeseetea/d2-api/2.36";
+import { D2AttributeValue } from "$/types/d2-api";
 import { Stats } from "$/domain/entities/Stats";
 import { convertAttributeValueToDate } from "$/data/utils";
 import { D2Attribute, D2DataSetOwner } from "$/data/repositories/DataSetD2Repository";
