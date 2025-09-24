@@ -115,8 +115,7 @@ export class DataSetD2Api {
                 page: options.paging.page,
                 filter: options.filters.projectsIds
                     ? {
-                          "attributeValues.attribute.id": { eq: attributes.project.id },
-                          "attributeValues.value": { in: options.filters.projectsIds },
+                          [attributes.project.id]: { in: options.filters.projectsIds },
                       }
                     : undefined,
                 fields: dataSetFieldsWithOrgUnits,

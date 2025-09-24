@@ -88,8 +88,7 @@ export class DataSetD2Repository implements DataSetRepository {
                     this.api.models.dataSets.get({
                         paging: false,
                         filter: {
-                            "attributeValues.attribute.id": { in: [attributes.createdByApp.id] },
-                            "attributeValues.value": { eq: "true" },
+                            [attributes.createdByApp.id]: { eq: "true" },
                             id: { in: dataSetIds },
                         },
                         fields: dataSetFieldsWithOrgUnits,
