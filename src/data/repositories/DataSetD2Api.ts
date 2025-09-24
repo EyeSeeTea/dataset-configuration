@@ -43,7 +43,7 @@ export class DataSetD2Api {
                         displayName: true,
                         lastUpdated: true,
                         sharing: { public: true },
-                        access: true,
+                        access: { update: true },
                     },
                     filter: {
                         id: { in: options.filters.ids },
@@ -445,7 +445,7 @@ export const categoryComboFields = {
 } as const;
 
 export const dataSetFields = {
-    access: true,
+    access: { update: true },
     created: true,
     displayDescription: true,
     displayName: true,
