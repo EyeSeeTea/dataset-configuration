@@ -15,9 +15,7 @@ export class UserD2Repository implements UserRepository {
     }
 
     private buildUser(d2User: D2User) {
-        const allAuthorities = d2User.userCredentials.userRoles.flatMap(
-            ({ authorities }) => authorities
-        );
+        const allAuthorities = d2User.userRoles.flatMap(({ authorities }) => authorities);
 
         const isAdmin = allAuthorities.some(authority => authorities.admin.includes(authority));
 
@@ -27,8 +25,9 @@ export class UserD2Repository implements UserRepository {
         return new User({
             id: d2User.id,
             name: d2User.displayName,
+            username: d2User.username,
+            userRoles: d2User.userRoles,
             userGroups: d2User.userGroups,
-            ...d2User.userCredentials,
             access: {
                 canCreatePublicDataSets: hasAccess(authorities.dataSets.createPublic),
                 canDeleteDataSets: hasAccess(authorities.dataSets.delete),
@@ -44,6 +43,8 @@ const userFields = {
     id: true,
     displayName: true,
     userGroups: { id: true, name: true },
+    username: true,
+    userRoles: { id: true, name: true, authorities: true },
     userCredentials: {
         username: true,
         userRoles: { id: true, name: true, authorities: true },
