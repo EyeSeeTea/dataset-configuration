@@ -63,6 +63,196 @@ export class D2ApiAppSettings {
         const compactValues = (values: Maybe<string>[]) => _(values).compact().value();
 
         return this.get().flatMap(appSettings => {
+            return (
+                Future.joinObj(
+                    {
+                        attributes: apiToFuture(
+                            this.api.models.attributes.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([
+                                            appSettings.dataSetFilterField,
+                                            appSettings.groupField,
+                                            appSettings.inputDateField,
+                                            appSettings.periodDateField,
+                                            appSettings.indicatorHideField,
+                                        ]),
+                                    },
+                                    code: {
+                                        in: compactValues([
+                                            // used for scripts to migrate data
+                                            // not necessary to be configurable in the app through settings
+                                            metadataCodes.attributes.outcomeDates,
+                                            metadataCodes.attributes.outputDates,
+                                            metadataCodes.attributes.project,
+                                            metadataCodes.attributes.outputCompanionIndicator,
+                                            metadataCodes.attributes.outcomeCompanionIndicator,
+                                            metadataCodes.attributes.indicatorMatching,
+                                        ]),
+                                    },
+                                },
+                                rootJunction: "OR",
+                                paging: false,
+                            })
+                        ),
+                        categoryCombos: apiToFuture(
+                            this.api.models.categoryCombos.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([appSettings.categoryComboId]),
+                                    },
+                                },
+                                paging: false,
+                            })
+                        ),
+                        organizationUnitLevels: apiToFuture(
+                            this.api.models.organisationUnitLevels.get({
+                                fields: { id: true, name: true, code: true, level: true },
+                                filter: {
+                                    id: { in: compactValues([appSettings.countryLevelId]) },
+                                },
+                                paging: false,
+                            })
+                        ),
+                        categories: apiToFuture(
+                            this.api.models.categories.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([appSettings.defaultProjectId]),
+                                    },
+                                },
+                                paging: false,
+                            })
+                        ),
+                        dataElementGroupSets: apiToFuture(
+                            this.api.models.dataElementGroupSets.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([
+                                            appSettings.coreCompetencyId,
+                                            appSettings.dataElementThemeId,
+                                            appSettings.originDataElementId,
+                                            appSettings.statusDataElementId,
+                                        ]),
+                                    },
+                                    code: {
+                                        in: compactValues([
+                                            metadataCodes.dataElementGroupSets.measure,
+                                        ]),
+                                    },
+                                },
+                                rootJunction: "OR",
+                                paging: false,
+                            })
+                        ),
+                        dataElementGroups: apiToFuture(
+                            this.api.models.dataElementGroups.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([
+                                            appSettings.mandatoryDataElementId,
+                                            appSettings.outputId,
+                                            appSettings.dataElementThemeId,
+                                        ]),
+                                    },
+                                    code: {
+                                        in: compactValues([
+                                            metadataCodes.dataElementGroups.localIndicator,
+                                            metadataCodes.dataElementGroups.donorIndicator,
+                                            metadataCodes.dataElementGroups.individualsIndicator,
+                                            metadataCodes.dataElementGroups.householdsIndicator,
+                                        ]),
+                                    },
+                                },
+                                rootJunction: "OR",
+                                paging: false,
+                            })
+                        ),
+                        indicatorGroupSets: apiToFuture(
+                            this.api.models.indicatorGroupSets.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([
+                                            appSettings.indicatorThemeId,
+                                            appSettings.originIndicatorId,
+                                            appSettings.statusIndicatorId,
+                                        ]),
+                                    },
+                                },
+                                paging: false,
+                            })
+                        ),
+                        indicatorGroups: apiToFuture(
+                            this.api.models.indicatorGroups.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    id: {
+                                        in: compactValues([appSettings.mandatoryIndicatorId]),
+                                    },
+                                    name: {
+                                        in: compactValues([
+                                            metadataCodes.indicatorGroup.donorIndicator,
+                                            metadataCodes.indicatorGroup.localIndicator,
+                                        ]),
+                                    },
+                                },
+                                rootJunction: "OR",
+                                paging: false,
+                            })
+                        ),
+                        userGroups: apiToFuture(
+                            this.api.models.userGroups.get({
+                                fields: { id: true, name: true, code: true },
+                                filter: {
+                                    code: { in: [metadataCodes.userGroups.adminNotification] },
+                                },
+                                paging: false,
+                            })
+                        ),
+                    },
+                    { concurrency: 10 }
+                )
+                    // .map(metadata => ({ appSettings, metadata }));
+                    .map(
+                        ({
+                            attributes,
+                            categoryCombos,
+                            organizationUnitLevels,
+                            categories,
+                            dataElementGroupSets,
+                            dataElementGroups,
+                            indicatorGroupSets,
+                            indicatorGroups,
+                            userGroups,
+                        }) => ({
+                            appSettings,
+                            metadata: {
+                                attributes: attributes.objects,
+                                categoryCombos: categoryCombos.objects,
+                                organisationUnitLevels: organizationUnitLevels.objects,
+                                categories: categories.objects,
+                                dataElementGroupSets: dataElementGroupSets.objects,
+                                dataElementGroups: dataElementGroups.objects,
+                                indicatorGroupSets: indicatorGroupSets.objects,
+                                indicatorGroups: indicatorGroups.objects,
+                                userGroups: userGroups.objects,
+                            },
+                        })
+                    )
+            );
+        });
+    }
+
+    getMetadataFromSettings1() {
+        const compactValues = (values: Maybe<string>[]) => _(values).compact().value();
+
+        return this.get().flatMap(appSettings => {
             return apiToFuture(
                 this.api.metadata.get({
                     attributes: {
