@@ -47,8 +47,7 @@ export class DataSetD2Api {
                     },
                     filter: {
                         id: { in: options.filters.ids },
-                        "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
-                        "attributeValues.value": { eq: "true" },
+                        [attributes.createdByApp.id]: { eq: "true" },
                         identifiable: { token: options.filters.search },
                     },
                     page: options.paging.page,
