@@ -117,7 +117,7 @@
         "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
     },
     "manifest.webapp": {
-        "name": "New DC App - 2.8.0",
+        "name": "New DC App - Beta",
         "description": "New DC App - with indicator matching",
         "icons": {
             "48": "icon.png"
