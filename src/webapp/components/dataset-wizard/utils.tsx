@@ -5,7 +5,7 @@ import { IndicatorsDataSet } from "$/webapp/components/dataset-wizard/Indicators
 import { SetupDataSet } from "$/webapp/components/dataset-wizard/SetupDataSet";
 import { ShareOptionsDataSet } from "$/webapp/components/dataset-wizard/ShareOptionsDataSet";
 import { SummaryDataSet } from "$/webapp/components/dataset-wizard/SummaryDataSet";
-import { IndicatorMatchingStep } from "$/webapp/components/dataset-wizard/IndicatorMatchingStep";
+// import { IndicatorMatchingStep } from "$/webapp/components/dataset-wizard/IndicatorMatchingStep";
 
 export const STEP_SUMMARY_KEY = "summary";
 
@@ -36,11 +36,11 @@ export function getDataSetSteps() {
             label: i18n.t("Share"),
             key: "share",
         },
-        {
-            component: IndicatorMatchingStep,
-            label: i18n.t("Matching indicators"),
-            key: "indicatorMatching",
-        },
+        // {
+        //     component: IndicatorMatchingStep,
+        //     label: i18n.t("Matching indicators"),
+        //     key: "indicatorMatching",
+        // },
         {
             component: SummaryDataSet,
             label: i18n.t("Summary and Save"),
