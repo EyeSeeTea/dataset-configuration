@@ -43,12 +43,11 @@ export class DataSetD2Api {
                         displayName: true,
                         lastUpdated: true,
                         sharing: { public: true },
-                        access: true,
+                        access: { update: true },
                     },
                     filter: {
                         id: { in: options.filters.ids },
-                        "attributeValues.attribute.id": { eq: attributes.createdByApp.id },
-                        "attributeValues.value": { eq: "true" },
+                        [attributes.createdByApp.id]: { eq: "true" },
                         identifiable: { token: options.filters.search },
                     },
                     page: options.paging.page,
@@ -116,8 +115,7 @@ export class DataSetD2Api {
                 page: options.paging.page,
                 filter: options.filters.projectsIds
                     ? {
-                          "attributeValues.attribute.id": { eq: attributes.project.id },
-                          "attributeValues.value": { in: options.filters.projectsIds },
+                          [attributes.project.id]: { in: options.filters.projectsIds },
                       }
                     : undefined,
                 fields: dataSetFieldsWithOrgUnits,
@@ -445,7 +443,7 @@ export const categoryComboFields = {
 } as const;
 
 export const dataSetFields = {
-    access: true,
+    access: { update: true },
     created: true,
     displayDescription: true,
     displayName: true,
@@ -454,7 +452,12 @@ export const dataSetFields = {
     notifyCompletingUser: true,
     id: true,
     lastUpdated: true,
-    sharing: true,
+    sharing: {
+        external: true,
+        users: { id: true, displayName: true },
+        userGroups: { id: true, displayName: true },
+        public: true,
+    },
     displayShortName: true,
     sections: {
         id: true,

@@ -20,7 +20,12 @@ export class D2ApiCategoryOption {
                         code: true,
                         displayName: true,
                         lastUpdated: true,
-                        sharing: true,
+                        sharing: {
+                            external: true,
+                            users: { id: true, displayName: true },
+                            userGroups: { id: true, displayName: true },
+                            public: true,
+                        },
                     },
                     paging: false,
                 })
