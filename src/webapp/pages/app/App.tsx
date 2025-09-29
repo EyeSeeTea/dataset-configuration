@@ -1,5 +1,3 @@
-import styled from "styled-components";
-import { HeaderBar } from "@dhis2/ui";
 import { LoadingProvider, SnackbarProvider } from "@eyeseetea/d2-ui-components";
 import { MuiThemeProvider } from "@material-ui/core/styles";
 //@ts-ignore
@@ -13,6 +11,7 @@ import muiThemeLegacy from "./themes/dhis2-legacy.theme";
 import { muiTheme } from "./themes/dhis2.theme";
 import { D2Api } from "$/types/d2-api";
 import { Config } from "$/domain/entities/Config";
+import { HeaderBar } from "$/webapp/components/header-bar/HeaderBar";
 
 export interface AppProps {
     compositionRoot: CompositionRoot;
@@ -44,7 +43,7 @@ function App(props: AppProps) {
                 {/* @ts-ignore */}
                 <LoadingProvider>
                     <SnackbarProvider>
-                        <StyledHeaderBar appName="Project Configuration app" />
+                        <HeaderBar appName="Project Configuration app" />
 
                         <div id="app" className="content">
                             <AppContext.Provider value={appContext}>
@@ -57,11 +56,5 @@ function App(props: AppProps) {
         </MuiThemeProvider>
     );
 }
-
-const StyledHeaderBar = styled(HeaderBar)`
-    div:first-of-type {
-        box-sizing: border-box;
-    }
-`;
 
 export default React.memo(App);
