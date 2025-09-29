@@ -7,12 +7,8 @@ type HeaderBarProps = {
 
 export const HeaderBar: React.FC<HeaderBarProps> = props => {
     const { appName } = props;
-
     const shouldRenderHeaderBar = window.self === window.top;
-    console.info("renderHeaderBar", shouldRenderHeaderBar);
-
-    if (shouldRenderHeaderBar) return <StyledHeaderBar appName={appName} />;
-    else return <></>;
+    return shouldRenderHeaderBar && <StyledHeaderBar appName={appName} />;
 };
 
 const StyledHeaderBar = styled(D2HeaderBar)`
