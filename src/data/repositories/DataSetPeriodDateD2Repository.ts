@@ -163,8 +163,7 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
                     attributeValues: { attribute: { id: true }, value: true },
                 },
                 filter: {
-                    [config.attributes.inputDates.id]: { like: "*" },
-                    "attributeValues.attribute.id": { eq: config.attributes.inputDates.id },
+                    [config.attributes.inputDates.id]: { "!null": true },
                 },
                 page: page,
                 pageSize: 200,
