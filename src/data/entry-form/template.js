@@ -1,5 +1,3 @@
-var _ = window._;
-var $ = window.$;
 var periodDates = {};
 var indicatorMatching = [];
 
@@ -13,197 +11,260 @@ function setIndicatorMatching(indicatorMatching_) {
 }
 
 (function () {
-    _.mixin({
-        cartesianProduct: function (args) {
-            return _.reduce(
-                args,
-                function (a, b) {
-                    return _.flatten(
-                        _.map(a, function (x) {
-                            return _.map(b, function (y) {
-                                return x.concat([y]);
-                            });
-                        }),
-                        true
-                    );
-                },
-                [[]]
-            );
-        },
+    // CDN URLs for dependencies
+    var LODASH_CDN = "https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js";
+    var JQUERY_CDN = "https://code.jquery.com/jquery-3.6.0.min.js";
 
-        groupConsecutiveBy: function (xs, mapper) {
-            mapper = mapper || _.identity;
-            var reducer = (acc, x) => {
-                if (_.isEmpty(acc)) {
-                    return acc.concat([[x]]);
-                } else {
-                    var last = _.last(acc);
-                    if (_.isEqual(mapper(_.last(last)), mapper(x))) {
-                        last.push(x);
-                        return acc;
-                    } else {
-                        return acc.concat([[x]]);
-                    }
-                }
-            };
-            return _(xs).reduce(reducer, []);
-        },
-    });
+    // Function to load a script dynamically
+    function loadScript(url, callback) {
+        var script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = url;
+        script.onload = callback;
+        script.onerror = function () {
+            console.warn("Failed to load script from CDN: " + url);
+            callback(); // Still proceed even if loading fails
+        };
+        document.head.appendChild(script);
+    }
 
-    var debugElapsed = (label, fn) => {
-        var start = new Date().getTime();
-        fn();
-        var elapsed = new Date().getTime() - start;
-        console.debug(`[elapsed] ${label}: ${elapsed} ms`);
-    };
+    // Function to ensure dependencies are loaded
+    function ensureDependencies(callback) {
+        var pendingLoads = 0;
 
-    var loadCss = function (url) {
-        $("<link/>", {
-            rel: "stylesheet",
-            type: "text/css",
-            href: url,
-        }).appendTo(document.head);
-    };
-
-    var loadJs = function (url, cb) {
-        $.getScript(url, cb);
-    };
-
-    var repeat = function (times, n) {
-        return Array.from(Array(times), () => n);
-    };
-
-    var splitWideTables = function () {
-        var splitedTablesCount = 0;
-        var createTablesCount = 0;
-
-        $(".sectionTable")
-            .get()
-            .map($)
-            .forEach((table, _count) => {
-                if (tableFitsInViewport(table)) return;
-                splitedTablesCount++;
-                var firstRow = table.find("tbody tr:first-child td .entryfield");
-                if (firstRow.size() === 0) return;
-                var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
-                var allCategoryOptions = table
-                    .find("thead tr")
-                    .get()
-                    .map(tr =>
-                        _.chain($(tr).find("th[scope=col]").get())
-                            .map(th => [
-                                repeat(parseInt($(th).attr("colspan")), $(th).text().trim()),
-                            ])
-                            .flatten()
-                            .value()
-                    );
-
-                var categoryOptions = _.zip.apply(null, allCategoryOptions);
-                var uniqCategories = allCategoryOptions.map(categoryOptions =>
-                    _.uniq(categoryOptions)
-                );
-                if (categoryOptions.length !== cocIds.length) {
-                    alert("Error: parsing of form failed");
-                }
-                var cocs = _.zip(categoryOptions, cocIds).map(pair => ({
-                    cos: pair[0],
-                    id: pair[1],
-                }));
-
-                var rows = _.chain(table.find("tbody tr").get())
-                    .map($)
-                    .map(tr => {
-                        var td = tr.find("td:first-child");
-                        var tdId = td.attr("id");
-
-                        if (tdId) {
-                            var deId = tdId.split("-")[0];
-                            var deName = td.text().trim();
-                            var valuesByCocId = _.chain(tr.find("td .entryfield").get())
-                                .map($)
-                                .map(input => {
-                                    var cocId = input.attr("id").split("-")[1];
-                                    return [cocId, { td: input.parent("td"), coc: cocId }];
-                                })
-                                .object()
-                                .value();
-                            return {
-                                de: { id: deId, name: deName, td: td },
-                                valuesByCocId: valuesByCocId,
-                            };
-                        } else {
-                            return null;
-                        }
-                    })
-                    .compact()
-                    .value();
-
-                var data = {
-                    group: table.find("nrcinfoheader").text().trim(),
-                    categories: uniqCategories,
-                    cocs: cocs,
-                    rows: rows,
-                    showRowTotals:
-                        table
-                            .find("tbody tr:first-child td:last-child input.dataelementtotal")
-                            .size() > 0,
-                    showColumnTotals:
-                        table
-                            .find("tbody tr:last-child td:nth-child(2) input.dataelementtotal")
-                            .size() > 0,
-                };
-
-                var newTables = splitTables(data, { categoryIndex: 0, tableIndex: 0 });
-                createTablesCount += newTables.length;
-                table.replaceWith($("<div>").append(newTables));
-            });
-
-        console.log(
-            "Split tables: " + splitedTablesCount + ", tables created: " + createTablesCount
-        );
-    };
-
-    var splitTables = function (data, options) {
-        var categoryIndex = options.categoryIndex;
-        var nCategories = data.categories.length;
-        var renderDataElementInfo = options.tableIndex === 0;
-        var table = buildTable(data, renderDataElementInfo);
-
-        if (categoryIndex >= nCategories - 1 || tableFitsInViewport(table)) {
-            return [table];
-        } else {
-            return _.chain(data.cocs)
-                .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
-                .map((splitCocs, splitTableIndex) =>
-                    splitTables(_.extend({}, data, { cocs: splitCocs }), {
-                        categoryIndex: categoryIndex + 1,
-                        tableIndex: options.tableIndex + splitTableIndex,
-                    })
-                )
-                .flatten(1)
-                .value();
+        function checkComplete() {
+            pendingLoads--;
+            if (pendingLoads === 0) {
+                callback();
+            }
         }
-    };
 
-    var buildTable = function (data, renderDataElementInfo) {
-        var getValues = row => data.cocs.map(coc => row.valuesByCocId[coc.id]);
-        var nCategories = data.categories.length;
-        var categoryThsList = _.range(nCategories).map(categoryIndex => {
-            return _.chain(data.cocs)
-                .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
-                .map(group => {
-                    var label = group[0].cos[categoryIndex];
-                    return $("<th>", {
-                        class: "nrcdataheader",
-                        colspan: group.length,
-                        scope: "col",
-                    }).text(label);
-                })
-                .value();
+        // Check if lodash is missing
+        if (!window._) {
+            pendingLoads++;
+            console.log("Lodash not found, loading from CDN...");
+            loadScript(LODASH_CDN, checkComplete);
+        }
+
+        // Check if jQuery is missing
+        if (!window.$) {
+            pendingLoads++;
+            console.log("jQuery not found, loading from CDN...");
+            loadScript(JQUERY_CDN, checkComplete);
+        }
+
+        // If both are already loaded, call callback immediately
+        if (pendingLoads === 0) {
+            callback();
+        }
+    }
+
+    // Main initialization
+    ensureDependencies(function () {
+        var _ = window._;
+        var $ = window.$;
+
+        if (!_ || !$) {
+            console.warn(
+                "Dependencies (lodash or jQuery) could not be loaded. Some features may not work."
+            );
+            return;
+        }
+
+        _.mixin({
+            cartesianProduct: function (args) {
+                return _.reduce(
+                    args,
+                    function (a, b) {
+                        return _.flatten(
+                            _.map(a, function (x) {
+                                return _.map(b, function (y) {
+                                    return x.concat([y]);
+                                });
+                            }),
+                            true
+                        );
+                    },
+                    [[]]
+                );
+            },
+
+            groupConsecutiveBy: function (xs, mapper) {
+                mapper = mapper || _.identity;
+                var reducer = (acc, x) => {
+                    if (_.isEmpty(acc)) {
+                        return acc.concat([[x]]);
+                    } else {
+                        var last = _.last(acc);
+                        if (_.isEqual(mapper(_.last(last)), mapper(x))) {
+                            last.push(x);
+                            return acc;
+                        } else {
+                            return acc.concat([[x]]);
+                        }
+                    }
+                };
+                return _(xs).reduce(reducer, []);
+            },
         });
 
-        return $("<table>", { id: "sectionTable", class: "sectionTable", cellspacing: "0" }).append(
-            [
+        var debugElapsed = (label, fn) => {
+            var start = new Date().getTime();
+            fn();
+            var elapsed = new Date().getTime() - start;
+            console.debug(`[elapsed] ${label}: ${elapsed} ms`);
+        };
+
+        var loadCss = function (url) {
+            $("<link/>", {
+                rel: "stylesheet",
+                type: "text/css",
+                href: url,
+            }).appendTo(document.head);
+        };
+
+        var loadJs = function (url, cb) {
+            $.getScript(url, cb);
+        };
+
+        var repeat = function (times, n) {
+            return Array.from(Array(times), () => n);
+        };
+
+        var splitWideTables = function () {
+            var splitedTablesCount = 0;
+            var createTablesCount = 0;
+
+            $(".sectionTable")
+                .get()
+                .map($)
+                .forEach((table, _count) => {
+                    if (tableFitsInViewport(table)) return;
+                    splitedTablesCount++;
+                    var firstRow = table.find("tbody tr:first-child td .entryfield");
+                    if (firstRow.size() === 0) return;
+                    var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
+                    var allCategoryOptions = table
+                        .find("thead tr")
+                        .get()
+                        .map(tr =>
+                            _.chain($(tr).find("th[scope=col]").get())
+                                .map(th => [
+                                    repeat(parseInt($(th).attr("colspan")), $(th).text().trim()),
+                                ])
+                                .flatten()
+                                .value()
+                        );
+
+                    var categoryOptions = _.zip.apply(null, allCategoryOptions);
+                    var uniqCategories = allCategoryOptions.map(categoryOptions =>
+                        _.uniq(categoryOptions)
+                    );
+                    if (categoryOptions.length !== cocIds.length) {
+                        alert("Error: parsing of form failed");
+                    }
+                    var cocs = _.zip(categoryOptions, cocIds).map(pair => ({
+                        cos: pair[0],
+                        id: pair[1],
+                    }));
+
+                    var rows = _.chain(table.find("tbody tr").get())
+                        .map($)
+                        .map(tr => {
+                            var td = tr.find("td:first-child");
+                            var tdId = td.attr("id");
+
+                            if (tdId) {
+                                var deId = tdId.split("-")[0];
+                                var deName = td.text().trim();
+                                var valuesByCocId = _.chain(tr.find("td .entryfield").get())
+                                    .map($)
+                                    .map(input => {
+                                        var cocId = input.attr("id").split("-")[1];
+                                        return [cocId, { td: input.parent("td"), coc: cocId }];
+                                    })
+                                    .object()
+                                    .value();
+                                return {
+                                    de: { id: deId, name: deName, td: td },
+                                    valuesByCocId: valuesByCocId,
+                                };
+                            } else {
+                                return null;
+                            }
+                        })
+                        .compact()
+                        .value();
+
+                    var data = {
+                        group: table.find("nrcinfoheader").text().trim(),
+                        categories: uniqCategories,
+                        cocs: cocs,
+                        rows: rows,
+                        showRowTotals:
+                            table
+                                .find("tbody tr:first-child td:last-child input.dataelementtotal")
+                                .size() > 0,
+                        showColumnTotals:
+                            table
+                                .find("tbody tr:last-child td:nth-child(2) input.dataelementtotal")
+                                .size() > 0,
+                    };
+
+                    var newTables = splitTables(data, { categoryIndex: 0, tableIndex: 0 });
+                    createTablesCount += newTables.length;
+                    table.replaceWith($("<div>").append(newTables));
+                });
+
+            console.log(
+                "Split tables: " + splitedTablesCount + ", tables created: " + createTablesCount
+            );
+        };
+
+        var splitTables = function (data, options) {
+            var categoryIndex = options.categoryIndex;
+            var nCategories = data.categories.length;
+            var renderDataElementInfo = options.tableIndex === 0;
+            var table = buildTable(data, renderDataElementInfo);
+
+            if (categoryIndex >= nCategories - 1 || tableFitsInViewport(table)) {
+                return [table];
+            } else {
+                return _.chain(data.cocs)
+                    .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
+                    .map((splitCocs, splitTableIndex) =>
+                        splitTables(_.extend({}, data, { cocs: splitCocs }), {
+                            categoryIndex: categoryIndex + 1,
+                            tableIndex: options.tableIndex + splitTableIndex,
+                        })
+                    )
+                    .flatten(1)
+                    .value();
+            }
+        };
+
+        var buildTable = function (data, renderDataElementInfo) {
+            var getValues = row => data.cocs.map(coc => row.valuesByCocId[coc.id]);
+            var nCategories = data.categories.length;
+            var categoryThsList = _.range(nCategories).map(categoryIndex => {
+                return _.chain(data.cocs)
+                    .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
+                    .map(group => {
+                        var label = group[0].cos[categoryIndex];
+                        return $("<th>", {
+                            class: "nrcdataheader",
+                            colspan: group.length,
+                            scope: "col",
+                        }).text(label);
+                    })
+                    .value();
+            });
+
+            return $("<table>", {
+                id: "sectionTable",
+                class: "sectionTable",
+                cellspacing: "0",
+            }).append([
                 $("<thead>").append(
                     categoryThsList.map((categoryThs, index) =>
                         $("<tr>").append(
@@ -265,230 +326,241 @@ function setIndicatorMatching(indicatorMatching_) {
                           )
                         : null
                 ),
-            ]
-        );
-    };
+            ]);
+        };
 
-    var tableFitsInViewport = function (table) {
-        // TODO: get input size and use tableWidth
-        // var tableWidth = table.width();
-        return table.find("thead tr:last th").size() - 1 <= 16;
-    };
+        var tableFitsInViewport = function (table) {
+            // TODO: get input size and use tableWidth
+            // var tableWidth = table.width();
+            return table.find("thead tr:last th").size() - 1 <= 16;
+        };
 
-    var fixActionsBox = function () {
-        // Button <run validation> does not fit in the box, add some more width.
-        $("#completenessDiv").css("width", "+=5px");
-    };
+        var fixActionsBox = function () {
+            // Button <run validation> does not fit in the box, add some more width.
+            $("#completenessDiv").css("width", "+=5px");
+        };
 
-    var renumerateInputFields = function () {
-        var lastIndex =
-            _.chain($("[tabindex]").get())
-                .map(x => parseInt($(x).attr("tabindex")))
-                .max()
-                .value() || 0;
-        $("#contentDiv .entryfield").each((i, input) =>
-            $(input).attr("tabindex", lastIndex + i + 1)
-        );
-    };
+        var renumerateInputFields = function () {
+            var lastIndex =
+                _.chain($("[tabindex]").get())
+                    .map(x => parseInt($(x).attr("tabindex")))
+                    .max()
+                    .value() || 0;
+            $("#contentDiv .entryfield").each((i, input) =>
+                $(input).attr("tabindex", lastIndex + i + 1)
+            );
+        };
 
-    var highlightDataElementRows = function () {
-        var setClass = function (ev, className, isActive) {
-            var tr = $(ev.currentTarget);
-            var de_class = (tr.attr("class") || "")
-                .split(" ")
-                .filter(cl => cl.startsWith("de-"))[0];
-            if (de_class) {
-                var deId = de_class.split("-")[1];
-                var el = $(".de-" + deId);
-                el.toggleClass(className, isActive);
-                if (tr.hasClass("secondary")) {
-                    var opacity = isActive ? 1 : 0;
-                    tr.find(".nrcindicatorName")
-                        .clearQueue()
-                        .delay(500)
-                        .animate({ opacity: opacity }, 100);
+        var highlightDataElementRows = function () {
+            var setClass = function (ev, className, isActive) {
+                var tr = $(ev.currentTarget);
+                var de_class = (tr.attr("class") || "")
+                    .split(" ")
+                    .filter(cl => cl.startsWith("de-"))[0];
+                if (de_class) {
+                    var deId = de_class.split("-")[1];
+                    var el = $(".de-" + deId);
+                    el.toggleClass(className, isActive);
+                    if (tr.hasClass("secondary")) {
+                        var opacity = isActive ? 1 : 0;
+                        tr.find(".nrcindicatorName")
+                            .clearQueue()
+                            .delay(500)
+                            .animate({ opacity: opacity }, 100);
+                    }
                 }
+            };
+
+            $("tr.derow")
+                .mouseover(ev => setClass(ev, "hover", true))
+                .mouseout(ev => setClass(ev, "hover", false))
+                .focusin(ev => setClass(ev, "focus", true))
+                .focusout(ev => setClass(ev, "focus", false));
+        };
+
+        var setTabsVisibility = function (type, isDateOutsidePeriod, info) {
+            const tabContents = $(".type-" + type);
+
+            if (isDateOutsidePeriod) {
+                tabContents.find(".in-period").hide();
+                tabContents.find(".out-of-period").show();
+                tabContents.find(".out-of-period .info").text(info);
+            } else {
+                tabContents.find(".in-period").show();
+                tabContents.find(".out-of-period").hide();
             }
         };
 
-        $("tr.derow")
-            .mouseover(ev => setClass(ev, "hover", true))
-            .mouseout(ev => setClass(ev, "hover", false))
-            .focusin(ev => setClass(ev, "focus", true))
-            .focusout(ev => setClass(ev, "focus", false));
-    };
+        var applyPeriodDates = function () {
+            /* eslint-disable no-undef */
+            const selectedPeriod = dhis2.de.getSelectedPeriod();
+            if (!selectedPeriod || !selectedPeriod.startDate) return;
+            const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
+            const getFormatDate = isoDate =>
+                isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null;
+            const startDate = selectedPeriod.startDate;
+            const periodYear = startDate.split("-")[0];
+            const today = new Date();
+            console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear, today });
 
-    var setTabsVisibility = function (type, isDateOutsidePeriod, info) {
-        const tabContents = $(".type-" + type);
+            ["output", "outcome"].forEach(type => {
+                const obj = (periodDates[type] || {})[periodYear];
+                const isDateOutsidePeriod =
+                    obj !== undefined &&
+                    ((obj.start && today < getDate(obj.start)) ||
+                        (obj.end && today > getDate(obj.end)));
+                let info;
+                if (isDateOutsidePeriod) {
+                    const ns = {
+                        from: getFormatDate(obj.start) || "-",
+                        to: getFormatDate(obj.end) || "-",
+                    };
+                    info = `${ns.from} -> ${ns.to}`;
+                }
 
-        if (isDateOutsidePeriod) {
-            tabContents.find(".in-period").hide();
-            tabContents.find(".out-of-period").show();
-            tabContents.find(".out-of-period .info").text(info);
-        } else {
-            tabContents.find(".in-period").show();
-            tabContents.find(".out-of-period").hide();
-        }
-    };
+                setTabsVisibility(type, isDateOutsidePeriod, info);
+            });
+        };
 
-    var applyPeriodDates = function () {
-        /* eslint-disable no-undef */
-        const selectedPeriod = dhis2.de.getSelectedPeriod();
-        if (!selectedPeriod || !selectedPeriod.startDate) return;
-        const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
-        const getFormatDate = isoDate =>
-            isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null;
-        const startDate = selectedPeriod.startDate;
-        const periodYear = startDate.split("-")[0];
-        const today = new Date();
-        console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear, today });
+        var applyChangesToForm = function () {
+            if (!$("#tabs").hasClass("dataset-configuration-custom-form")) return;
 
-        ["output", "outcome"].forEach(type => {
-            const obj = (periodDates[type] || {})[periodYear];
-            const isDateOutsidePeriod =
-                obj !== undefined &&
-                ((obj.start && today < getDate(obj.start)) ||
-                    (obj.end && today > getDate(obj.end)));
-            let info;
-            if (isDateOutsidePeriod) {
-                const ns = {
-                    from: getFormatDate(obj.start) || "-",
-                    to: getFormatDate(obj.end) || "-",
-                };
-                info = `${ns.from} -> ${ns.to}`;
+            applyPeriodDates();
+            debugElapsed("Split tables", splitWideTables);
+            highlightDataElementRows();
+            renumerateInputFields();
+            fixActionsBox();
+            initializeIndicatorMatch(indicatorMatching);
+        };
+
+        var initializeIndicatorMatch = function (matchingRules) {
+            matchingRules.forEach(setupRule);
+
+            function setupRule(rule) {
+                const { target, expression, sourceIds } = rule;
+
+                const targetElements = findElementsByPattern(target);
+
+                targetElements.forEach(targetElement => {
+                    const cocId = extractCocId(targetElement.id, target);
+
+                    const sourceElements = sourceIds
+                        .map(sourceId => document.getElementById(`${sourceId}-${cocId}`))
+                        .filter(el => el !== null);
+
+                    if (sourceElements.length > 0) {
+                        attachListeners(
+                            sourceElements,
+                            targetElement,
+                            expression,
+                            sourceIds,
+                            cocId
+                        );
+                    }
+                });
             }
 
-            setTabsVisibility(type, isDateOutsidePeriod, info);
-        });
-    };
+            function findElementsByPattern(dataElementId) {
+                const pattern = `input[id^="${dataElementId}-"]`;
+                return Array.from(document.querySelectorAll(pattern));
+            }
 
-    var applyChangesToForm = function () {
-        if (!$("#tabs").hasClass("dataset-configuration-custom-form")) return;
+            function extractCocId(fullId, dataElementId) {
+                return fullId.replace(`${dataElementId}-`, "");
+            }
 
-        applyPeriodDates();
-        debugElapsed("Split tables", splitWideTables);
-        highlightDataElementRows();
-        renumerateInputFields();
-        fixActionsBox();
-        initializeIndicatorMatch(indicatorMatching);
-    };
+            function attachListeners(sourceElements, targetElement, expression, sourceIds, cocId) {
+                const updateTarget = () => {
+                    try {
+                        const result = evaluateExpression(expression, sourceIds, cocId);
+                        targetElement.value = result;
 
-    var initializeIndicatorMatch = function (matchingRules) {
-        matchingRules.forEach(setupRule);
+                        targetElement.dispatchEvent(new Event("change", { bubbles: true }));
+                    } catch (error) {
+                        console.error("Error evaluating expression:", error);
+                        targetElement.value = "";
+                    }
+                };
 
-        function setupRule(rule) {
-            const { target, expression, sourceIds } = rule;
+                sourceElements.forEach(sourceElement => {
+                    sourceElement.addEventListener("change", updateTarget);
+                    sourceElement.addEventListener("input", debounce(updateTarget, 300));
+                });
+            }
 
-            const targetElements = findElementsByPattern(target);
+            function evaluateExpression(expression, sourceIds, cocId) {
+                const sourceValues = sourceIds.map(sourceId => {
+                    const element = document.getElementById(`${sourceId}-${cocId}`);
+                    if (!element) return null;
 
-            targetElements.forEach(targetElement => {
-                const cocId = extractCocId(targetElement.id, target);
+                    const value = element.value;
+                    if (!value || value.trim() === "") return null;
 
-                const sourceElements = sourceIds
-                    .map(sourceId => document.getElementById(`${sourceId}-${cocId}`))
-                    .filter(el => el !== null);
+                    const numValue = parseFloat(value);
+                    return isNaN(numValue) ? null : numValue;
+                });
 
-                if (sourceElements.length > 0) {
-                    attachListeners(sourceElements, targetElement, expression, sourceIds, cocId);
+                if (sourceValues.includes(null)) {
+                    return "";
                 }
-            });
-        }
 
-        function findElementsByPattern(dataElementId) {
-            const pattern = `input[id^="${dataElementId}-"]`;
-            return Array.from(document.querySelectorAll(pattern));
-        }
+                const processedExpression = sourceIds.reduce((acc, sourceId, index) => {
+                    const value = sourceValues[index];
+                    const placeholder = `#{${sourceId}}`;
+                    return acc.replace(new RegExp(escapeRegExp(placeholder), "g"), value);
+                }, expression);
 
-        function extractCocId(fullId, dataElementId) {
-            return fullId.replace(`${dataElementId}-`, "");
-        }
+                return safeEval(processedExpression);
+            }
 
-        function attachListeners(sourceElements, targetElement, expression, sourceIds, cocId) {
-            const updateTarget = () => {
+            function safeEval(expression) {
+                if (!expression || expression.trim() === "") {
+                    return null;
+                }
+                if (!/^[0-9+\-*/.() ]+$/.test(expression)) {
+                    throw new Error("Invalid expression characters");
+                }
+
                 try {
-                    const result = evaluateExpression(expression, sourceIds, cocId);
-                    targetElement.value = result;
-
-                    targetElement.dispatchEvent(new Event("change", { bubbles: true }));
+                    return new Function(`return ${expression}`)();
                 } catch (error) {
-                    console.error("Error evaluating expression:", error);
-                    targetElement.value = "";
+                    console.error("Expression evaluation failed:", expression, error);
+                    return 0;
                 }
-            };
-
-            sourceElements.forEach(sourceElement => {
-                sourceElement.addEventListener("change", updateTarget);
-                sourceElement.addEventListener("input", debounce(updateTarget, 300));
-            });
-        }
-
-        function evaluateExpression(expression, sourceIds, cocId) {
-            const sourceValues = sourceIds.map(sourceId => {
-                const element = document.getElementById(`${sourceId}-${cocId}`);
-                if (!element) return null;
-
-                const value = element.value;
-                if (!value || value.trim() === "") return null;
-
-                const numValue = parseFloat(value);
-                return isNaN(numValue) ? null : numValue;
-            });
-
-            if (sourceValues.includes(null)) {
-                return "";
             }
 
-            const processedExpression = sourceIds.reduce((acc, sourceId, index) => {
-                const value = sourceValues[index];
-                const placeholder = `#{${sourceId}}`;
-                return acc.replace(new RegExp(escapeRegExp(placeholder), "g"), value);
-            }, expression);
-
-            return safeEval(processedExpression);
-        }
-
-        function safeEval(expression) {
-            if (!expression || expression.trim() === "") {
-                return null;
-            }
-            if (!/^[0-9+\-*/.() ]+$/.test(expression)) {
-                throw new Error("Invalid expression characters");
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             }
 
-            try {
-                return new Function(`return ${expression}`)();
-            } catch (error) {
-                console.error("Expression evaluation failed:", expression, error);
-                return 0;
-            }
-        }
-
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
                     clearTimeout(timeout);
-                    func(...args);
+                    timeout = setTimeout(later, wait);
                 };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
+            }
+        };
+
+        var init = function () {
+            if (window.datasetConfigurationCustomFormLoaded) return;
+            window.datasetConfigurationCustomFormLoaded = true;
+            $(document).on("dhis2.de.event.formLoaded", applyChangesToForm);
+            applyChangesToForm();
+            $("#selectedPeriodId").change(applyPeriodDates);
+            loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
+            loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
+        };
+
+        // Use jQuery's ready function or execute immediately if DOM is ready
+        if (document.readyState === "loading") {
+            $(document).ready(init);
+        } else {
+            init();
         }
-    };
-
-    var init = function () {
-        if (window.datasetConfigurationCustomFormLoaded) return;
-        window.datasetConfigurationCustomFormLoaded = true;
-        $(document).on("dhis2.de.event.formLoaded", applyChangesToForm);
-        applyChangesToForm();
-        $("#selectedPeriodId").change(applyPeriodDates);
-        loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
-        loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
-    };
-
-    $(init);
+    });
 })();
