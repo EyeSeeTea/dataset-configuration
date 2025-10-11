@@ -534,6 +534,8 @@ export class DataSetD2Repository implements DataSetRepository {
                     code,
                     dataSet: { id: id },
                     name: `${coreCompetency.name} ${typeLabel}`,
+                    showColumnTotals: Boolean(dataSet?.sectionConfig.showColumnTotals),
+                    showRowTotals: Boolean(dataSet?.sectionConfig.showRowTotals),
                     greyedFields: disabledFieldsForSection.map(disabledField => {
                         return {
                             dataElement: { id: disabledField.dataElementId },
@@ -810,6 +812,8 @@ type D2DataSetSection = {
     code: string;
     dataSet: Ref;
     name: string;
+    showColumnTotals: boolean;
+    showRowTotals: boolean;
     greyedFields: Array<{ dataElement: Ref; categoryOptionCombo: Ref }>;
     dataElements: Ref[];
     indicators: Ref[];

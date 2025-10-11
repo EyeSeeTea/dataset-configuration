@@ -38,6 +38,11 @@ export type DataSetAttrs = {
     canBeUpdated: boolean;
     shortName: string;
     indicatorMatching: Maybe<IndicatorMatch[]>;
+    sectionConfig: {
+        renderAsTabs: boolean;
+        showColumnTotals: boolean;
+        showRowTotals: boolean;
+    };
 };
 
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
@@ -126,6 +131,13 @@ export class DataSet extends Struct<DataSetAttrs>() {
 
     setIndicators(indicators: Indicator[]): DataSet {
         return this._update({ indicators });
+    }
+
+    setSectionConfig<K extends keyof DataSet["sectionConfig"]>(
+        fieldName: K,
+        value: DataSet["sectionConfig"][K]
+    ): DataSet {
+        return this._update({ sectionConfig: { ...this.sectionConfig, [fieldName]: value } });
     }
 
     validateIndicatorsStep(): ValidationError<DataSet>[] {
@@ -354,6 +366,11 @@ export class DataSet extends Struct<DataSetAttrs>() {
             periodDate: undefined,
             disabledFields: [],
             indicatorMatching: undefined,
+            sectionConfig: {
+                renderAsTabs: false,
+                showColumnTotals: false,
+                showRowTotals: false,
+            },
             ...initialData,
         });
     }
