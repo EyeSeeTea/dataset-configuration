@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: i18next-conv\n"
-"POT-Creation-Date: 2025-08-29T06:27:59.255Z\n"
+"POT-Creation-Date: 2025-10-13T08:19:25.975Z\n"
 "PO-Revision-Date: 2018-10-25T09:02:35.143Z\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -380,6 +380,15 @@ msgstr "Seleccionado"
 
 msgid "No Selected"
 msgstr "No seleccionado"
+
+msgid "Group data element in sections"
+msgstr ""
+
+msgid "Show row totals"
+msgstr ""
+
+msgid "Show column totals"
+msgstr ""
 
 msgid "There are some suggested companion"
 msgstr ""
