@@ -689,6 +689,7 @@ const SectionConfigContainer = styled(Box)`
     padding: 0.5em 1.5em 0 1.5em;
     display: flex;
     flex-direction: column;
+    min-width: 270px;
 `;
 
 const CheckboxSectionConfig = styled(Checkbox)`
