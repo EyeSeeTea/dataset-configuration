@@ -666,7 +666,7 @@ export class DataSetD2Repository implements DataSetRepository {
         config: D2Config
     ) {
         return {
-            renderAsTabs: true,
+            renderAsTabs: dataSet.sectionConfig.renderAsTabs,
             dataElementDecoration: true,
             categoryCombo: {
                 id: config.categoryCombos.projectTargetActual.id,
