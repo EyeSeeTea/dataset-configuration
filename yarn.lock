@@ -2641,10 +2641,10 @@
     qs "6.9.7"
     react "^16.12.0"
 
-"@eyeseetea/d2-ui-components@2.11.0":
-  version "2.11.0"
-  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-ui-components/-/d2-ui-components-2.11.0.tgz#07ac8a80f0915046fbc54d330f7d9f2074cc7c10"
-  integrity sha512-8FOGG+EQAW39FOjAQtPaM6ag+Y0HJQ7sJHclCvCwANDrS1T0Y0dUkrngblJrCOY+yeVY2Q2lTuw7KVLZs5bgWA==
+"@eyeseetea/d2-ui-components@2.12.0-beta.4":
+  version "2.12.0-beta.4"
+  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-ui-components/-/d2-ui-components-2.12.0-beta.4.tgz#aa2ac7885cbd2692ed7924677bedadb82b4a2bd2"
+  integrity sha512-QHNTl9gANzLJE3K2YPAn7SLQWsgBcVXubEAO1tdk0YeJ1tSxVjA4QRzN2pRlp6vXPl9xAVGs/D/0H7AYm7WWUA==
   dependencies:
     "@date-io/core" "1.3.6"
     "@date-io/moment" "1.0.2"
