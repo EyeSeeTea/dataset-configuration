@@ -11,11 +11,9 @@ function setIndicatorMatching(indicatorMatching_) {
 }
 
 (function () {
-    // CDN URLs for dependencies
     var LODASH_CDN = "https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js";
     var JQUERY_CDN = "https://code.jquery.com/jquery-3.6.0.min.js";
 
-    // Function to load a script dynamically
     function loadScript(url, callback) {
         var script = document.createElement("script");
         script.type = "text/javascript";
@@ -58,8 +56,6 @@ function setIndicatorMatching(indicatorMatching_) {
             callback();
         }
     }
-
-    // Main initialization
     ensureDependencies(function () {
         var _ = window._;
         var $ = window.$;
@@ -139,6 +135,7 @@ function setIndicatorMatching(indicatorMatching_) {
                 .get()
                 .map($)
                 .forEach((table, _count) => {
+                    if (!table) return;
                     if (tableFitsInViewport(table)) return;
                     splitedTablesCount++;
                     var firstRow = table.find("tbody tr:first-child td .entryfield");
@@ -202,13 +199,11 @@ function setIndicatorMatching(indicatorMatching_) {
                         cocs: cocs,
                         rows: rows,
                         showRowTotals:
-                            table
-                                .find("tbody tr:first-child td:last-child input.dataelementtotal")
-                                .size() > 0,
+                            table.find("tbody tr:first-child td:last-child input.dataelementtotal")
+                                .length > 0,
                         showColumnTotals:
-                            table
-                                .find("tbody tr:last-child td:nth-child(2) input.dataelementtotal")
-                                .size() > 0,
+                            table.find("tbody tr:last-child td:nth-child(2) input.dataelementtotal")
+                                .length > 0,
                     };
 
                     var newTables = splitTables(data, { categoryIndex: 0, tableIndex: 0 });
@@ -332,7 +327,7 @@ function setIndicatorMatching(indicatorMatching_) {
         var tableFitsInViewport = function (table) {
             // TODO: get input size and use tableWidth
             // var tableWidth = table.width();
-            return table.find("thead tr:last th").size() - 1 <= 16;
+            return table.find("thead tr:last th").length - 1 <= 16;
         };
 
         var fixActionsBox = function () {
@@ -391,13 +386,21 @@ function setIndicatorMatching(indicatorMatching_) {
             }
         };
 
+        var formatDate = function (date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return [day, month, year].join("/");
+        };
+
         var applyPeriodDates = function () {
             /* eslint-disable no-undef */
             const selectedPeriod = dhis2.de.getSelectedPeriod();
             if (!selectedPeriod || !selectedPeriod.startDate) return;
             const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
             const getFormatDate = isoDate =>
-                isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null;
+                isoDate ? formatDate(new Date(isoDate.split("T")[0])) : null;
             const startDate = selectedPeriod.startDate;
             const periodYear = startDate.split("-")[0];
             const today = new Date();
@@ -460,6 +463,16 @@ function setIndicatorMatching(indicatorMatching_) {
                 });
             }
 
+            function setReactInputAndSave(el, value) {
+                const setter = Object.getOwnPropertyDescriptor(el.__proto__, "value").set;
+                setter.call(el, String(value));
+
+                ["change", "focusout", "blur"].forEach(type =>
+                    el.dispatchEvent(new Event(type, { bubbles: type !== "blur" }))
+                );
+                el.blur();
+            }
+
             function findElementsByPattern(dataElementId) {
                 const pattern = `input[id^="${dataElementId}-"]`;
                 return Array.from(document.querySelectorAll(pattern));
@@ -472,10 +485,8 @@ function setIndicatorMatching(indicatorMatching_) {
             function attachListeners(sourceElements, targetElement, expression, sourceIds, cocId) {
                 const updateTarget = () => {
                     try {
-                        const result = evaluateExpression(expression, sourceIds, cocId);
-                        targetElement.value = result;
-
-                        targetElement.dispatchEvent(new Event("change", { bubbles: true }));
+                        var result = evaluateExpression(expression, sourceIds, cocId);
+                        setReactInputAndSave(targetElement, result);
                     } catch (error) {
                         console.error("Error evaluating expression:", error);
                         targetElement.value = "";
@@ -483,8 +494,7 @@ function setIndicatorMatching(indicatorMatching_) {
                 };
 
                 sourceElements.forEach(sourceElement => {
-                    sourceElement.addEventListener("change", updateTarget);
-                    sourceElement.addEventListener("input", debounce(updateTarget, 300));
+                    sourceElement.addEventListener("blur", updateTarget);
                 });
             }
 
@@ -549,11 +559,12 @@ function setIndicatorMatching(indicatorMatching_) {
         var init = function () {
             if (window.datasetConfigurationCustomFormLoaded) return;
             window.datasetConfigurationCustomFormLoaded = true;
-            $(document).on("dhis2.de.event.formLoaded", applyChangesToForm);
+            window.addEventListener("dhis2.de.event.formLoaded", applyChangesToForm);
             applyChangesToForm();
             $("#selectedPeriodId").change(applyPeriodDates);
             loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
             loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
+            window.addEventListener("dhis2.de.event.periodChanged", applyPeriodDates);
         };
 
         // Use jQuery's ready function or execute immediately if DOM is ready
