@@ -298,8 +298,8 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
                         onChange={validateIndicators}
                         sorting={sorting}
-                        customConfig={
-                            dataSet && <SectionConfig dataSet={dataSet} onChange={onChange} />
+                        globalActionComponents={
+                            <SectionConfig dataSet={dataSet} onChange={onChange} />
                         }
                     />
                 </Grid>
@@ -686,12 +686,15 @@ const SuggestCompanionContainer = styled.div`
 `;
 
 const SectionConfigContainer = styled(Box)`
-    padding: 0.5em 1.5em 0 1.5em;
+    padding-block-start: 0.5em;
+    padding-block-end: 0;
+    padding-inline: 1.5em;
     display: flex;
     flex-direction: column;
     min-width: 270px;
 `;
 
 const CheckboxSectionConfig = styled(Checkbox)`
-    margin: 8px 0 !important;
+    margin-block: 8px !important;
+    margin-inline: 0 !important;
 `;
