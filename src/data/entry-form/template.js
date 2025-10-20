@@ -434,6 +434,8 @@ function setIndicatorMatching(indicatorMatching_) {
             renumerateInputFields();
             fixActionsBox();
             initializeIndicatorMatch(indicatorMatching);
+            initializeAccordion();
+            initializeTabs();
         };
 
         var initializeIndicatorMatch = function (matchingRules) {
@@ -561,17 +563,65 @@ function setIndicatorMatching(indicatorMatching_) {
             window.datasetConfigurationCustomFormLoaded = true;
             window.addEventListener("dhis2.de.event.formLoaded", applyChangesToForm);
             applyChangesToForm();
-            $("#selectedPeriodId").change(applyPeriodDates);
-            loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
-            loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
             window.addEventListener("dhis2.de.event.periodChanged", applyPeriodDates);
         };
 
-        // Use jQuery's ready function or execute immediately if DOM is ready
-        if (document.readyState === "loading") {
-            $(document).ready(init);
-        } else {
-            init();
-        }
+        var initializeAccordion = function () {
+            document.addEventListener("click", function (e) {
+                const heading = e.target.closest(".panel-heading");
+                if (!heading) return;
+
+                e.preventDefault();
+                const isCollapsed = heading.classList.contains("collapsed");
+                const targetId = heading.getAttribute("data-target");
+
+                if (targetId) {
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        if (isCollapsed) {
+                            heading.classList.remove("collapsed");
+                            targetElement.classList.remove("collapsed");
+                        } else {
+                            heading.classList.add("collapsed");
+                            targetElement.classList.add("collapsed");
+                        }
+                    }
+                }
+            });
+        };
+
+        var initializeTabs = function () {
+            const tabsContainer = document.getElementById("tabs");
+            if (!tabsContainer) return;
+
+            const tabLinks = tabsContainer.querySelectorAll("ul > li > a");
+            const tabContents = tabsContainer.querySelectorAll('[id^="tab-"]');
+
+            tabLinks.forEach((link, index) => {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
+
+                    tabLinks.forEach(l => l.parentElement.classList.remove("ui-tabs-active"));
+                    tabContents.forEach(content => {
+                        content.style.display = "none";
+                    });
+
+                    this.parentElement.classList.add("ui-tabs-active");
+                    if (tabContents[index]) {
+                        tabContents[index].style.display = "block";
+                    }
+                });
+            });
+
+            if (tabLinks.length > 0 && tabContents.length > 0) {
+                tabLinks[0].parentElement.classList.add("ui-tabs-active");
+                tabContents[0].style.display = "block";
+                for (let i = 1; i < tabContents.length; i++) {
+                    tabContents[i].style.display = "none";
+                }
+            }
+        };
+
+        $(init);
     });
 })();

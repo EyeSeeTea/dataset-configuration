@@ -198,7 +198,7 @@
 
             <ul class="list-unstyled">
                 <li class="panel panel-default">
-                    <div class="panel-heading" data-target="#${identifier}" data-toggle="collapse">
+                    <div class="panel-heading" data-target="#${identifier}" data-toggle="collapse" role="button" aria-expanded="true">
                         <h5 class="panel-title accordion-toggle">
                             <a class="nrc-panel-title">
                                 #if($theme == "null") Default #else $theme #end
@@ -221,13 +221,13 @@
                             #elseif ($section.type == "outcome")
                                 #set( $dataElementsByCategoryCombo = $helpers.getDataElementsByCategoryComboForIndicators($items) )
 
-                                #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
-                                    #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
-                                    #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
-                                #end
-
-                                #renderIndicators($items)
+                            #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
+                                #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
+                                #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
                             #end
+
+                            #renderIndicators($items)
+                        #end
                         #end
                     </div>
                 </li>
@@ -245,12 +245,12 @@
 
 #if( $dataSet.renderAsTabs )
     <div id="tabs" class="dataset-configuration-custom-form">
-        <ul>
+        <ul class="list-unstyled tab-links">
             #foreach( $section in $sections )
                 #if( $section.name )
-                    <li><a href="#tab-${section.id}">$encoder.htmlEncode( $section.name )</a></li>
+                    <li><a data-section-id="#${section.id}">$encoder.htmlEncode( $section.name )</a></li>
                 #else
-                    <li><a href="#tab-${section.id}">$i18n.getString("section") $velocityCount</a></li>
+                    <li><a data-section-id="#${section.id}">$i18n.getString("section") $velocityCount</a></li>
                 #end
             #end
         </ul>

@@ -20,13 +20,14 @@
 }
 
 .formSection th {
-    font-weight: normal;
     font-size: 14px;
     text-align: center;
     white-space: normal !important;
     max-width: 75px;
-    background-color: #eaf7fb;
-    max-width: 200px;
+    background-color: #f3f5f7 !important;
+    border: 1px solid #d5dde5 !important;
+    color: black !important;
+    font-weight: 500;
 }
 
 .indicatorArea {
@@ -49,69 +50,69 @@
     max-width: 300px;
 }
 
-#contentDiv .nrcsubsection {
+main .nrcsubsection {
     background-color: #fff;
     height: 5px;
 }
 
-#contentDiv input.entryfield {
+main input.entryfield {
     width: 70px;
     height: 18px;
     padding: 2px;
 }
 
-#contentDiv input.dataelementtotal {
+main input.dataelementtotal {
     width: 70px;
     height: 16px;
     padding: 2px;
 }
 
-#contentDiv input.indicator {
+main input.indicator {
     width: 70px;
     height: 18px;
     padding: 2px;
 }
 
-#contentDiv tr.derow {
+main tr.derow {
     background-color: #fff;
 }
 
-#contentDiv tr.focus {
+main tr.focus {
     background-color: #e5f5e5;
 }
 
-#contentDiv tr.hover,
-#contentDiv tr:hover {
+main tr.hover,
+main tr:hover {
     background-color: #e5e5e5;
 }
 
-#contentDiv th {
+main th {
     border-style: hidden !important;
 }
 
-#contentDiv td {
+main td {
     padding: 2px !important;
     height: 16px;
     text-align: center;
     border-style: none !important;
 }
 
-#contentDiv td.nrcindicatorName {
+main td.nrcindicatorName {
     text-align: left;
     white-space: normal;
     max-width: 33%;
 }
 
-#contentDiv tr.secondary td.nrcindicatorName {
+main tr.secondary td.nrcindicatorName {
     font-style: italic;
 }
 
-#contentDiv td.lastinrow {
+main td.lastinrow {
     background-color: #eee;
     text-align: center;
 }
 
-#contentDiv th.nrcinfoheader {
+main th.nrcinfoheader {
     text-align: left;
     border-bottom-style: hidden;
     border-left-style: hidden;
@@ -122,7 +123,7 @@
     padding: 2px !important;
 }
 
-#contentDiv th.nrcdataheader {
+main th.nrcdataheader {
     text-align: center;
     border-bottom: 1px solid #ddd !important;
     background-color: #eaf7fb;
@@ -134,7 +135,7 @@
     word-wrap: break-word;
 }
 
-#contentDiv th.nrctotalheader {
+main th.nrctotalheader {
     text-align: center;
     border-bottom: 1px solid #ddd !important;
     background-color: #eee;
@@ -145,23 +146,27 @@
     padding-right: 10px;
 }
 
-#contentDiv .panel {
+main .panel {
     margin-bottom: 7px;
 }
 
-#contentDiv .panel-body {
+main .panel-body {
     padding-top: 0;
     padding-left: 8px;
     padding-right: 8px;
     padding-bottom: 4px;
 }
 
-#contentDiv .panel-default > .panel-heading {
-    background-color: #3c3c3c !important;
-    border-color: #3c3c3c;
-    padding: 7px;
-    margin-bottom: 5px;
+main .panel-default > .panel-heading {
+    background-color: #404b5a;
+    border-color: #404b5a;
+    padding: 16px;
+    color: white;
     cursor: pointer;
+}
+
+main .panel-default > .panel-heading h5 {
+    margin: 0;
 }
 
 .ui-state-active a,
@@ -175,23 +180,27 @@
     background-color: #2f3867;
 }
 
-#contentDiv a.nrc-panel-title {
+main a.nrc-panel-title {
     color: white;
     cursor: pointer;
 }
 
-#contentDiv .accordion-toggle:after {
+main .accordion-toggle:after {
     font-family: FontAwesome;
     content: "\f077";
     float: right;
     color: white !important;
 }
 
-#contentDiv .panel-heading.collapsed .accordion-toggle:after {
+main .panel-heading.collapsed .accordion-toggle:after {
     content: "\f078";
 }
 
-#contentDiv .sectionTable {
+main .panel-collapse.collapsed {
+    display: none;
+}
+
+main .sectionTable {
     margin-bottom: 0px !important;
     margin-top: 5px;
 }
@@ -215,3 +224,27 @@
     border-bottom: 1px solid #cad5e5;
     min-height: 28px;
 }
+
+#tabs .tab-links li {
+    padding: 16px 16px 11px;
+    font-size: 14px;
+    border-bottom: 1px solid rgb(213, 221, 229);
+    color: rgb(108, 119, 135);
+    cursor: pointer;
+}
+
+#tabs .tab-links li:hover {
+    border-bottom: 3px solid #6C7787;
+    color: rgb(33, 41, 52);
+}
+
+#tabs .tab-links li.ui-tabs-active {
+    border-bottom: 6px solid #1264be;
+    color: rgb(13, 71, 161);
+}
+
+ul.list-unstyled{
+    list-style-type: none;
+    display: flex
+}
+
