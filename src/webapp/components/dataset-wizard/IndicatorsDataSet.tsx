@@ -1,7 +1,15 @@
 import React from "react";
 import styled from "styled-components";
 import { Alert, ToggleButtonGroup, ToggleButton } from "@material-ui/lab";
-import { Button, Divider, Grid, useMediaQuery } from "@material-ui/core";
+import {
+    Box,
+    Button,
+    Checkbox,
+    Divider,
+    FormControlLabel,
+    Grid,
+    useMediaQuery,
+} from "@material-ui/core";
 import {
     ObjectsTable,
     SearchBox,
@@ -290,6 +298,9 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
                         selection={dataSet.indicators.map(indicator => ({ id: indicator.id }))}
                         onChange={validateIndicators}
                         sorting={sorting}
+                        globalActionComponents={
+                            <SectionConfig dataSet={dataSet} onChange={onChange} />
+                        }
                     />
                 </Grid>
             </Grid>
@@ -344,6 +355,61 @@ export const FilterTable = React.memo(
                     </ToggleButtonGroup>
                 </section>
             </>
+        );
+    }
+);
+
+const SectionConfig = React.memo(
+    (props: { dataSet: DataSet; onChange: (dataSet: DataSet) => void }) => {
+        const { dataSet, onChange } = props;
+        return (
+            <SectionConfigContainer>
+                <Divider />
+                <FormControlLabel
+                    control={
+                        <CheckboxSectionConfig
+                            checked={dataSet.sectionConfig.renderAsTabs}
+                            onChange={event =>
+                                onChange(
+                                    dataSet.setSectionConfig("renderAsTabs", event.target.checked)
+                                )
+                            }
+                        />
+                    }
+                    label={i18n.t("Group data element in sections")}
+                />
+                <Divider />
+                <FormControlLabel
+                    control={
+                        <CheckboxSectionConfig
+                            checked={dataSet.sectionConfig.showRowTotals}
+                            onChange={event =>
+                                onChange(
+                                    dataSet.setSectionConfig("showRowTotals", event.target.checked)
+                                )
+                            }
+                        />
+                    }
+                    label={i18n.t("Show row totals")}
+                />
+
+                <FormControlLabel
+                    control={
+                        <CheckboxSectionConfig
+                            checked={dataSet.sectionConfig.showColumnTotals}
+                            onChange={event =>
+                                onChange(
+                                    dataSet.setSectionConfig(
+                                        "showColumnTotals",
+                                        event.target.checked
+                                    )
+                                )
+                            }
+                        />
+                    }
+                    label={i18n.t("Show column totals")}
+                />
+            </SectionConfigContainer>
         );
     }
 );
@@ -617,4 +683,18 @@ const ToggleButtonStyled = styled(ToggleButton)`
 
 const SuggestCompanionContainer = styled.div`
     padding: 0.5em !important;
+`;
+
+const SectionConfigContainer = styled(Box)`
+    padding-block-start: 0.5em;
+    padding-block-end: 0;
+    padding-inline: 1.5em;
+    display: flex;
+    flex-direction: column;
+    min-width: 270px;
+`;
+
+const CheckboxSectionConfig = styled(Checkbox)`
+    margin-block: 8px !important;
+    margin-inline: 0 !important;
 `;

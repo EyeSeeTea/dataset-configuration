@@ -24,7 +24,7 @@ import { Maybe } from "$/utils/ts-utils";
 import { Id } from "$/domain/entities/Ref";
 import _ from "$/domain/entities/generic/Collection";
 import { Indicator } from "$/domain/entities/Indicator";
-import { Dropdown, DropdownItem } from "$/webapp/components/dropdown/Dropdown";
+import { Dropdown, DropdownItem } from "@eyeseetea/d2-ui-components";
 
 type IndicatorMatchingStepProps = {
     dataSet: DataSet;
