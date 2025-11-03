@@ -198,7 +198,7 @@
 
             <ul class="list-unstyled">
                 <li class="panel panel-default">
-                    <div class="panel-heading" data-target="#${identifier}" data-toggle="collapse" role="button" aria-expanded="true">
+                    <div class="panel-heading" data-target="#${identifier}" data-toggle="collapse">
                         <h5 class="panel-title accordion-toggle">
                             <a class="nrc-panel-title">
                                 #if($theme == "null") Default #else $theme #end
@@ -227,7 +227,6 @@
                             #end
 
                             #renderIndicators($items)
-                        #end
                         #end
                     </div>
                 </li>
