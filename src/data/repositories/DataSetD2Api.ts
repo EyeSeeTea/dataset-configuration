@@ -275,6 +275,11 @@ export class DataSetD2Api {
             openFuturePeriods: d2DataSet.openFuturePeriods,
             disabledFields: disabledFields,
             indicatorMatching: this.buildIndicatorMatchingFromAttributes(d2DataSet, attributes),
+            sectionConfig: {
+                renderAsTabs: d2DataSet.renderAsTabs,
+                showColumnTotals: Boolean(d2DataSet.sections?.[0]?.showColumnTotals),
+                showRowTotals: Boolean(d2DataSet.sections?.[0]?.showRowTotals),
+            },
         });
     }
 
@@ -464,6 +469,8 @@ export const dataSetFields = {
         name: true,
         displayName: true,
         code: true,
+        showColumnTotals: true,
+        showRowTotals: true,
         greyedFields: {
             dataElement: true,
             categoryOptionCombo: true,
@@ -482,6 +489,7 @@ export const dataSetFields = {
         },
         categoryCombo: categoryComboFields,
     },
+    renderAsTabs: true,
 } as const;
 
 export const dataSetFieldsWithOrgUnits = {
