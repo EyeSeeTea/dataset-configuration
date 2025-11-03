@@ -221,10 +221,10 @@
                             #elseif ($section.type == "outcome")
                                 #set( $dataElementsByCategoryCombo = $helpers.getDataElementsByCategoryComboForIndicators($items) )
 
-                            #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
-                                #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
-                                #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
-                            #end
+                                #foreach( $categoryComboId in $dataElementsByCategoryCombo.keys() )
+                                    #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
+                                    #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
+                                #end
 
                             #renderIndicators($items)
                         #end
