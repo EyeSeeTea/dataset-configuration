@@ -248,9 +248,9 @@
         <ul class="list-unstyled tab-links">
             #foreach( $section in $sections )
                 #if( $section.name )
-                    <li><a data-section-id="#${section.id}">$encoder.htmlEncode( $section.name )</a></li>
+                    <li><button data-section-id="#${section.id}">$encoder.htmlEncode( $section.name )</a></li>
                 #else
-                    <li><a data-section-id="#${section.id}">$i18n.getString("section") $velocityCount</a></li>
+                    <li><button data-section-id="#${section.id}">$i18n.getString("section") $velocityCount</a></li>
                 #end
             #end
         </ul>

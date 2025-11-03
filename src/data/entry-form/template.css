@@ -1,6 +1,4 @@
 .formSection {
-    border: 1px solid #cacaca;
-    border-radius: 3px;
     margin: 0;
     padding: 1px 4px 1px 4px;
 }
@@ -16,7 +14,7 @@
 .formSection td {
     text-align: center;
     min-width: 75px;
-    padding: 1px;
+    padding: 0px;
 }
 
 .formSection th {
@@ -91,16 +89,13 @@ main th {
 }
 
 main td {
-    padding: 2px !important;
-    height: 16px;
-    text-align: center;
-    border-style: none !important;
 }
 
 main td.nrcindicatorName {
     text-align: left;
     white-space: normal;
     max-width: 33%;
+    padding: 8px;
 }
 
 main tr.secondary td.nrcindicatorName {
@@ -112,15 +107,9 @@ main td.lastinrow {
     text-align: center;
 }
 
-main th.nrcinfoheader {
-    text-align: left;
-    border-bottom-style: hidden;
-    border-left-style: hidden;
-    border-top-style: hidden;
-    width: 100%;
-    white-space: nowrap;
-    background-color: #fff;
-    padding: 2px !important;
+main th.nrcinfoheader:first-of-type {
+    border-bottom: none !important;
+    border-top: none !important;
 }
 
 main th.nrcdataheader {
@@ -128,8 +117,8 @@ main th.nrcdataheader {
     border-bottom: 1px solid #ddd !important;
     background-color: #eaf7fb;
     white-space: nowrap;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
     padding-left: 10px;
     padding-right: 10px;
     word-wrap: break-word;
@@ -160,7 +149,7 @@ main .panel-body {
 main .panel-default > .panel-heading {
     background-color: #404b5a;
     border-color: #404b5a;
-    padding: 16px;
+    padding: 10px;
     color: white;
     cursor: pointer;
 }
@@ -183,26 +172,29 @@ main .panel-default > .panel-heading h5 {
 main a.nrc-panel-title {
     color: white;
     cursor: pointer;
+    margin-left: 8px;
 }
 
-main .accordion-toggle:after {
-    font-family: FontAwesome;
-    content: "\f077";
-    float: right;
-    color: white !important;
+main .accordion-toggle:before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'><path d='M7.646 5.646a.5.5 0 01.638-.057l.07.057 3.5 3.5a.5.5 0 01-.638.765l-.07-.057L8 6.707 4.854 9.854a.5.5 0 01-.638.057l-.07-.057a.5.5 0 01-.057-.638l.057-.07z'/></svg>") no-repeat center;
 }
 
-main .panel-heading.collapsed .accordion-toggle:after {
-    content: "\f078";
+main .panel-heading.collapsed .accordion-toggle:before {
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'><path d='M4.146 6.146a.5.5 0 01.638-.057l.07.057L8 9.293l3.146-3.147a.5.5 0 01.638-.057l.07.057a.5.5 0 01.057.638l-.057.07-3.5 3.5a.5.5 0 01-.638.057l-.07-.057-3.5-3.5a.5.5 0 010-.708z'/></svg>") no-repeat center / contain;
 }
 
 main .panel-collapse.collapsed {
-    display: none;
+    visibility: hidden;
+    height: 0px;
 }
 
 main .sectionTable {
     margin-bottom: 0px !important;
-    margin-top: 5px;
 }
 
 .page p,
@@ -226,11 +218,18 @@ main .sectionTable {
 }
 
 #tabs .tab-links li {
-    padding: 16px 16px 11px;
     font-size: 14px;
     border-bottom: 1px solid rgb(213, 221, 229);
     color: rgb(108, 119, 135);
     cursor: pointer;
+}
+
+#tabs .tab-links li button {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 16px 16px 11px;
 }
 
 #tabs .tab-links li:hover {

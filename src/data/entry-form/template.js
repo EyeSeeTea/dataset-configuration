@@ -594,7 +594,7 @@ function setIndicatorMatching(indicatorMatching_) {
             const tabsContainer = document.getElementById("tabs");
             if (!tabsContainer) return;
 
-            const tabLinks = tabsContainer.querySelectorAll("ul > li > a");
+            const tabLinks = tabsContainer.querySelectorAll("ul > li > button");
             const tabContents = tabsContainer.querySelectorAll('[id^="tab-"]');
 
             tabLinks.forEach((link, index) => {
