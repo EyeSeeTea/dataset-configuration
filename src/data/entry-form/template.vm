@@ -225,8 +225,8 @@
                                     #set( $dataElements = $dataElementsByCategoryCombo.get( $categoryComboId ) )
                                     #renderSectionTable($dataElements $categoryComboId $group $velocityCount)
                                 #end
-
-                            #renderIndicators($items)
+                                #renderIndicators($items)
+                            #end
                         #end
                     </div>
                 </li>
