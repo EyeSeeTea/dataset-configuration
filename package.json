@@ -16,7 +16,7 @@
         "@dhis2/d2-i18n-extract": "1.0.8",
         "@dhis2/d2-i18n-generate": "1.2.0",
         "@dhis2/ui": "6.12.0",
-        "@eyeseetea/d2-api": "1.21.0-beta.2",
+        "@eyeseetea/d2-api": "1.21.0-beta.3",
         "@eyeseetea/d2-ui-components": "2.12.0",
         "@material-ui/core": "4.12.4",
         "@material-ui/icons": "4.11.3",
@@ -114,7 +114,8 @@
         "prepare": "husky install",
         "migrate-period-dates": "npx ts-node src/scripts/migrate-dataset-period-dates",
         "migrate-ds-project": "npx ts-node src/scripts/migrate-dataset-project.ts",
-        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
+        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts",
+        "resave-datasets": "node src/scripts/resave-datasets-runner.js"
     },
     "manifest.webapp": {
         "name": "New DC App",
