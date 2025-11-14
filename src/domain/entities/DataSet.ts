@@ -282,6 +282,11 @@ export class DataSet extends Struct<DataSetAttrs>() {
                 errors: validateOrgUnits(this.orgUnits),
                 value: this.orgUnits,
             },
+            {
+                property: "project" as const,
+                errors: validateRequired(this.project),
+                value: this.project,
+            },
         ].filter(validation => validation.errors.length > 0);
     }
 
