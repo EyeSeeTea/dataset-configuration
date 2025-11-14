@@ -384,6 +384,9 @@ function setIndicatorMatching(indicatorMatching_) {
             targetElements.forEach(targetElement => {
                 const cocId = extractCocId(targetElement.id, target);
 
+                targetElement.disabled = true;
+                targetElement.setAttribute("data-indicator-match-target", "true");
+
                 const sourceElements = sourceIds
                     .map(sourceId => document.getElementById(`${sourceId}-${cocId}`))
                     .filter(el => el !== null);
