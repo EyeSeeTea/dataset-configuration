@@ -372,7 +372,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             disabledFields: [],
             indicatorMatching: undefined,
             sectionConfig: {
-                renderAsTabs: false,
+                renderAsTabs: true,
                 showColumnTotals: false,
                 showRowTotals: false,
             },
