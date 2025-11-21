@@ -38,6 +38,14 @@ export class ConfigD2Repository implements ConfigRepository {
                     periodLastYearEndDate: apiConfig.periodLastYearEndDate,
                     notificationUserGroup: apiConfig.userGroups.adminNotification,
                     periodLastYearUnits: apiConfig.periodLastYearUnits || DEFAULT_UNIT_DATE,
+                    outcomeEndDateDay: apiConfig.outcomeEndDateDay,
+                    outcomeEndDateMonth: apiConfig.outcomeEndDateMonth,
+                    outcomeLastYearUnits: apiConfig.outcomeLastYearUnits,
+                    outcomeLastYearValue: apiConfig.outcomeLastYearValue,
+                    outputEndDateDay: apiConfig.outputEndDateDay,
+                    outputEndDateMonth: apiConfig.outputEndDateMonth,
+                    outputLastYearUnits: apiConfig.outputLastYearUnits,
+                    outputLastYearValue: apiConfig.outputLastYearValue,
                 };
             });
         });

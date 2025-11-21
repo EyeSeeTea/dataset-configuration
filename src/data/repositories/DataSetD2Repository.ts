@@ -728,7 +728,10 @@ export class DataSetD2Repository implements DataSetRepository {
             value: dataSet.project?.id,
         };
         const createdByAttribute = { attribute: { id: attributes.createdByApp.id }, value: "true" };
-        const { inputDate, periodDate } = this.parsePeriodDate(dataSet, attributes);
+        const { inputDate, periodDate, outputDate, outcomeDate } = this.parsePeriodDate(
+            dataSet,
+            attributes
+        );
         const indicatorMatching = this.parseIndicatorMatching(dataSet, attributes);
 
         const attributesToSave = [
@@ -736,6 +739,8 @@ export class DataSetD2Repository implements DataSetRepository {
             createdByAttribute,
             inputDate,
             periodDate,
+            outputDate,
+            outcomeDate,
             indicatorMatching,
         ].filter(attribute => attribute.value);
 
@@ -749,7 +754,7 @@ export class DataSetD2Repository implements DataSetRepository {
 
     private buildDataInputPeriod(dataSet: DataSetToSave): D2DataSetToSave["dataInputPeriods"] {
         return (
-            dataSet.periodDate?.dataInputPeriods.map(p => ({
+            dataSet.periodDate?.inputPeriodsFromOutcomeOutputPeriods.map(p => ({
                 closingDate: p.endDate,
                 openingDate: p.startDate,
                 period: {
@@ -762,12 +767,33 @@ export class DataSetD2Repository implements DataSetRepository {
     private parsePeriodDate(
         dataSetToSave: DataSetToSave,
         attributes: D2Config["attributes"]
-    ): { inputDate: D2Attribute; periodDate: D2Attribute } {
+    ): {
+        inputDate: D2Attribute;
+        periodDate: D2Attribute;
+        outputDate: D2Attribute;
+        outcomeDate: D2Attribute;
+    } {
+        const buildShortFormatPeriod = (period: {
+            year: number;
+            startDate: string;
+            endDate: string;
+        }) => {
+            return `${period.year}=${period.startDate}-${period.endDate}`;
+        };
+
         const periods = dataSetToSave.periodDate
             ? dataSetToSave.periodDate.periodsShortFormat.map(period => {
-                  return `${period.year}=${period.startDate}-${period.endDate}`;
+                  return buildShortFormatPeriod(period);
               })
             : [];
+
+        const outputPeriods = dataSetToSave.periodDate?.periodsOutputShortFormat.map(period => {
+            return buildShortFormatPeriod(period);
+        });
+
+        const outcomePeriods = dataSetToSave.periodDate?.periodsOutcomeShortFormat.map(period => {
+            return buildShortFormatPeriod(period);
+        });
 
         return {
             inputDate: {
@@ -779,6 +805,14 @@ export class DataSetD2Repository implements DataSetRepository {
             periodDate: {
                 attribute: { id: attributes.periodDates.id },
                 value: periods.join(","),
+            },
+            outputDate: {
+                attribute: { id: attributes.outputDates.id },
+                value: outputPeriods ? outputPeriods.join(",") : "",
+            },
+            outcomeDate: {
+                attribute: { id: attributes.outcomeDates.id },
+                value: outcomePeriods ? outcomePeriods.join(",") : "",
             },
         };
     }

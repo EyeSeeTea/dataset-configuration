@@ -1,5 +1,5 @@
 import { apiToFuture } from "$/data/api-futures";
-import { AppSettings } from "$/domain/entities/AppSettings";
+import { AppSettings, EndDateConfig, LastYearEndDateConfig } from "$/domain/entities/AppSettings";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2Api, DataStore } from "$/types/d2-api";
 import { Maybe } from "$/utils/ts-utils";
@@ -47,6 +47,26 @@ export class D2ApiAppSettings {
                 statusIndicatorId: response.indicatorGroupSetStatusId,
                 indicatorHideField: response.hideInDataSetAppAttributeId,
                 userGroupId: response.exclusionRuleCoreUserGroupId,
+                outcomeEndDateDay:
+                    response.outcomeEndDate?.day ?? AppSettings.DEFAULT_OUTCOME_END_DATE_DAY,
+                outcomeEndDateMonth:
+                    response.outcomeEndDate?.month ?? AppSettings.DEFAULT_OUTCOME_END_DATE_MONTH,
+                outcomeLastYearUnits:
+                    response.outcomeLastYearEndDate?.units ??
+                    AppSettings.DEFAULT_OUTCOME_LAST_YEAR_UNITS,
+                outcomeLastYearValue:
+                    response.outcomeLastYearEndDate?.value ??
+                    AppSettings.DEFAULT_OUTCOME_LAST_YEAR_VALUE,
+                outputEndDateDay:
+                    response.outputEndDate?.day ?? AppSettings.DEFAULT_OUTPUT_END_DATE_DAY,
+                outputEndDateMonth:
+                    response.outputEndDate?.month ?? AppSettings.DEFAULT_OUTPUT_END_DATE_MONTH,
+                outputLastYearUnits:
+                    response.outputLastYearEndDate?.units ??
+                    AppSettings.DEFAULT_OUTPUT_LAST_YEAR_UNITS,
+                outputLastYearValue:
+                    response.outputLastYearEndDate?.value ??
+                    AppSettings.DEFAULT_OUTPUT_LAST_YEAR_VALUE,
             });
         });
     }
@@ -288,6 +308,22 @@ export class D2ApiAppSettings {
                 value: appSettings.periodLastYearEndDate,
             },
             dataSetPeriodDateAttribute: appSettings.periodDateField,
+            outcomeEndDate: {
+                day: appSettings.outcomeEndDateDay,
+                month: appSettings.outcomeEndDateMonth,
+            },
+            outcomeLastYearEndDate: {
+                units: appSettings.outcomeLastYearUnits,
+                value: appSettings.outcomeLastYearValue,
+            },
+            outputEndDate: {
+                day: appSettings.outputEndDateDay,
+                month: appSettings.outputEndDateMonth,
+            },
+            outputLastYearEndDate: {
+                units: appSettings.outputLastYearUnits,
+                value: appSettings.outputLastYearValue,
+            },
         };
     }
 }
@@ -317,4 +353,8 @@ type D2ApiSettingsAttrs = {
     periodEndDate: Maybe<{ day: number; month: number }>;
     periodLastYearEndDate: Maybe<{ units: UnitDate; value: number }>;
     dataSetPeriodDateAttribute: string;
+    outcomeEndDate: Maybe<EndDateConfig>;
+    outcomeLastYearEndDate: Maybe<LastYearEndDateConfig>;
+    outputEndDate: Maybe<EndDateConfig>;
+    outputLastYearEndDate: Maybe<LastYearEndDateConfig>;
 };

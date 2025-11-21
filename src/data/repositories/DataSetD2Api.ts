@@ -294,12 +294,22 @@ export class DataSetD2Api {
             attribute => attribute.attribute.id === attributes.periodDates.id
         );
 
+        const outputDate = d2DataSet.attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outputDates.id
+        );
+
+        const outcomeDate = d2DataSet.attributeValues.find(
+            attribute => attribute.attribute.id === attributes.outcomeDates.id
+        );
+
         const [startDate, endDate] = getStartEndDate(inputDate?.value);
 
         return DatePeriod.create({
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
             periods: parsePeriodDateAttribute(periodDate?.value),
+            output: parsePeriodDateAttribute(outputDate?.value),
+            outcome: parsePeriodDateAttribute(outcomeDate?.value),
         });
     }
 

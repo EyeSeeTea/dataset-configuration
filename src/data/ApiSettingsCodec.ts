@@ -33,4 +33,8 @@ export const D2ApiSettingsCodec = Codec.interface({
     periodEndDate: optionalPeriod,
     periodLastYearEndDate: optionalPeriodLastYear,
     dataSetPeriodDateAttribute: string,
+    outcomeEndDate: optionalPeriod,
+    outcomeLastYearEndDate: optionalPeriodLastYear,
+    outputEndDate: optionalPeriod,
+    outputLastYearEndDate: optionalPeriodLastYear,
 });

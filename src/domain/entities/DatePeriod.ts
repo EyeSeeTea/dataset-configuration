@@ -12,7 +12,13 @@ export type YearlyPeriodDetailsAttrs = {
     endDate: string;
 };
 
-type DatePeriodAttrs = { startDate: string; endDate: string; periods: YearlyPeriodDetailsAttrs[] };
+type DatePeriodAttrs = {
+    startDate: string;
+    endDate: string;
+    periods: YearlyPeriodDetailsAttrs[];
+    output: YearlyPeriodDetailsAttrs[];
+    outcome: YearlyPeriodDetailsAttrs[];
+};
 
 export class DatePeriod extends Struct<DatePeriodAttrs>() {
     get years() {
@@ -33,6 +39,70 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
             startDate: this.buildShortFormat(period.startDate),
             endDate: this.buildShortFormat(period.endDate),
         }));
+    }
+
+    get periodsOutputShortFormat() {
+        return this.buildShortFormatByPeriodType("output");
+    }
+
+    get periodsOutcomeShortFormat() {
+        return this.buildShortFormatByPeriodType("outcome");
+    }
+
+    private buildShortFormatByPeriodType(periodType: "output" | "outcome") {
+        return this[periodType].map(period => ({
+            ...period,
+            startDate: this.buildShortFormat(period.startDate),
+            endDate: this.buildShortFormat(period.endDate),
+        }));
+    }
+
+    get inputPeriodsFromOutcomeOutputPeriods(): MonthlyPeriodDetails[] {
+        const { outcome, output, startDate, endDate } = this;
+
+        const { minStartDate: minOutputDate, maxEndDate: maxOutputDate } =
+            this.getMinMaxDatesFromPeriodDetails(output);
+        const { minStartDate: minOutcomeDate, maxEndDate: maxOutcomeDate } =
+            this.getMinMaxDatesFromPeriodDetails(outcome);
+
+        const allStartDates = [startDate, minOutputDate, minOutcomeDate];
+        const allEndDates = [endDate, maxOutputDate, maxOutcomeDate];
+        const startPeriodDate = new Date(
+            Math.min(...allStartDates.map(date => new Date(date).getTime()))
+        );
+        const endPeriodDate = new Date(
+            Math.max(...allEndDates.map(date => new Date(date).getTime()))
+        );
+
+        const startYear = startPeriodDate.getFullYear();
+        const startMonth = startPeriodDate.getMonth();
+        const totalMonths = Math.round(getDiff(startPeriodDate, endPeriodDate, "month"));
+
+        return Collection.range(0, totalMonths + 1)
+            .map(monthOffset => {
+                const targetYear = startYear + Math.floor((startMonth + monthOffset) / 12);
+                const targetMonth = ((startMonth + monthOffset) % 12) + 1;
+
+                return MonthlyPeriodDetails.create({
+                    year: targetYear,
+                    month: targetMonth,
+                    startDate: toISODateWithoutTimezone(startPeriodDate),
+                    endDate: toISODateWithoutTimezone(endPeriodDate),
+                });
+            })
+            .value();
+    }
+
+    private getMinMaxDatesFromPeriodDetails(periods: YearlyPeriodDetailsAttrs[]) {
+        const allStartDates = periods.map(period => period.startDate);
+        const minStartDate = new Date(
+            Math.min(...allStartDates.map(date => new Date(date).getTime()))
+        );
+
+        const allEndDates = periods.map(period => period.endDate);
+        const maxEndDate = new Date(Math.max(...allEndDates.map(date => new Date(date).getTime())));
+
+        return { minStartDate: minStartDate, maxEndDate: maxEndDate };
     }
 
     get dataInputPeriods(): MonthlyPeriodDetails[] {
@@ -80,36 +150,100 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
             .value();
     }
 
-    generatePeriods(config: DataPeriodConfig): DatePeriod["periods"] {
-        const { startDate, endDate, periods, years } = this;
+    generatePeriods(options: {
+        config: DataPeriodConfig;
+        outcomeSameYear: boolean;
+        outputSameYear: boolean;
+    }): {
+        periods: YearlyPeriodDetailsAttrs[];
+        outcome: YearlyPeriodDetailsAttrs[];
+        output: YearlyPeriodDetailsAttrs[];
+    } {
+        const { config, outcomeSameYear, outputSameYear } = options;
+        const { startDate, endDate, outcome, output, periods, years } = this;
 
-        const month = config.periodEndDateMonth;
-        const day = config.periodEndDateDay;
-        const units = config.periodLastYearUnits;
-        const unitValue = config.periodLastYearEndDate;
         const lastYear = years[years.length - 1];
 
-        return years.map(year => {
-            const currentPeriod = periods.find(period => period.year === year);
+        const generatePeriodsByYear = (periodType: "outcome" | "output") => {
+            const { month, day, units, unitValue } = this.getConfigValuesForType(
+                periodType,
+                config
+            );
+            const sameYear = periodType === "outcome" ? outcomeSameYear : outputSameYear;
+            const currentPeriods = periodType === "outcome" ? outcome : output;
 
-            const defaultEndDate = new Date(year + 1, month - 1, day, 0, 0, 0).toISOString();
+            if (sameYear) return this.buildSameYearPeriods(years, currentPeriods);
 
-            const lastYearEndDate =
-                units && unitValue ? addToDate(endDate ?? "", units, unitValue) : endDate;
+            return years.map(year => {
+                const currentPeriod = currentPeriods.find(period => period.year === year);
 
-            const endM = year === lastYear ? lastYearEndDate : defaultEndDate;
+                const defaultEndDate = new Date(year + 1, month - 1, day, 0, 0, 0).toISOString();
 
-            return {
-                year,
-                startDate: currentPeriod?.startDate ?? startDate ?? "",
-                endDate: currentPeriod?.endDate ?? endM ?? "",
-            };
-        });
+                const lastYearEndDate =
+                    units && unitValue ? addToDate(endDate ?? "", units, unitValue) : endDate;
+
+                const endM = year === lastYear ? lastYearEndDate : defaultEndDate;
+
+                return {
+                    year,
+                    startDate: currentPeriod?.startDate ?? startDate ?? "",
+                    endDate: currentPeriod?.endDate ?? endM ?? "",
+                };
+            });
+        };
+
+        const outcomePeriods = generatePeriodsByYear("outcome");
+        const outputPeriods = generatePeriodsByYear("output");
+
+        return { periods, outcome: outcomePeriods, output: outputPeriods };
+    }
+
+    private buildSameYearPeriods(
+        years: number[],
+        periods: YearlyPeriodDetailsAttrs[]
+    ): YearlyPeriodDetailsAttrs[] {
+        return _(years)
+            .compactMap(year => {
+                const currentPeriod = periods[0];
+                if (!currentPeriod) return undefined;
+
+                return {
+                    year: year,
+                    startDate: currentPeriod.startDate,
+                    endDate: currentPeriod.endDate,
+                };
+            })
+            .value();
+    }
+
+    private getConfigValuesForType(periodType: "outcome" | "output", config: DataPeriodConfig) {
+        switch (periodType) {
+            case "outcome":
+                return {
+                    month: config.outcomeEndDateMonth,
+                    day: config.outcomeEndDateDay,
+                    units: config.outcomeLastYearUnits,
+                    unitValue: config.outcomeLastYearValue,
+                };
+            case "output":
+                return {
+                    month: config.outputEndDateMonth,
+                    day: config.outputEndDateDay,
+                    units: config.outputLastYearUnits,
+                    unitValue: config.outputLastYearValue,
+                };
+            default:
+                throw new Error(`Unknown period type: ${periodType}`);
+        }
     }
 
     initializePeriods(config: DataPeriodConfig): DatePeriod {
-        const periods = this.generatePeriods(config);
-        return this.updatedPeriods(periods);
+        const periods = this.generatePeriods({
+            config,
+            outcomeSameYear: false,
+            outputSameYear: false,
+        });
+        return this.updatedPeriods(periods.periods, periods.outcome, periods.output);
     }
 
     private buildShortFormat(date: string) {
@@ -134,8 +268,12 @@ export class DatePeriod extends Struct<DatePeriodAttrs>() {
         return this._update({ [fieldName]: value });
     }
 
-    updatedPeriods(periods: YearlyPeriodDetailsAttrs[]): DatePeriod {
-        return this._update({ periods });
+    updatedPeriods(
+        periods: YearlyPeriodDetailsAttrs[],
+        outcome: YearlyPeriodDetailsAttrs[],
+        output: YearlyPeriodDetailsAttrs[]
+    ): DatePeriod {
+        return this._update({ periods, outcome, output });
     }
 
     static getFuturePeriods(endDateStr: Maybe<string>): number {
@@ -159,5 +297,16 @@ export class MonthlyPeriodDetails extends Struct<MonthlyPeriodDetailsAttrs>() {
 
 type DataPeriodConfig = Pick<
     Config,
-    "periodEndDateMonth" | "periodEndDateDay" | "periodLastYearUnits" | "periodLastYearEndDate"
+    | "periodEndDateMonth"
+    | "periodEndDateDay"
+    | "periodLastYearUnits"
+    | "periodLastYearEndDate"
+    | "outcomeEndDateMonth"
+    | "outcomeEndDateDay"
+    | "outcomeLastYearUnits"
+    | "outcomeLastYearValue"
+    | "outputEndDateMonth"
+    | "outputEndDateDay"
+    | "outputLastYearUnits"
+    | "outputLastYearValue"
 >;

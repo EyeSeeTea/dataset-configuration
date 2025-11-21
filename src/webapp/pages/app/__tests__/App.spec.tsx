@@ -14,6 +14,17 @@ describe("App", () => {
     });
 });
 
+export const outcomeOutputTestData = {
+    outcomeEndDateDay: 1,
+    outcomeEndDateMonth: 5,
+    outcomeLastYearUnits: "month",
+    outcomeLastYearValue: 0,
+    outputEndDateDay: 1,
+    outputEndDateMonth: 4,
+    outputLastYearUnits: "month",
+    outputLastYearValue: 0,
+} as const;
+
 function getView() {
     const { compositionRoot } = getTestContext();
     const baseUrl = "http://localhost:8080";
@@ -32,6 +43,7 @@ function getView() {
             code: "GL_admin",
             name: "GL_GlobalAdministrator",
         },
+        ...outcomeOutputTestData,
     };
     return render(
         <Provider config={{ baseUrl: "http://localhost:8080", apiVersion: 30 }}>

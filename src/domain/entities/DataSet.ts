@@ -86,6 +86,8 @@ export class DataSet extends Struct<DataSetAttrs>() {
                       startDate: project.startDate,
                       endDate: project.endDate,
                       periods: [],
+                      output: [],
+                      outcome: [],
                   }).initializePeriods(config)
                 : undefined;
 
@@ -96,7 +98,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             name,
             orgUnits: orgsUnits,
             periodDate,
-            openFuturePeriods: DatePeriod.getFuturePeriods(periodDate?.endDate),
+            openFuturePeriods: DatePeriod.getFuturePeriods(project?.endDate),
         });
     }
 
