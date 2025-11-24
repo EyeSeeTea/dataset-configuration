@@ -102,6 +102,16 @@ tr:has(.MuiAlert-message) {
     max-width: none;
 }
 
+.datepicker > .Mui-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.datepicker input.Mui-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 /* 
   Workaround to change the background color for selected items in dropdowns
   because d2-ui-components uses its own theme provider.

@@ -184,39 +184,81 @@ const GeneralForm = (props: GeneralFormProps) => {
                         className="dropdown dropdown-resetmargins"
                         hideEmpty
                         items={monthsItems}
-                        label={i18n.t("Default Period End Date - Month")}
-                        onChange={value => updateProject(Number(value), "periodEndDateMonth")}
-                        value={String(appSettings.periodEndDateMonth)}
+                        label={i18n.t("Output Period End Date - Month")}
+                        onChange={value => updateProject(Number(value), "outputEndDateMonth")}
+                        value={String(appSettings.outputEndDateMonth)}
                     />
                 </Box>
                 <Dropdown
                     hideEmpty
                     items={daysPerMonthYear}
-                    onChange={value => updateProject(Number(value), "periodEndDateDay")}
+                    onChange={value => updateProject(Number(value), "outputEndDateDay")}
                     label={i18n.t("Day")}
-                    value={String(appSettings.periodEndDateDay)}
+                    value={String(appSettings.outputEndDateDay)}
                 />
             </Box>
             <Box display="flex">
                 <Box flex="1">
                     <TextField
                         fullWidth
-                        label={i18n.t("Default Time Period End Date (Last year) - Value")}
+                        label={i18n.t("Output Time Period End Date (Last year) - Value")}
                         type="number"
-                        value={appSettings.periodLastYearEndDate}
+                        value={appSettings.outputLastYearValue}
                         onChange={event =>
-                            updateProject(Number(event.target.value), "periodLastYearEndDate")
+                            updateProject(Number(event.target.value), "outputLastYearValue")
                         }
                     />
                 </Box>
                 <Dropdown
                     hideEmpty
                     items={unitsItems}
-                    onChange={value => updateProject(value, "periodLastYearUnits")}
+                    onChange={value => updateProject(value, "outputLastYearUnits")}
                     label={i18n.t("Units")}
-                    value={appSettings.periodLastYearUnits}
+                    value={appSettings.outputLastYearUnits}
                 />
             </Box>
+
+            {/* Outcome */}
+            <Box display="flex">
+                <Box flex="1">
+                    <Dropdown
+                        className="dropdown dropdown-resetmargins"
+                        hideEmpty
+                        items={monthsItems}
+                        label={i18n.t("Outcome Period End Date - Month")}
+                        onChange={value => updateProject(Number(value), "outcomeEndDateMonth")}
+                        value={String(appSettings.outcomeEndDateMonth)}
+                    />
+                </Box>
+                <Dropdown
+                    hideEmpty
+                    items={daysPerMonthYear}
+                    onChange={value => updateProject(Number(value), "outcomeEndDateDay")}
+                    label={i18n.t("Day")}
+                    value={String(appSettings.outcomeEndDateDay)}
+                />
+            </Box>
+            <Box display="flex">
+                <Box flex="1">
+                    <TextField
+                        fullWidth
+                        label={i18n.t("Outcome Time Period End Date (Last year) - Value")}
+                        type="number"
+                        value={appSettings.outcomeLastYearValue}
+                        onChange={event =>
+                            updateProject(Number(event.target.value), "outcomeLastYearValue")
+                        }
+                    />
+                </Box>
+                <Dropdown
+                    hideEmpty
+                    items={unitsItems}
+                    onChange={value => updateProject(value, "outcomeLastYearUnits")}
+                    label={i18n.t("Units")}
+                    value={appSettings.outcomeLastYearUnits}
+                />
+            </Box>
+
             <Dropdown
                 items={settingsData.countriesLevel}
                 onChange={value => updateProject(value, "countryLevelId")}

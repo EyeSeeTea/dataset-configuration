@@ -27,11 +27,34 @@ export type AppSettingsAttr = {
     statusIndicatorId: Maybe<Id>;
     indicatorHideField: Maybe<Id>;
     userGroupId: Maybe<Id>;
+    // outcomeEndDate: EndDateConfig;
+    // outcomeLastYearEndDate: LastYearEndDateConfig;
+    // outputEndDate: EndDateConfig;
+    // outputLastYearEndDate: LastYearEndDateConfig;
+    outcomeEndDateDay: number;
+    outcomeEndDateMonth: number;
+    outcomeLastYearUnits: UnitDate;
+    outcomeLastYearValue: number;
+
+    outputEndDateDay: number;
+    outputEndDateMonth: number;
+    outputLastYearUnits: UnitDate;
+    outputLastYearValue: number;
 };
 
 export class AppSettings extends Struct<AppSettingsAttr>() {
     static DEFAULT_PERIOD_END_DATE_MONTH = 4;
     static DEFAULT_PERIOD_END_DATE_DAY = 1;
+
+    static DEFAULT_OUTCOME_END_DATE_DAY = 1;
+    static DEFAULT_OUTCOME_END_DATE_MONTH = 5;
+    static DEFAULT_OUTCOME_LAST_YEAR_UNITS: UnitDate = DEFAULT_UNIT_DATE;
+    static DEFAULT_OUTCOME_LAST_YEAR_VALUE = 0;
+
+    static DEFAULT_OUTPUT_END_DATE_DAY = 1;
+    static DEFAULT_OUTPUT_END_DATE_MONTH = 4;
+    static DEFAULT_OUTPUT_LAST_YEAR_UNITS: UnitDate = DEFAULT_UNIT_DATE;
+    static DEFAULT_OUTPUT_LAST_YEAR_VALUE = 0;
 
     static initial(): AppSettings {
         return this.create({
@@ -58,6 +81,19 @@ export class AppSettings extends Struct<AppSettingsAttr>() {
             statusIndicatorId: undefined,
             indicatorHideField: undefined,
             userGroupId: undefined,
+
+            outcomeEndDateDay: this.DEFAULT_OUTCOME_END_DATE_DAY,
+            outcomeEndDateMonth: this.DEFAULT_OUTCOME_END_DATE_MONTH,
+            outcomeLastYearUnits: this.DEFAULT_OUTCOME_LAST_YEAR_UNITS,
+            outcomeLastYearValue: this.DEFAULT_OUTCOME_LAST_YEAR_VALUE,
+
+            outputEndDateDay: this.DEFAULT_OUTPUT_END_DATE_DAY,
+            outputEndDateMonth: this.DEFAULT_OUTPUT_END_DATE_MONTH,
+            outputLastYearUnits: this.DEFAULT_OUTPUT_LAST_YEAR_UNITS,
+            outputLastYearValue: this.DEFAULT_OUTPUT_LAST_YEAR_VALUE,
         });
     }
 }
+
+export type EndDateConfig = { day: number; month: number };
+export type LastYearEndDateConfig = { units: UnitDate; value: number };

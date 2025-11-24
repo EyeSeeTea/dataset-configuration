@@ -15,6 +15,9 @@ import { convertAttributeValueToDate } from "$/data/utils";
 import { D2Attribute, D2DataSetOwner } from "$/data/repositories/DataSetD2Repository";
 import { getStartEndDate, parsePeriodDateAttribute } from "$/data/period-dates";
 
+// This implementation was created to migrate from output/outcome dates to the new period dates attribute.
+// Since output/outcome dates are back maybe we can consider removing this implementation later.
+
 export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepository {
     private d2ApiConfig: D2ApiConfig;
 
@@ -189,6 +192,8 @@ export class DataSetPeriodDateD2Repository implements DataSetPeriodDateRepositor
             startDate: startDate ? convertAttributeValueToDate(startDate) : "",
             endDate: endDate ? convertAttributeValueToDate(endDate) : "",
             periods: periodDate ? parsePeriodDateAttribute(periodDate?.value) : [],
+            outcome: [],
+            output: [],
         });
     }
 }

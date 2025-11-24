@@ -15,4 +15,14 @@ export type Config = {
     periodLastYearEndDate: number;
     notificationUserGroup: Maybe<UserGroup>;
     periodLastYearUnits: UnitDate;
+
+    outcomeEndDateDay: number;
+    outcomeEndDateMonth: number;
+    outcomeLastYearUnits: UnitDate;
+    outcomeLastYearValue: number;
+
+    outputEndDateDay: number;
+    outputEndDateMonth: number;
+    outputLastYearUnits: UnitDate;
+    outputLastYearValue: number;
 };

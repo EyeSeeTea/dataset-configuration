@@ -6,6 +6,7 @@ import { getTestCompositionRoot } from "$/CompositionRoot";
 import { createAdminUser } from "$/domain/entities/__tests__/userFixtures";
 import { D2Api } from "$/types/d2-api";
 import { Config } from "$/domain/entities/Config";
+import { outcomeOutputTestData } from "$/webapp/pages/app/__tests__/App.spec";
 
 export const configTest: Config = {
     categoryCombinations: [],
@@ -20,6 +21,7 @@ export const configTest: Config = {
     periodLastYearEndDate: 0,
     periodLastYearUnits: "month",
     notificationUserGroup: { id: "EVSddRDWk5i", code: "GL_admin", name: "GL_GlobalAdministrator" },
+    ...outcomeOutputTestData,
 };
 
 export function getTestContext() {

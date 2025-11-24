@@ -170,6 +170,14 @@ export class D2ApiConfig {
                         userGroup => userGroup.name === metadataCodes.userGroups.adminNotification
                     ),
                 },
+                outcomeEndDateDay: appSettings.outcomeEndDateDay,
+                outcomeEndDateMonth: appSettings.outcomeEndDateMonth,
+                outcomeLastYearUnits: appSettings.outcomeLastYearUnits,
+                outcomeLastYearValue: appSettings.outcomeLastYearValue,
+                outputEndDateDay: appSettings.outputEndDateDay,
+                outputEndDateMonth: appSettings.outputEndDateMonth,
+                outputLastYearUnits: appSettings.outputLastYearUnits,
+                outputLastYearValue: appSettings.outputLastYearValue,
             };
         });
     }
@@ -239,6 +247,15 @@ export type D2Config = {
     };
     indicatorGroupSets: { theme: D2NamedCodeRef; status: D2NamedCodeRef };
     organisationUnitLevels: { country: D2NamedCodeRef & { level: number } };
+    outcomeEndDateDay: number;
+    outcomeEndDateMonth: number;
+    outcomeLastYearUnits: UnitDate;
+    outcomeLastYearValue: number;
+
+    outputEndDateDay: number;
+    outputEndDateMonth: number;
+    outputLastYearUnits: UnitDate;
+    outputLastYearValue: number;
 };
 
 type D2NamedCodeRef = NamedRef & { code: string };
