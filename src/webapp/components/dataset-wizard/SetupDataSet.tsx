@@ -170,7 +170,6 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
             </Grid>
 
             <Grid item xs={12}>
-                {/* @ts-ignore */}
                 <OrgUnitsSelector
                     api={api}
                     selected={dataSet.orgUnits.map(orgUnit => `/${orgUnit.path.join("/")}`)}

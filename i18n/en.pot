@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-10-13T08:19:25.975Z\n"
-"PO-Revision-Date: 2025-10-13T08:19:25.975Z\n"
+"POT-Creation-Date: 2025-11-24T16:43:49.491Z\n"
+"PO-Revision-Date: 2025-11-24T16:43:49.491Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -170,6 +170,12 @@ msgstr ""
 msgid "Load logs older than"
 msgstr ""
 
+msgid "Output Dates"
+msgstr ""
+
+msgid "Outcome Dates"
+msgstr ""
+
 msgid "Set output/outcome period dates: {{dataSetsNames}}"
 msgstr ""
 
@@ -182,7 +188,7 @@ msgstr ""
 msgid "End date of data input"
 msgstr ""
 
-msgid "Periods"
+msgid "Apply same dates for every year"
 msgstr ""
 
 msgid "DataSets removed"
@@ -548,13 +554,19 @@ msgstr ""
 msgid "Core competency data element group set"
 msgstr ""
 
-msgid "Default Period End Date - Month"
+msgid "Output Period End Date - Month"
 msgstr ""
 
-msgid "Default Time Period End Date (Last year) - Value"
+msgid "Output Time Period End Date (Last year) - Value"
 msgstr ""
 
 msgid "Units"
+msgstr ""
+
+msgid "Outcome Period End Date - Month"
+msgstr ""
+
+msgid "Outcome Time Period End Date (Last year) - Value"
 msgstr ""
 
 msgid "Country organisation unit level"
