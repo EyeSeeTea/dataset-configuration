@@ -135,61 +135,71 @@ export const DataSetPeriodDates = React.memo((props: DataSetPeriodDatesProps) =>
                     format="yyyy-MM-DD"
                 />
             </DatesContainer>
-            {periodTypes.map(periodType => {
-                const periodsToShow = periodsByYear[periodType];
-                const label = periodTypeLabels[periodType];
-                const sameYearValue = periodType === "output" ? outputSameYear : outcomeSameYear;
-                return (
-                    <PeriodsContainer key={periodType}>
-                        <Typography className="periods-text">{label}</Typography>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={sameYearValue}
-                                    onChange={updateSameYear(periodType)}
-                                />
-                            }
-                            label={i18n.t("Apply same dates for every year")}
-                        />
-                        {periodsToShow.map((periodDetail, index) => {
-                            return (
-                                <PeriodDateItem key={periodDetail.year}>
-                                    <span>
-                                        <strong>{periodDetail.year}</strong>
-                                    </span>
-                                    <DatePicker
-                                        value={periodDetail.startDate}
-                                        onChange={value =>
-                                            updatePeriod(
-                                                periodDetail,
-                                                value,
-                                                "startDate",
-                                                periodType
-                                            )
-                                        }
-                                        label={i18n.t("Start date of data input")}
-                                        className="datepicker"
-                                        minDate={periodDate.startDate}
-                                        format="yyyy-MM-DD"
-                                        disabled={sameYearValue && index > 0}
+            <PeriodTypeContainer>
+                {periodTypes.map(periodType => {
+                    const periodsToShow = periodsByYear[periodType];
+                    const label = periodTypeLabels[periodType];
+                    const sameYearValue =
+                        periodType === "output" ? outputSameYear : outcomeSameYear;
+                    return (
+                        <PeriodsContainer key={periodType}>
+                            <Typography className="periods-text">
+                                <strong>{label}</strong>
+                            </Typography>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={sameYearValue}
+                                        onChange={updateSameYear(periodType)}
                                     />
-                                    <DatePicker
-                                        value={periodDetail.endDate}
-                                        onChange={value =>
-                                            updatePeriod(periodDetail, value, "endDate", periodType)
-                                        }
-                                        label={i18n.t("End date of data input")}
-                                        minDate={periodDate.startDate}
-                                        className="datepicker"
-                                        format="yyyy-MM-DD"
-                                        disabled={sameYearValue && index > 0}
-                                    />
-                                </PeriodDateItem>
-                            );
-                        })}
-                    </PeriodsContainer>
-                );
-            })}
+                                }
+                                label={i18n.t("Apply same dates for every year")}
+                            />
+                            {periodsToShow.map((periodDetail, index) => {
+                                return (
+                                    <PeriodDateItem key={periodDetail.year}>
+                                        <span>
+                                            <strong>{periodDetail.year}</strong>
+                                        </span>
+                                        <DatePicker
+                                            value={periodDetail.startDate}
+                                            onChange={value =>
+                                                updatePeriod(
+                                                    periodDetail,
+                                                    value,
+                                                    "startDate",
+                                                    periodType
+                                                )
+                                            }
+                                            label={i18n.t("Start date of data input")}
+                                            className="datepicker"
+                                            minDate={periodDate.startDate}
+                                            format="yyyy-MM-DD"
+                                            disabled={sameYearValue && index > 0}
+                                        />
+                                        <DatePicker
+                                            value={periodDetail.endDate}
+                                            onChange={value =>
+                                                updatePeriod(
+                                                    periodDetail,
+                                                    value,
+                                                    "endDate",
+                                                    periodType
+                                                )
+                                            }
+                                            label={i18n.t("End date of data input")}
+                                            minDate={periodDate.startDate}
+                                            className="datepicker"
+                                            format="yyyy-MM-DD"
+                                            disabled={sameYearValue && index > 0}
+                                        />
+                                    </PeriodDateItem>
+                                );
+                            })}
+                        </PeriodsContainer>
+                    );
+                })}
+            </PeriodTypeContainer>
         </ConfirmationDialog>
     );
 });
@@ -208,6 +218,12 @@ const PeriodDateItem = styled.div`
         margin: 0;
         padding: 0;
     }
+`;
+
+const PeriodTypeContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
 `;
 
 const PeriodsContainer = styled.div`
