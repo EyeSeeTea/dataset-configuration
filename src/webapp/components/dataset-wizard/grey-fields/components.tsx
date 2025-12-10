@@ -1,4 +1,4 @@
-import React from "react";
+import React, { CSSProperties } from "react";
 import { Checkbox, FormControlLabel } from "@material-ui/core";
 
 import { DataSet, DisabledField } from "$/domain/entities/DataSet";
@@ -13,6 +13,7 @@ import { Maybe } from "$/utils/ts-utils";
 
 type HeaderCheckBoxProps = {
     label: string;
+    id: string;
     dataElements: DataElementWithCompetency[];
     categoryOptionCombos: Category["options"];
     greyedFields: Record<string, boolean>;
@@ -24,6 +25,7 @@ type HeaderCheckBoxProps = {
 
 const HeaderCheckBox = ({
     label,
+    id,
     dataElements,
     categoryOptionCombos,
     greyedFields,
@@ -35,6 +37,8 @@ const HeaderCheckBox = ({
     const cocsIds = categoryOptionCombos.map(coc => ({ id: coc.id }));
     const fieldIds = generateGreyFieldsFromDataElements(dataElements, cocsIds);
     const allFieldsInColumnAreSelected = at(greyedFields, fieldIds).every(value => !value);
+
+    const disabled = disableCategoryOptionFor2026([id], dataSet?.project?.startDate);
 
     const toggleAll = () => {
         const updatedGreyedFields = HashMap.fromPairs(
@@ -50,9 +54,12 @@ const HeaderCheckBox = ({
     };
 
     return (
-        <div onClick={toggleAll}>
+        <div onClick={toggleAll} style={{ pointerEvents: disabled ? "none" : "inherit" }}>
             {(dataElements.length > 1 || categoryOptionCombos.length > 1) && (
-                <SimpleCheckBox checked={allFieldsInColumnAreSelected} />
+                <SimpleCheckBox
+                    checked={disabled ? false : allFieldsInColumnAreSelected}
+                    disabled={disabled}
+                />
             )}
             {label === defaultLabel ? "" : label}
         </div>
@@ -98,10 +105,11 @@ const TableHeader = ({
                 const firstRecord = consecutiveProducts[0];
                 if (!firstRecord) {
                     console.warn(`no record found for ${index}, ${consecutiveProducts}`);
-                    return { label: "", cocs: [] };
+                    return { label: "", cocs: [], id: "" };
                 }
                 const label = firstRecord[index]?.name ?? "";
-                return { label, cocs: _(cocs).compact().value() };
+                const id = firstRecord[index]?.id ?? "";
+                return { label, cocs: _(cocs).compact().value(), id };
             });
         })
         .value();
@@ -115,7 +123,7 @@ const TableHeader = ({
                         <th style={{ background: "#f0f0f0" }} className="dataelement-header">
                             {isLastHeader && i18n.t("Data Element")}
                         </th>
-                        {row.map(({ label, cocs }, colNum) => (
+                        {row.map(({ label, cocs, id }, colNum) => (
                             <th
                                 key={`${rowNum}.${colNum}`}
                                 colSpan={cocs.length}
@@ -123,6 +131,7 @@ const TableHeader = ({
                             >
                                 <HeaderCheckBox
                                     label={label}
+                                    id={id}
                                     dataElements={dataSetElements}
                                     categoryOptionCombos={cocs}
                                     greyedFields={greyedFields}
@@ -149,6 +158,7 @@ type DataElementCheckboxProps = {
     dataSet: DataSet;
     combinations: IndicatorCombination[];
     combinationById: Record<string, NamedRef>;
+    disabled?: boolean;
 };
 
 const DataElementCheckbox = ({
@@ -160,6 +170,7 @@ const DataElementCheckbox = ({
     dataSet,
     combinations,
     combinationById,
+    disabled,
 }: DataElementCheckboxProps) => {
     if (!dataElement.disaggregation || !combinationById) return null;
     const key = getKey(dataElement.disaggregation, categoryOptions);
@@ -180,7 +191,11 @@ const DataElementCheckbox = ({
 
     return (
         <td key={fieldId} style={{ border: "1px solid rgb(224, 224, 224)", textAlign: "center" }}>
-            <SimpleCheckBox onClick={toggleGreyedFields} checked={!isGreyed} />
+            <SimpleCheckBox
+                onClick={toggleGreyedFields}
+                checked={disabled ? false : !isGreyed}
+                disabled={disabled}
+            />
         </td>
     );
 };
@@ -217,6 +232,10 @@ const DataElementRows = ({
             </td>
             {categoryOptionCombos.map((cos, index) => (
                 <DataElementCheckbox
+                    disabled={disableCategoryOptionFor2026(
+                        cos.map(({ id }) => id),
+                        dataSet?.project?.startDate
+                    )}
                     key={index}
                     dataElement={dse}
                     categoryOptions={cos}
@@ -455,13 +474,24 @@ export function CategoryOptionCheckBox(props: {
     );
 }
 
-function SimpleCheckBox(props: { onClick?: () => void; checked: boolean }) {
-    const { onClick, checked } = props;
+function SimpleCheckBox(props: { onClick?: () => void; checked: boolean; disabled?: boolean }) {
+    const { onClick, checked, disabled } = props;
     const onClickCheckbox = () => {
         if (onClick) onClick();
     };
+    const wrapperStyle = React.useMemo<CSSProperties>(
+        () => ({
+            marginRight: 5,
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? "not-allowed" : "pointer",
+            pointerEvents: disabled ? "none" : "auto",
+            background: disabled ? "#dcdcdc" : "none",
+        }),
+        [disabled]
+    );
+
     return (
-        <span onClick={onClickCheckbox} style={{ marginRight: 5 }}>
+        <span onClick={onClickCheckbox} style={wrapperStyle}>
             <input type="checkbox" readOnly={true} checked={checked} className="simple-checkbox" />
             <span />
         </span>
@@ -476,3 +506,10 @@ export const getKey = (categoryCombo: Ref, categoryOptions: Category["options"])
         .value();
     return [categoryCombo.id, ...sortedUniqueIds].join(".");
 };
+
+function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
+    if (!projectStartDate) return false;
+
+    const startDate = new Date(projectStartDate);
+    return startDate.getFullYear() >= 2026 && optionIds.includes("bvFA7fsiN3T");
+}
