@@ -457,14 +457,19 @@ export function CategoryOptionCheckBox(props: {
     option: NamedRef;
     disableOptions: string[];
     updateOptions: (optionId: string, checked: boolean) => void;
+    disabled?: boolean;
 }) {
-    const { option, disableOptions, updateOptions } = props;
+    const { option, disableOptions, updateOptions, disabled } = props;
+    const isDisabled = !!disabled;
+    const checked = isDisabled ? false : !disableOptions.includes(option.id);
+
     return (
         <FormControlLabel
             control={
                 <Checkbox
-                    checked={!disableOptions.includes(option.id)}
-                    onChange={(_, checked) => updateOptions(option.id, checked)}
+                    checked={checked}
+                    disabled={isDisabled}
+                    onChange={(_, isChecked) => updateOptions(option.id, isChecked)}
                     name={option.id}
                 />
             }
@@ -507,7 +512,7 @@ export const getKey = (categoryCombo: Ref, categoryOptions: Category["options"])
     return [categoryCombo.id, ...sortedUniqueIds].join(".");
 };
 
-function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
+export function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
     if (!projectStartDate) return false;
 
     const startDate = new Date(projectStartDate);

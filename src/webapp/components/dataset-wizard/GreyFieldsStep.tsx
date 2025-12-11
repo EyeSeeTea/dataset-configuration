@@ -19,6 +19,7 @@ import {
     CategoryOptionCheckBox,
     CombinationTables,
     buildDisableFieldsFromGreyFields,
+    disableCategoryOptionFor2026,
     generateGreyFieldsFromDataElements,
     getKey,
 } from "$/webapp/components/dataset-wizard/grey-fields/components";
@@ -151,6 +152,10 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                                             disableOptions={disableOptions}
                                             option={option}
                                             updateOptions={updateOptions}
+                                            disabled={disableCategoryOptionFor2026(
+                                                [option.id],
+                                                dataSet?.project?.startDate
+                                            )}
                                         />
                                     ))}
                                 </div>
