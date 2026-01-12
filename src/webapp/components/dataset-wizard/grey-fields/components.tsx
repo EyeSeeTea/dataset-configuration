@@ -1,4 +1,4 @@
-import React, { CSSProperties } from "react";
+import React from "react";
 import { Checkbox, FormControlLabel } from "@material-ui/core";
 
 import { DataSet, DisabledField } from "$/domain/entities/DataSet";
@@ -484,7 +484,7 @@ function SimpleCheckBox(props: { onClick?: () => void; checked: boolean; disable
     const onClickCheckbox = () => {
         if (onClick) onClick();
     };
-    const wrapperStyle = React.useMemo<CSSProperties>(
+    const wrapperStyle = React.useMemo<React.CSSProperties>(
         () => ({
             marginRight: 5,
             opacity: disabled ? 0.5 : 1,
@@ -516,5 +516,7 @@ export function disableCategoryOptionFor2026(optionIds: string[], projectStartDa
     if (!projectStartDate) return false;
 
     const startDate = new Date(projectStartDate);
+    // year and category hardcoded as decided in requirements
+    // #869bcnh4t
     return startDate.getFullYear() >= 2026 && optionIds.includes("bvFA7fsiN3T");
 }
