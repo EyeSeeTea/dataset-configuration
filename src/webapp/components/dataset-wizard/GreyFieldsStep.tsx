@@ -22,11 +22,13 @@ import {
     disableCategoryOptionFor2026,
     generateGreyFieldsFromDataElements,
     getKey,
+    isAllCOCbvFA7fsiN3TSelected,
 } from "$/webapp/components/dataset-wizard/grey-fields/components";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
     onChange: (dataSet: DataSet) => void;
+    isEditing: boolean;
 };
 
 function getCategories(dataSet: DataSet) {
@@ -61,7 +63,7 @@ function getCategories(dataSet: DataSet) {
 }
 
 export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
-    const { dataSet, onChange } = props;
+    const { dataSet, onChange, isEditing } = props;
     const [disableOptions, setDisabledOptions] = React.useState<string[]>([]);
     const [selectedCompetency, setSelectedCompetency] = React.useState<string>();
     const [greyedFields, setGreyedFields] = React.useState<Record<string, boolean>>(() => {
@@ -127,6 +129,27 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     const combinationsFiltered = selectedCompetency
         ? combinations.filter(combination => combination.coreCompetency.id === selectedCompetency)
         : combinations;
+
+    // initialize greyed fields for new dataSets
+    React.useEffect(() => {
+        if (
+            isEditing ||
+            !combinationById ||
+            (Object.keys(greyedFields).length > 0 &&
+                isAllCOCbvFA7fsiN3TSelected({
+                    combinationById,
+                    greyedFields,
+                }))
+        )
+            return;
+        uniqueCategories.forEach(category =>
+            category.options.forEach(option => {
+                if (disableCategoryOptionFor2026([option.id], dataSet?.project?.startDate)) {
+                    updateOptions(option.id, false);
+                }
+            })
+        );
+    }, [isEditing, combinationById, greyedFields]);
 
     return (
         <div>

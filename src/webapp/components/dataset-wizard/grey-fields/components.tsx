@@ -512,11 +512,23 @@ export const getKey = (categoryCombo: Ref, categoryOptions: Category["options"])
     return [categoryCombo.id, ...sortedUniqueIds].join(".");
 };
 
+// year and category hardcoded as decided in requirements (869bcnh4t)
 export function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
     if (!projectStartDate) return false;
 
     const startDate = new Date(projectStartDate);
-    // year and category hardcoded as decided in requirements
-    // #869bcnh4t
     return startDate.getFullYear() >= 2026 && optionIds.includes("bvFA7fsiN3T");
+}
+
+export function isAllCOCbvFA7fsiN3TSelected(props: {
+    combinationById: Record<string, NamedRef>;
+    greyedFields: Record<string, boolean>;
+}) {
+    const { combinationById, greyedFields } = props;
+    const categoryComboOptionIds = _(Object.keys(combinationById))
+        .filter(key => key.includes("bvFA7fsiN3T"))
+        .compactMap(key => combinationById[key]?.id)
+        .value();
+
+    return at(greyedFields, categoryComboOptionIds).every(value => !value);
 }
