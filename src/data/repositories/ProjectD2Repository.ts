@@ -9,7 +9,7 @@ import { Id } from "$/domain/entities/Ref";
 import { DataSet } from "$/domain/entities/DataSet";
 import {
     D2CategoryOptionType,
-    D2CategoryOptionWithDates,
+    D2CategoryOptionWithDatesOu,
 } from "$/data/repositories/D2ApiCategoryOption";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { D2ApiConfig, D2Config } from "$/data/repositories/D2ApiMetadata";
@@ -142,7 +142,7 @@ export class ProjectD2Repository implements ProjectRepository {
         };
     }
 
-    private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDates[]): Project[] {
+    private getProjectsWithDates(categoryOptions: D2CategoryOptionWithDatesOu[]): Project[] {
         return categoryOptions.map(d2CategoryOption => {
             const { access } = this.d2ApiSharing.mapSharingToEntity(d2CategoryOption.sharing);
             return Project.build({
