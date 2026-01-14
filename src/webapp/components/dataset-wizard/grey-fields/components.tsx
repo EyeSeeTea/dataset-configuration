@@ -10,6 +10,7 @@ import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import _, { Collection } from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
+import { disableCategoryOptionFor2026 } from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 type HeaderCheckBoxProps = {
     label: string;
@@ -521,24 +522,3 @@ export const getKey = (categoryCombo: Ref, categoryOptions: Category["options"])
         .value();
     return [categoryCombo.id, ...sortedUniqueIds].join(".");
 };
-
-// year and category hardcoded as decided in requirements (869bcnh4t)
-export function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
-    if (!projectStartDate) return false;
-
-    const startDate = new Date(projectStartDate);
-    return startDate.getFullYear() >= 2026 && optionIds.includes("bvFA7fsiN3T");
-}
-
-export function isAllCOCbvFA7fsiN3TSelected(props: {
-    combinationById: Record<string, NamedRef>;
-    greyedFields: Record<string, boolean>;
-}) {
-    const { combinationById, greyedFields } = props;
-    const categoryComboOptionIds = _(Object.keys(combinationById))
-        .filter(key => key.includes("bvFA7fsiN3T"))
-        .compactMap(key => combinationById[key]?.id)
-        .value();
-
-    return at(greyedFields, categoryComboOptionIds).every(value => !value);
-}

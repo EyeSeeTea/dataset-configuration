@@ -10,7 +10,7 @@ import { defaultLabel } from "$/domain/entities/Category";
 import styled from "styled-components";
 import { Maybe } from "$/utils/ts-utils";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { NamedRef } from "$/domain/entities/Ref";
+import { Id } from "$/domain/entities/Ref";
 import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { HashMap } from "$/domain/entities/generic/HashMap";
@@ -19,16 +19,17 @@ import {
     CategoryOptionCheckBox,
     CombinationTables,
     buildDisableFieldsFromGreyFields,
-    disableCategoryOptionFor2026,
     generateGreyFieldsFromDataElements,
     getKey,
-    isAllCOCbvFA7fsiN3TSelected,
 } from "$/webapp/components/dataset-wizard/grey-fields/components";
+import {
+    disableCategoryOptionFor2026,
+    useDisable2026bvFA7fsiN3T,
+} from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
     onChange: (dataSet: DataSet) => void;
-    isEditing: boolean;
 };
 
 function getCategories(dataSet: DataSet) {
@@ -63,7 +64,7 @@ function getCategories(dataSet: DataSet) {
 }
 
 export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
-    const { dataSet, onChange, isEditing } = props;
+    const { dataSet, onChange } = props;
     const [disableOptions, setDisabledOptions] = React.useState<string[]>([]);
     const [selectedCompetency, setSelectedCompetency] = React.useState<string>();
     const [greyedFields, setGreyedFields] = React.useState<Record<string, boolean>>(() => {
@@ -130,26 +131,14 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         ? combinations.filter(combination => combination.coreCompetency.id === selectedCompetency)
         : combinations;
 
-    // initialize greyed fields for new dataSets
-    React.useEffect(() => {
-        if (
-            isEditing ||
-            !combinationById ||
-            (Object.keys(greyedFields).length > 0 &&
-                isAllCOCbvFA7fsiN3TSelected({
-                    combinationById,
-                    greyedFields,
-                }))
-        )
-            return;
-        uniqueCategories.forEach(category =>
-            category.options.forEach(option => {
-                if (disableCategoryOptionFor2026([option.id], dataSet?.project?.startDate)) {
-                    updateOptions(option.id, false);
-                }
-            })
-        );
-    }, [isEditing, combinationById, greyedFields]);
+    useDisable2026bvFA7fsiN3T({
+        combinations,
+        combinationById,
+        greyedFields,
+        uniqueCategories,
+        dataSet,
+        updateOptions,
+    });
 
     return (
         <div>
@@ -223,11 +212,15 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     );
 });
 
+export type CategoryOptionCombo = CategoryCombination["optionsCombos"][number] & {
+    categoryComboId: Id;
+};
 function useGetExistingCombinations(props: { combinations: IndicatorCombination[] }) {
     const { combinations } = props;
     const { compositionRoot } = useAppContext();
     const [existingCombos, setExistingCombos] = React.useState<CategoryCombination[]>([]);
-    const [combinationById, setCombinationById] = React.useState<Record<string, NamedRef>>();
+    const [combinationById, setCombinationById] =
+        React.useState<Record<string, CategoryOptionCombo>>();
 
     React.useEffect(() => {
         const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
@@ -255,10 +248,13 @@ function useGetExistingCombinations(props: { combinations: IndicatorCombination[
                     .merge(existingCombinationsById);
                 const categoryCombinationPairs = categoryCombosById.values().flatMap(cc => {
                     return cc.optionsCombos.map(coc2 => {
-                        return [getKey(cc, coc2.options), coc2] as [
-                            string,
-                            CategoryCombination["optionsCombos"][number]
-                        ];
+                        return [
+                            getKey(cc, coc2.options),
+                            {
+                                ...coc2,
+                                categoryComboId: cc.id,
+                            },
+                        ] as [string, CategoryOptionCombo];
                     });
                 });
                 const cocByCategoryKey = HashMap.fromPairs(categoryCombinationPairs).toObject();
