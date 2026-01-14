@@ -42,6 +42,7 @@ import {
 } from "$/webapp/components/dataset-wizard/FilterIndicatorContainer";
 import { ChipItem } from "$/webapp/components/dataset-wizard/ChipFilter";
 import { FilterCompanionIndicators } from "$/webapp/components/dataset-wizard/FilterCompanionIndicators";
+import { useDisable2026bvFA7fsiN3TOnIndicatorUpdate } from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 export type IndicatorsDataSetProps = {
     dataSet: DataSet;
@@ -540,6 +541,8 @@ function useValidateIndicators(props: {
         setSorting,
     } = props;
 
+    const { disable2026bvFA7fsiN3T } = useDisable2026bvFA7fsiN3TOnIndicatorUpdate();
+
     const indicatorsById = React.useMemo(
         () => _(indicators).keyBy(indicator => indicator.id),
         [indicators]
@@ -587,7 +590,15 @@ function useValidateIndicators(props: {
 
             setAlertedIndicatorIds(newIndicatorIdsToAlert);
             setSelectedIndicators(ids);
-            onChange(dataSet.setIndicators(currentIndicators));
+
+            const dataSetIndicators = dataSet.setIndicators(currentIndicators);
+            disable2026bvFA7fsiN3T({
+                indicators: currentIndicators,
+                dataSet: dataSetIndicators,
+            }).run(
+                updatedDataSet => onChange(updatedDataSet),
+                () => onChange(dataSetIndicators)
+            );
             setSorting(state.sorting);
         },
         [
@@ -600,6 +611,7 @@ function useValidateIndicators(props: {
             setSorting,
             snackBar,
             onShowCompanionIndicator,
+            disable2026bvFA7fsiN3T,
         ]
     );
     return validateIndicators;

@@ -10,7 +10,7 @@ import { defaultLabel } from "$/domain/entities/Category";
 import styled from "styled-components";
 import { Maybe } from "$/utils/ts-utils";
 import { useAppContext } from "$/webapp/contexts/app-context";
-import { Id } from "$/domain/entities/Ref";
+import { NamedRef } from "$/domain/entities/Ref";
 import { IndicatorCombination } from "$/domain/entities/Indicator";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { HashMap } from "$/domain/entities/generic/HashMap";
@@ -22,10 +22,7 @@ import {
     generateGreyFieldsFromDataElements,
     getKey,
 } from "$/webapp/components/dataset-wizard/grey-fields/components";
-import {
-    disableCategoryOptionFor2026,
-    useDisable2026bvFA7fsiN3T,
-} from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
+import { disableCategoryOptionFor2026 } from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
@@ -131,15 +128,6 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
         ? combinations.filter(combination => combination.coreCompetency.id === selectedCompetency)
         : combinations;
 
-    useDisable2026bvFA7fsiN3T({
-        combinations,
-        combinationById,
-        greyedFields,
-        uniqueCategories,
-        dataSet,
-        updateOptions,
-    });
-
     return (
         <div>
             <Accordion>
@@ -212,15 +200,11 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
     );
 });
 
-export type CategoryOptionCombo = CategoryCombination["optionsCombos"][number] & {
-    categoryComboId: Id;
-};
 function useGetExistingCombinations(props: { combinations: IndicatorCombination[] }) {
     const { combinations } = props;
     const { compositionRoot } = useAppContext();
     const [existingCombos, setExistingCombos] = React.useState<CategoryCombination[]>([]);
-    const [combinationById, setCombinationById] =
-        React.useState<Record<string, CategoryOptionCombo>>();
+    const [combinationById, setCombinationById] = React.useState<Record<string, NamedRef>>();
 
     React.useEffect(() => {
         const allDataElements = combinations.flatMap(dataElement => dataElement.dataElements);
@@ -248,13 +232,10 @@ function useGetExistingCombinations(props: { combinations: IndicatorCombination[
                     .merge(existingCombinationsById);
                 const categoryCombinationPairs = categoryCombosById.values().flatMap(cc => {
                     return cc.optionsCombos.map(coc2 => {
-                        return [
-                            getKey(cc, coc2.options),
-                            {
-                                ...coc2,
-                                categoryComboId: cc.id,
-                            },
-                        ] as [string, CategoryOptionCombo];
+                        return [getKey(cc, coc2.options), coc2] as [
+                            string,
+                            CategoryCombination["optionsCombos"][number]
+                        ];
                     });
                 });
                 const cocByCategoryKey = HashMap.fromPairs(categoryCombinationPairs).toObject();

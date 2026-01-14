@@ -80,7 +80,6 @@ export const DataSetWizard = React.memo((props: DataSetWizardProps) => {
                         validationStatus,
                         onChange: updateDataSet,
                         dataSetSettings,
-                        isEditing,
                     },
                 };
             });
