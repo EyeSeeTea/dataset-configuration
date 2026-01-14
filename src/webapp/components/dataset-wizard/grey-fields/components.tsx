@@ -15,7 +15,7 @@ type HeaderCheckBoxProps = {
     label: string;
     id: string;
     dataElements: DataElementWithCompetency[];
-    categoryOptionCombos: Category["options"];
+    categoryOptionCombos: Category[];
     greyedFields: Record<string, boolean>;
     setGreyedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
     onChange: (dataSet: DataSet) => void;
@@ -38,7 +38,10 @@ const HeaderCheckBox = ({
     const fieldIds = generateGreyFieldsFromDataElements(dataElements, cocsIds);
     const allFieldsInColumnAreSelected = at(greyedFields, fieldIds).every(value => !value);
 
-    const disabled = disableCategoryOptionFor2026([id], dataSet?.project?.startDate);
+    const optionIds = categoryOptionCombos.flatMap(
+        coc => coc.options?.map(option => option.id) ?? []
+    );
+    const disabled = disableCategoryOptionFor2026([id, ...optionIds], dataSet?.project?.startDate);
 
     const toggleAll = () => {
         const updatedGreyedFields = HashMap.fromPairs(
@@ -109,7 +112,14 @@ const TableHeader = ({
                 }
                 const label = firstRecord[index]?.name ?? "";
                 const id = firstRecord[index]?.id ?? "";
-                return { label, cocs: _(cocs).compact().value(), id };
+                const cocsWithOptions = _(cocs)
+                    .compact()
+                    .map(cos => ({
+                        ...cos,
+                        options: firstRecord,
+                    }))
+                    .value();
+                return { label, cocs: cocsWithOptions, id };
             });
         })
         .value();
