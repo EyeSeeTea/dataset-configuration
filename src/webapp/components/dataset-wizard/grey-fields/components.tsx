@@ -10,11 +10,13 @@ import { at, groupConsecutiveBy } from "$/data/entry-form/CustomForm";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import _, { Collection } from "$/domain/entities/generic/Collection";
 import { Maybe } from "$/utils/ts-utils";
+import { disableCategoryOptionFor2026 } from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 type HeaderCheckBoxProps = {
     label: string;
+    id: string;
     dataElements: DataElementWithCompetency[];
-    categoryOptionCombos: Category["options"];
+    categoryOptionCombos: Category[];
     greyedFields: Record<string, boolean>;
     setGreyedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
     onChange: (dataSet: DataSet) => void;
@@ -24,6 +26,7 @@ type HeaderCheckBoxProps = {
 
 const HeaderCheckBox = ({
     label,
+    id,
     dataElements,
     categoryOptionCombos,
     greyedFields,
@@ -35,6 +38,11 @@ const HeaderCheckBox = ({
     const cocsIds = categoryOptionCombos.map(coc => ({ id: coc.id }));
     const fieldIds = generateGreyFieldsFromDataElements(dataElements, cocsIds);
     const allFieldsInColumnAreSelected = at(greyedFields, fieldIds).every(value => !value);
+
+    const optionIds = categoryOptionCombos.flatMap(
+        coc => coc.options?.map(option => option.id) ?? []
+    );
+    const disabled = disableCategoryOptionFor2026([id, ...optionIds], dataSet?.project?.startDate);
 
     const toggleAll = () => {
         const updatedGreyedFields = HashMap.fromPairs(
@@ -50,9 +58,12 @@ const HeaderCheckBox = ({
     };
 
     return (
-        <div onClick={toggleAll}>
+        <div onClick={toggleAll} style={{ pointerEvents: disabled ? "none" : "inherit" }}>
             {(dataElements.length > 1 || categoryOptionCombos.length > 1) && (
-                <SimpleCheckBox checked={allFieldsInColumnAreSelected} />
+                <SimpleCheckBox
+                    checked={disabled ? false : allFieldsInColumnAreSelected}
+                    disabled={disabled}
+                />
             )}
             {label === defaultLabel ? "" : label}
         </div>
@@ -98,10 +109,18 @@ const TableHeader = ({
                 const firstRecord = consecutiveProducts[0];
                 if (!firstRecord) {
                     console.warn(`no record found for ${index}, ${consecutiveProducts}`);
-                    return { label: "", cocs: [] };
+                    return { label: "", cocs: [], id: "" };
                 }
                 const label = firstRecord[index]?.name ?? "";
-                return { label, cocs: _(cocs).compact().value() };
+                const id = firstRecord[index]?.id ?? "";
+                const cocsWithOptions = _(cocs)
+                    .compact()
+                    .map(cos => ({
+                        ...cos,
+                        options: firstRecord,
+                    }))
+                    .value();
+                return { label, cocs: cocsWithOptions, id };
             });
         })
         .value();
@@ -115,7 +134,7 @@ const TableHeader = ({
                         <th style={{ background: "#f0f0f0" }} className="dataelement-header">
                             {isLastHeader && i18n.t("Data Element")}
                         </th>
-                        {row.map(({ label, cocs }, colNum) => (
+                        {row.map(({ label, cocs, id }, colNum) => (
                             <th
                                 key={`${rowNum}.${colNum}`}
                                 colSpan={cocs.length}
@@ -123,6 +142,7 @@ const TableHeader = ({
                             >
                                 <HeaderCheckBox
                                     label={label}
+                                    id={id}
                                     dataElements={dataSetElements}
                                     categoryOptionCombos={cocs}
                                     greyedFields={greyedFields}
@@ -149,6 +169,7 @@ type DataElementCheckboxProps = {
     dataSet: DataSet;
     combinations: IndicatorCombination[];
     combinationById: Record<string, NamedRef>;
+    disabled?: boolean;
 };
 
 const DataElementCheckbox = ({
@@ -160,6 +181,7 @@ const DataElementCheckbox = ({
     dataSet,
     combinations,
     combinationById,
+    disabled,
 }: DataElementCheckboxProps) => {
     if (!dataElement.disaggregation || !combinationById) return null;
     const key = getKey(dataElement.disaggregation, categoryOptions);
@@ -180,7 +202,11 @@ const DataElementCheckbox = ({
 
     return (
         <td key={fieldId} style={{ border: "1px solid rgb(224, 224, 224)", textAlign: "center" }}>
-            <SimpleCheckBox onClick={toggleGreyedFields} checked={!isGreyed} />
+            <SimpleCheckBox
+                onClick={toggleGreyedFields}
+                checked={disabled ? false : !isGreyed}
+                disabled={disabled}
+            />
         </td>
     );
 };
@@ -217,6 +243,10 @@ const DataElementRows = ({
             </td>
             {categoryOptionCombos.map((cos, index) => (
                 <DataElementCheckbox
+                    disabled={disableCategoryOptionFor2026(
+                        cos.map(({ id }) => id),
+                        dataSet?.project?.startDate
+                    )}
                     key={index}
                     dataElement={dse}
                     categoryOptions={cos}
@@ -438,14 +468,19 @@ export function CategoryOptionCheckBox(props: {
     option: NamedRef;
     disableOptions: string[];
     updateOptions: (optionId: string, checked: boolean) => void;
+    disabled?: boolean;
 }) {
-    const { option, disableOptions, updateOptions } = props;
+    const { option, disableOptions, updateOptions, disabled } = props;
+    const isDisabled = !!disabled;
+    const checked = isDisabled ? false : !disableOptions.includes(option.id);
+
     return (
         <FormControlLabel
             control={
                 <Checkbox
-                    checked={!disableOptions.includes(option.id)}
-                    onChange={(_, checked) => updateOptions(option.id, checked)}
+                    checked={checked}
+                    disabled={isDisabled}
+                    onChange={(_, isChecked) => updateOptions(option.id, isChecked)}
                     name={option.id}
                 />
             }
@@ -455,13 +490,24 @@ export function CategoryOptionCheckBox(props: {
     );
 }
 
-function SimpleCheckBox(props: { onClick?: () => void; checked: boolean }) {
-    const { onClick, checked } = props;
+function SimpleCheckBox(props: { onClick?: () => void; checked: boolean; disabled?: boolean }) {
+    const { onClick, checked, disabled } = props;
     const onClickCheckbox = () => {
         if (onClick) onClick();
     };
+    const wrapperStyle = React.useMemo<React.CSSProperties>(
+        () => ({
+            marginRight: 5,
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? "not-allowed" : "pointer",
+            pointerEvents: disabled ? "none" : "auto",
+            background: disabled ? "#dcdcdc" : "none",
+        }),
+        [disabled]
+    );
+
     return (
-        <span onClick={onClickCheckbox} style={{ marginRight: 5 }}>
+        <span onClick={onClickCheckbox} style={wrapperStyle}>
             <input type="checkbox" readOnly={true} checked={checked} className="simple-checkbox" />
             <span />
         </span>

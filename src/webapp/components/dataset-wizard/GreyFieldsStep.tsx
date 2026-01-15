@@ -22,6 +22,7 @@ import {
     generateGreyFieldsFromDataElements,
     getKey,
 } from "$/webapp/components/dataset-wizard/grey-fields/components";
+import { disableCategoryOptionFor2026 } from "$/webapp/components/dataset-wizard/useDisable2026bvFA7fsiN3T";
 
 type GreyFieldsStepProps = {
     dataSet: DataSet;
@@ -151,6 +152,10 @@ export const GreyFieldsStep = React.memo((props: GreyFieldsStepProps) => {
                                             disableOptions={disableOptions}
                                             option={option}
                                             updateOptions={updateOptions}
+                                            disabled={disableCategoryOptionFor2026(
+                                                [option.id],
+                                                dataSet?.project?.startDate
+                                            )}
                                         />
                                     ))}
                                 </div>
