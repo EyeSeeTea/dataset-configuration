@@ -114,7 +114,8 @@
         "prepare": "husky install",
         "migrate-period-dates": "npx ts-node src/scripts/migrate-dataset-period-dates",
         "migrate-ds-project": "npx ts-node src/scripts/migrate-dataset-project.ts",
-        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
+        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts",
+        "remove-old-projects": "npx tsx src/scripts/move-old-projects.ts"
     },
     "manifest.webapp": {
         "name": "New DC App",
