@@ -121,12 +121,13 @@ const getOldProjectsWithDeprecatedData = async (
     api: D2Api,
     sqlViewId: Id
 ): Promise<{ id: string; name: string }[]> => {
-    const response = await api.sqlViews.query(sqlViewId, { paging: false }).getData();
+    // @ts-expect-error
+    const response = await api.sqlViews.query(sqlViewId, {}, { paging: false }).getData();
 
     return response.rows.map(row => {
         const getValue = (key: string) => row[key] || "";
 
-        return { id: getValue("id"), name: getValue("name") };
+        return { id: getValue("project_uid"), name: getValue("project_name") };
     });
 };
 

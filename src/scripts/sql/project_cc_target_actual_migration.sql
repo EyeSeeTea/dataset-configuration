@@ -23,102 +23,102 @@ BEGIN;
 -- STEP 1: Create temp table with the "old project" IDs
 -- ============================================================================
 
-CREATE TEMP TABLE old_projects AS
-SELECT DISTINCT project_co.categoryoptionid,
-                project_co.uid,
-                project_co.name
-FROM datavalue dv
--- The COC of the dataValue
-JOIN categoryoptioncombos_categoryoptions cocco_phase
-  ON cocco_phase.categoryoptioncomboid = dv.attributeoptioncomboid
-JOIN dataelementcategoryoption phase_co
-  ON phase_co.categoryoptionid = cocco_phase.categoryoptionid
- AND phase_co.name LIKE '%[DEPRECATED]%'
-JOIN categories_categoryoptions cat_phase
-  ON cat_phase.categoryoptionid = phase_co.categoryoptionid
-JOIN dataelementcategory phase_cat
-  ON phase_cat.categoryid = cat_phase.categoryid
- AND phase_cat.uid = 'ouNRBWIbnxY'
--- From the SAME COC, extract the project
-JOIN categoryoptioncombos_categoryoptions cocco_proj
-  ON cocco_proj.categoryoptioncomboid = dv.attributeoptioncomboid
-JOIN dataelementcategoryoption project_co
-  ON project_co.categoryoptionid = cocco_proj.categoryoptionid
-JOIN categories_categoryoptions cat_proj
-  ON cat_proj.categoryoptionid = project_co.categoryoptionid
-JOIN dataelementcategory proj_cat
-  ON proj_cat.categoryid = cat_proj.categoryid
- AND proj_cat.uid = 'MRwzyV0kXv9'
--- Ensure the COC belongs to the correct combo
-JOIN categorycombos_optioncombos ccoc
-  ON ccoc.categoryoptioncomboid = dv.attributeoptioncomboid
-JOIN categorycombo cc
-  ON cc.categorycomboid = ccoc.categorycomboid
- AND cc.uid = 'GmXXE8fiCK5'
-WHERE dv.deleted = false;
+-- CREATE TEMP TABLE old_projects AS
+-- SELECT DISTINCT project_co.categoryoptionid,
+--                 project_co.uid,
+--                 project_co.name
+-- FROM datavalue dv
+-- -- The COC of the dataValue
+-- JOIN categoryoptioncombos_categoryoptions cocco_phase
+--   ON cocco_phase.categoryoptioncomboid = dv.attributeoptioncomboid
+-- JOIN dataelementcategoryoption phase_co
+--   ON phase_co.categoryoptionid = cocco_phase.categoryoptionid
+--  AND phase_co.name LIKE '%[DEPRECATED]%'
+-- JOIN categories_categoryoptions cat_phase
+--   ON cat_phase.categoryoptionid = phase_co.categoryoptionid
+-- JOIN dataelementcategory phase_cat
+--   ON phase_cat.categoryid = cat_phase.categoryid
+--  AND phase_cat.uid = 'ouNRBWIbnxY'
+-- -- From the SAME COC, extract the project
+-- JOIN categoryoptioncombos_categoryoptions cocco_proj
+--   ON cocco_proj.categoryoptioncomboid = dv.attributeoptioncomboid
+-- JOIN dataelementcategoryoption project_co
+--   ON project_co.categoryoptionid = cocco_proj.categoryoptionid
+-- JOIN categories_categoryoptions cat_proj
+--   ON cat_proj.categoryoptionid = project_co.categoryoptionid
+-- JOIN dataelementcategory proj_cat
+--   ON proj_cat.categoryid = cat_proj.categoryid
+--  AND proj_cat.uid = 'MRwzyV0kXv9'
+-- -- Ensure the COC belongs to the correct combo
+-- JOIN categorycombos_optioncombos ccoc
+--   ON ccoc.categoryoptioncomboid = dv.attributeoptioncomboid
+-- JOIN categorycombo cc
+--   ON cc.categorycomboid = ccoc.categorycomboid
+--  AND cc.uid = 'GmXXE8fiCK5'
+-- WHERE dv.deleted = false;
 
-SELECT 'STEP 1 - Old projects identified' AS step, COUNT(*) AS total FROM old_projects;
+-- SELECT 'STEP 1 - Old projects identified' AS step, COUNT(*) AS total FROM old_projects;
 
--- How many old_projects are NEW (not already in Old_Project)
-SELECT 'VERIFY 1a - Old projects NEW in Old_Project' AS check_name,
-       COUNT(*) AS total
-FROM old_projects op
-WHERE NOT EXISTS (
-  SELECT 1 FROM categories_categoryoptions existing
-  WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
-    AND existing.categoryoptionid = op.categoryoptionid
-);
+-- -- How many old_projects are NEW (not already in Old_Project)
+-- SELECT 'VERIFY 1a - Old projects NEW in Old_Project' AS check_name,
+--        COUNT(*) AS total
+-- FROM old_projects op
+-- WHERE NOT EXISTS (
+--   SELECT 1 FROM categories_categoryoptions existing
+--   WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
+--     AND existing.categoryoptionid = op.categoryoptionid
+-- );
 
--- How many old_projects already exist in Old_Project
-SELECT 'VERIFY 1b - Old projects ALREADY in Old_Project' AS check_name,
-       COUNT(*) AS total
-FROM old_projects op
-WHERE EXISTS (
-  SELECT 1 FROM categories_categoryoptions existing
-  WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
-    AND existing.categoryoptionid = op.categoryoptionid
-);
+-- -- How many old_projects already exist in Old_Project
+-- SELECT 'VERIFY 1b - Old projects ALREADY in Old_Project' AS check_name,
+--        COUNT(*) AS total
+-- FROM old_projects op
+-- WHERE EXISTS (
+--   SELECT 1 FROM categories_categoryoptions existing
+--   WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
+--     AND existing.categoryoptionid = op.categoryoptionid
+-- );
+
+-- -- ============================================================================
+-- -- STEP 2a: Add old projects to Old_Project category (WIWj6TauYO8)
+-- -- ============================================================================
+
+-- INSERT INTO categories_categoryoptions (categoryid, categoryoptionid, sort_order)
+-- SELECT
+--   (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8'),
+--   op.categoryoptionid,
+--   COALESCE(
+--     (SELECT MAX(sort_order) FROM categories_categoryoptions
+--      WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')),
+--     0
+--   ) + row_number() OVER (ORDER BY op.categoryoptionid)
+-- FROM old_projects op
+-- WHERE NOT EXISTS (
+--   SELECT 1 FROM categories_categoryoptions existing
+--   WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
+--     AND existing.categoryoptionid = op.categoryoptionid
+-- );
+
+-- SELECT 'STEP 2a - Old projects added to Old_Project category' AS step,
+--        COUNT(*) AS total
+-- FROM categories_categoryoptions
+-- WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8');
+
+-- -- ============================================================================
+-- -- STEP 2b: Remove old projects from Project category (MRwzyV0kXv9)
+-- -- ============================================================================
+
+-- DELETE FROM categories_categoryoptions
+-- WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'MRwzyV0kXv9')
+--   AND categoryoptionid IN (SELECT categoryoptionid FROM old_projects);
+
+-- SELECT 'STEP 2b - Old projects removed from Project category' AS step,
+--        COUNT(*) AS remaining
+-- FROM categories_categoryoptions
+-- WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'MRwzyV0kXv9');
 
 -- ============================================================================
--- STEP 2a: Add old projects to Old_Project category (WIWj6TauYO8)
--- ============================================================================
-
-INSERT INTO categories_categoryoptions (categoryid, categoryoptionid, sort_order)
-SELECT
-  (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8'),
-  op.categoryoptionid,
-  COALESCE(
-    (SELECT MAX(sort_order) FROM categories_categoryoptions
-     WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')),
-    0
-  ) + row_number() OVER (ORDER BY op.categoryoptionid)
-FROM old_projects op
-WHERE NOT EXISTS (
-  SELECT 1 FROM categories_categoryoptions existing
-  WHERE existing.categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8')
-    AND existing.categoryoptionid = op.categoryoptionid
-);
-
-SELECT 'STEP 2a - Old projects added to Old_Project category' AS step,
-       COUNT(*) AS total
-FROM categories_categoryoptions
-WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'WIWj6TauYO8');
-
--- ============================================================================
--- STEP 2b: Remove old projects from Project category (MRwzyV0kXv9)
--- ============================================================================
-
-DELETE FROM categories_categoryoptions
-WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'MRwzyV0kXv9')
-  AND categoryoptionid IN (SELECT categoryoptionid FROM old_projects);
-
-SELECT 'STEP 2b - Old projects removed from Project category' AS step,
-       COUNT(*) AS remaining
-FROM categories_categoryoptions
-WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'MRwzyV0kXv9');
-
--- ============================================================================
--- STEP 3: Assign 3 categories to destination categoryCombo hTqaMzEox3l
+-- STEP 1: Assign 3 categories to destination categoryCombo hTqaMzEox3l
 -- sort_order starts at 1 (DHIS2 convention)
 -- ============================================================================
 
@@ -132,16 +132,17 @@ VALUES
    (SELECT categoryid FROM dataelementcategory WHERE uid = 'sHta2dMEOLO'), 3)
 ON CONFLICT DO NOTHING;
 
-SELECT 'STEP 3 - Categories assigned to destination combo' AS step,
+SELECT 'STEP 1 - Categories assigned to destination combo' AS step,
        COUNT(*) AS categories_count
 FROM categorycombos_categories
 WHERE categorycomboid = (SELECT categorycomboid FROM categorycombo WHERE uid = 'hTqaMzEox3l');
 
 -- ============================================================================
--- STEP 4: Identify COCs to move
+-- STEP 2: Identify COCs to move
 -- ============================================================================
 
-CREATE TEMP TABLE cocs_to_move AS
+DROP TABLE IF EXISTS cocs_to_move;
+CREATE TABLE cocs_to_move AS
 SELECT DISTINCT ccoc.categoryoptioncomboid
 FROM categorycombos_optioncombos ccoc
 JOIN categorycombo cc
@@ -163,17 +164,17 @@ JOIN datavalue dv
   ON dv.attributeoptioncomboid = ccoc.categoryoptioncomboid
  AND dv.deleted = false;
 
-SELECT 'STEP 4 - COCs to move identified' AS step, COUNT(*) AS total FROM cocs_to_move;
+SELECT 'STEP 2 - COCs to move identified' AS step, COUNT(*) AS total FROM cocs_to_move;
 
 -- ============================================================================
--- STEP 5: Move COCs - update bridge table categorycombos_optioncombos
+-- STEP 3: Move COCs - update bridge table categorycombos_optioncombos
 -- ============================================================================
 
 UPDATE categorycombos_optioncombos
 SET categorycomboid = (SELECT categorycomboid FROM categorycombo WHERE uid = 'hTqaMzEox3l')
 WHERE categoryoptioncomboid IN (SELECT categoryoptioncomboid FROM cocs_to_move);
 
-SELECT 'STEP 5 - COCs moved to destination combo' AS step, COUNT(*) AS total
+SELECT 'STEP 3 - COCs moved to destination combo' AS step, COUNT(*) AS total
 FROM categorycombos_optioncombos
 WHERE categorycomboid = (SELECT categorycomboid FROM categorycombo WHERE uid = 'hTqaMzEox3l');
 
@@ -190,7 +191,7 @@ JOIN categoryoptioncombos_categoryoptions cocco ON cocco.categoryoptioncomboid =
 JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid AND opt.name LIKE '%[DEPRECATED]%'
 JOIN datavalue dv ON dv.attributeoptioncomboid = ccoc.categoryoptioncomboid AND dv.deleted = false;
 
--- VERIFY 1b - Deprecated COCs WITHOUT dataValues remaining in GmXXE8fiCK5 (expected, not moved by design)
+-- VERIFY 1b - Deprecated COCs WITHOUT dataValues remaining in GmXXE8fiCK5 (expected)
 SELECT 'VERIFY 1b - Deprecated COCs WITHOUT data in GmXXE8fiCK5 (expected)' AS check_name,
        COUNT(*) AS total
 FROM categorycombos_optioncombos ccoc
@@ -229,17 +230,6 @@ JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptio
 GROUP BY coc.uid
 LIMIT 5;
 
-SELECT 'VERIFY 5 - totals' AS check_name,
-       coc.uid,
-       count(coc.uid) AS options
-FROM categorycombos_optioncombos ccoc
-JOIN categorycombo cc ON cc.categorycomboid = ccoc.categorycomboid AND cc.uid = 'hTqaMzEox3l'
-JOIN categoryoptioncombo coc ON coc.categoryoptioncomboid = ccoc.categoryoptioncomboid
-JOIN categoryoptioncombos_categoryoptions cocco ON cocco.categoryoptioncomboid = coc.categoryoptioncomboid
-JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid
-GROUP BY coc.uid
-LIMIT 5;
-
 -- VERIFY 6 - DataValues associated to the new combo (should be > 0)
 SELECT 'VERIFY 6 - DataValues in hTqaMzEox3l (should be > 0)' AS check_name,
        COUNT(*) AS total
@@ -268,7 +258,6 @@ JOIN dataelementcategoryoption opt
 WHERE dv.deleted = false;
 
 -- COMMIT;
--- ROLLBACK;
 
-DROP TABLE IF EXISTS old_projects;
-DROP TABLE IF EXISTS cocs_to_move;
+-- DROP TABLE IF EXISTS old_projects;
+-- DROP TABLE IF EXISTS cocs_to_move;
