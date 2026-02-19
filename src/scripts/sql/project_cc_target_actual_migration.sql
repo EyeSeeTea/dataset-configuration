@@ -1,10 +1,10 @@
 -- ============================================================================
--- DHIS2 Category Combo Migration Script
+-- DHIS2 Category Combo Migration Script - Project-CC-Target/Actual to Project-CC-Target/Actual_Old
 -- ============================================================================
 -- FROM: GmXXE8fiCK5 (Project-CC-Target/Actual)
 --       Categories: MRwzyV0kXv9 (Project) x ouNRBWIbnxY (Phase of Emergency) x sHta2dMEOLO (ActualTargets)
 --
--- TO:   hTqaMzEox3l (ProjectTargetActual_Old)
+-- TO:   hTqaMzEox3l (Project-CC-Target/Actual_Old)
 --       Categories: WIWj6TauYO8 (Old_Project) x Ce6Bdp9vVog (CoreCompetencies_Deprecated) x sHta2dMEOLO (ActualTargets)
 --
 -- What this script does:
@@ -181,12 +181,27 @@ WHERE categorycomboid = (SELECT categorycomboid FROM categorycombo WHERE uid = '
 -- VERIFICATION QUERIES
 -- ============================================================================
 
-SELECT 'VERIFY 1 - Deprecated COCs remaining in GmXXE8fiCK5 (should be 0)' AS check_name,
+-- VERIFY 1a - Deprecated COCs WITH dataValues remaining in GmXXE8fiCK5 (should be 0)
+SELECT 'VERIFY 1a - Deprecated COCs WITH data in GmXXE8fiCK5 (should be 0)' AS check_name,
+       COUNT(DISTINCT ccoc.categoryoptioncomboid) AS total
+FROM categorycombos_optioncombos ccoc
+JOIN categorycombo cc ON cc.categorycomboid = ccoc.categorycomboid AND cc.uid = 'GmXXE8fiCK5'
+JOIN categoryoptioncombos_categoryoptions cocco ON cocco.categoryoptioncomboid = ccoc.categoryoptioncomboid
+JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid AND opt.name LIKE '%[DEPRECATED]%'
+JOIN datavalue dv ON dv.attributeoptioncomboid = ccoc.categoryoptioncomboid AND dv.deleted = false;
+
+-- VERIFY 1b - Deprecated COCs WITHOUT dataValues remaining in GmXXE8fiCK5 (expected, not moved by design)
+SELECT 'VERIFY 1b - Deprecated COCs WITHOUT data in GmXXE8fiCK5 (expected)' AS check_name,
        COUNT(*) AS total
 FROM categorycombos_optioncombos ccoc
 JOIN categorycombo cc ON cc.categorycomboid = ccoc.categorycomboid AND cc.uid = 'GmXXE8fiCK5'
 JOIN categoryoptioncombos_categoryoptions cocco ON cocco.categoryoptioncomboid = ccoc.categoryoptioncomboid
-JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid AND opt.name LIKE '%[DEPRECATED]%';
+JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid AND opt.name LIKE '%[DEPRECATED]%'
+WHERE NOT EXISTS (
+  SELECT 1 FROM datavalue dv
+  WHERE dv.attributeoptioncomboid = ccoc.categoryoptioncomboid
+    AND dv.deleted = false
+);
 
 SELECT 'VERIFY 2 - Total COCs in hTqaMzEox3l' AS check_name,
        COUNT(*) AS total
@@ -206,6 +221,17 @@ WHERE categoryid = (SELECT categoryid FROM dataelementcategory WHERE uid = 'MRwz
 SELECT 'VERIFY 5 - Sample moved COC structure (only first 5 rows)' AS check_name,
        coc.uid AS coc_uid,
        string_agg(opt.name, ' | ' ORDER BY opt.name) AS options
+FROM categorycombos_optioncombos ccoc
+JOIN categorycombo cc ON cc.categorycomboid = ccoc.categorycomboid AND cc.uid = 'hTqaMzEox3l'
+JOIN categoryoptioncombo coc ON coc.categoryoptioncomboid = ccoc.categoryoptioncomboid
+JOIN categoryoptioncombos_categoryoptions cocco ON cocco.categoryoptioncomboid = coc.categoryoptioncomboid
+JOIN dataelementcategoryoption opt ON opt.categoryoptionid = cocco.categoryoptionid
+GROUP BY coc.uid
+LIMIT 5;
+
+SELECT 'VERIFY 5 - totals' AS check_name,
+       coc.uid,
+       count(coc.uid) AS options
 FROM categorycombos_optioncombos ccoc
 JOIN categorycombo cc ON cc.categorycomboid = ccoc.categorycomboid AND cc.uid = 'hTqaMzEox3l'
 JOIN categoryoptioncombo coc ON coc.categoryoptioncomboid = ccoc.categoryoptioncomboid
@@ -241,7 +267,7 @@ JOIN dataelementcategoryoption opt
  AND opt.name LIKE '%[DEPRECATED]%'
 WHERE dv.deleted = false;
 
-COMMIT;
+-- COMMIT;
 -- ROLLBACK;
 
 DROP TABLE IF EXISTS old_projects;
