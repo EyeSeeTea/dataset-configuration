@@ -13,12 +13,12 @@ type ScriptArgs = Readonly<{
     persist: boolean;
 }>;
 
-type Category = Readonly<{ id: Id; categoryOptions?: Array<{ id: Id }> }>;
+type Category = Readonly<{ id: Id; categoryOptions: Array<{ id: Id }> }>;
 
-const DEFAULTS = {
-    sqlViewId: "XKCUtfKjjOt",
-    fromCategoryId: "MRwzyV0kXv9",
-    toCategoryId: "WIWj6TauYO8",
+const metadata = {
+    sqlViewId: "XKCUtfKjjOt", //SqlView > move_old_projects
+    fromCategoryId: "MRwzyV0kXv9", // Category -> Project
+    toCategoryId: "WIWj6TauYO8", // Category -> Old_Project
 } as const;
 
 const main = () => {
@@ -44,7 +44,6 @@ const main = () => {
             }),
             persist: flag({
                 long: "persist",
-                short: "a",
                 description: "Persist changes",
             }),
         },
@@ -61,7 +60,7 @@ const runMigration = async (args: ScriptArgs): Promise<void> => {
         backend: "xhr",
     });
 
-    const projects = await getOldProjectsWithDeprecatedData(api, DEFAULTS.sqlViewId);
+    const projects = await getOldProjectsWithDeprecatedData(api, metadata.sqlViewId);
     const oldProjectIdsInSqlView = projects.map(project => project.id);
 
     if (oldProjectIdsInSqlView.length === 0) {
@@ -69,8 +68,8 @@ const runMigration = async (args: ScriptArgs): Promise<void> => {
         return;
     }
 
-    const fromCategory = await getCategoryById(api, DEFAULTS.fromCategoryId);
-    const toCategory = await getCategoryById(api, DEFAULTS.toCategoryId);
+    const fromCategory = await getCategoryById(api, metadata.fromCategoryId);
+    const toCategory = await getCategoryById(api, metadata.toCategoryId);
 
     const fromCategoryOptionIds = getCategoryOptionIds(fromCategory);
     const toCategoryOptionIds = getCategoryOptionIds(toCategory);
@@ -89,8 +88,8 @@ const runMigration = async (args: ScriptArgs): Promise<void> => {
     writeFileSync(metadataFileName, JSON.stringify(metadataToPost, null, 4));
 
     logSummary({
-        fromCategoryId: DEFAULTS.fromCategoryId,
-        toCategoryId: DEFAULTS.toCategoryId,
+        fromCategoryId: metadata.fromCategoryId,
+        toCategoryId: metadata.toCategoryId,
         sourceCategoryOptionsBefore: fromCategoryOptionIds.length,
         targetCategoryOptionsBefore: toCategoryOptionIds.length,
         idsToMove: idsToMove.length,
@@ -121,8 +120,9 @@ const getOldProjectsWithDeprecatedData = async (
     api: D2Api,
     sqlViewId: Id
 ): Promise<{ id: string; name: string }[]> => {
-    // @ts-expect-error
-    const response = await api.sqlViews.query(sqlViewId, {}, { paging: false }).getData();
+    const response = await api.sqlViews
+        .query(sqlViewId, {}, { ["paging" as string]: false })
+        .getData();
 
     return response.rows.map(row => {
         const getValue = (key: string) => row[key] || "";

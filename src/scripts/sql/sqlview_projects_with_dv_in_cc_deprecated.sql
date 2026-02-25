@@ -12,6 +12,7 @@ JOIN categorycombos_optioncombos ccoc
   ON ccoc.categoryoptioncomboid = cocco.categoryoptioncomboid
 JOIN categorycombo cc
   ON cc.categorycomboid = ccoc.categorycomboid
+  -- categoryCombo: Project-CC-Target/Actual
  AND cc.uid = 'GmXXE8fiCK5'
 JOIN datavalue dv
   ON dv.attributeoptioncomboid = cocco.categoryoptioncomboid
