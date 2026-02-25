@@ -258,6 +258,3 @@ JOIN dataelementcategoryoption opt
 WHERE dv.deleted = false;
 
 -- COMMIT;
-
--- DROP TABLE IF EXISTS old_projects;
--- DROP TABLE IF EXISTS cocs_to_move;
