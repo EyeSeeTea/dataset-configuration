@@ -188,7 +188,7 @@ export function getCommonActions<T extends HasPermission>(
             text: i18n.t("Set output/outcome period dates"),
             icon: <DateRangeIcon />,
             multiple: true,
-            isActive: isActionActive,
+            isActive: rows => isActionActive(rows) && user.isAdmin(),
             onClick: selectedIds => {
                 onAction({ ids: selectedIds, action: "set_period_dates" });
             },
