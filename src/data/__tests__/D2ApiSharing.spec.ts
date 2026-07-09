@@ -1,44 +1,24 @@
 import { D2ApiSharing } from "$/data/D2ApiSharing";
-import { AccessData } from "$/domain/entities/DataSet";
-import { Permission, Permissions } from "$/domain/entities/Permission";
-
-const sharingPermissions: Permissions = {
-    data: Permission.create({ read: true, write: true }),
-    metadata: Permission.create({ read: true, write: false }),
-};
-
-const fallbackAccess: AccessData[] = [
-    {
-        id: "swAdminGroupId",
-        name: "SW_Administrators",
-        type: "groups",
-        permissions: sharingPermissions,
-    },
-    {
-        id: "swUsersGroupId",
-        name: "SW_Users",
-        type: "groups",
-        permissions: sharingPermissions,
-    },
-];
+import { Permission } from "$/domain/entities/Permission";
+import { swAccessGroups } from "$/domain/entities/__tests__/sharingFixtures";
 
 describe("D2ApiSharing", () => {
     it("should generate non-empty userGroups from access copied from the project sharing", () => {
         const d2ApiSharing = new D2ApiSharing();
 
         const result = d2ApiSharing.generateSharingData({
-            access: fallbackAccess,
+            access: swAccessGroups,
             permissions: Permission.noPermissions(),
         });
 
         expect(result.userGroups).toEqual({
-            swAdminGroupId: {
-                id: "swAdminGroupId",
+            OCFhIi9THVW: {
+                id: "OCFhIi9THVW",
                 displayName: "SW_Administrators",
                 access: "r-rw----",
             },
-            swUsersGroupId: {
-                id: "swUsersGroupId",
+            VASLT4IGA6c: {
+                id: "VASLT4IGA6c",
                 displayName: "SW_Users",
                 access: "r-rw----",
             },

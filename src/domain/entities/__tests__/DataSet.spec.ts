@@ -1,7 +1,12 @@
-import { AccessData, DataSet, DataSetAttrs } from "$/domain/entities/DataSet";
-import { Permission, Permissions } from "$/domain/entities/Permission";
+import { DataSet, DataSetAttrs } from "$/domain/entities/DataSet";
+import { Permission } from "$/domain/entities/Permission";
 import { Project } from "$/domain/entities/Project";
 import { getErrorMessageFromErrors } from "$/domain/entities/generic/Error";
+import {
+    projectWithoutGroupsTest,
+    projectWithoutRegionTest,
+    swAccessGroups,
+} from "$/domain/entities/__tests__/sharingFixtures";
 import { configTest } from "$/utils/tests";
 import { Maybe } from "$/utils/ts-utils";
 import { getUid } from "$/utils/uid";
@@ -30,37 +35,6 @@ const projectTest: Project = Project.create({
         },
     ],
 });
-
-const swSharingPermissions: Permissions = {
-    data: Permission.create({ read: true, write: true }),
-    metadata: Permission.create({ read: true, write: false }),
-};
-
-const swAccessGroups: AccessData[] = [
-    {
-        id: "OCFhIi9THVW",
-        name: "SW_Administrators",
-        type: "groups",
-        permissions: swSharingPermissions,
-    },
-    {
-        id: "VASLT4IGA6c",
-        name: "SW_Users",
-        type: "groups",
-        permissions: swSharingPermissions,
-    },
-];
-
-const swUserAccess: AccessData = {
-    id: "swUserId",
-    name: "John Doe",
-    type: "users",
-    permissions: swSharingPermissions,
-};
-
-// SW has no matching region in configTest, so region derivation gives an empty result
-const projectWithoutRegionTest = createProject("SWFM2604", [...swAccessGroups, swUserAccess]);
-const projectWithoutGroupsTest = createProject("GL_CatO:CRFM", [swUserAccess]);
 
 describe("DataSet", () => {
     it("should throw an error if project and org. units are not present", async () => {
@@ -164,20 +138,6 @@ describe("DataSet", () => {
 
 function createDataSet(data?: Partial<DataSetAttrs>): DataSet {
     return DataSet.initial(getUid(new Date().getTime().toString()), data);
-}
-
-function createProject(code: string, access: AccessData[]): Project {
-    return Project.create({
-        id: getUid(code),
-        name: `Test Project ${code}`,
-        startDate: new Date().toISOString(),
-        endDate: new Date().toISOString(),
-        code,
-        lastUpdated: new Date().toISOString(),
-        orgsUnits: [],
-        dataSets: [],
-        access,
-    });
 }
 
 function expectUserGroups(dataSet: Maybe<DataSet>) {
