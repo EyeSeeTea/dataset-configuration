@@ -5,8 +5,8 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1)\n"
-"POT-Creation-Date: 2025-12-11T09:29:10.813Z\n"
-"PO-Revision-Date: 2025-12-11T09:29:10.813Z\n"
+"POT-Creation-Date: 2026-07-09T20:12:45.540Z\n"
+"PO-Revision-Date: 2026-07-09T20:12:45.540Z\n"
 
 msgid "edit dataset"
 msgstr ""
@@ -408,6 +408,16 @@ msgid "<No value>"
 msgstr ""
 
 msgid "Select Project"
+msgstr ""
+
+msgid ""
+"Sharing settings is not available for this project/org. unit. The dataset "
+"will inherit the sharing settings of the linked project."
+msgstr ""
+
+msgid ""
+"Sharing settings is not available and the linked project has no user groups "
+"in its sharing settings. The dataset will be saved without sharing settings."
 msgstr ""
 
 msgid "DataSet name"
