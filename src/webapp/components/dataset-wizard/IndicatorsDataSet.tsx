@@ -129,6 +129,7 @@ export const IndicatorsDataSet = React.memo((props: IndicatorsDataSetProps) => {
     const validateIndicators = useValidateIndicators({
         dataSet,
         indicators,
+        existingIndicatorIds: dataSetSettings.existingIndicatorIds,
         onChange,
         setSelectedIndicators,
         setSorting,
@@ -521,6 +522,7 @@ export const StatusIndicator = React.memo((props: { status: string }) => {
 
 function useValidateIndicators(props: {
     indicators: Indicator[];
+    existingIndicatorIds: Id[];
     onChange: (dataSet: DataSet) => void;
     dataSet: DataSet;
     setSelectedIndicators: React.Dispatch<React.SetStateAction<Id[]>>;
@@ -534,6 +536,7 @@ function useValidateIndicators(props: {
     const {
         companionTable,
         indicators,
+        existingIndicatorIds,
         onChange,
         dataSet,
         onShowCompanionIndicator,
@@ -595,6 +598,7 @@ function useValidateIndicators(props: {
             disable2026bvFA7fsiN3T({
                 indicators: currentIndicators,
                 dataSet: dataSetIndicators,
+                existingIndicatorIds,
             }).run(
                 updatedDataSet => onChange(updatedDataSet),
                 () => onChange(dataSetIndicators)
@@ -603,6 +607,7 @@ function useValidateIndicators(props: {
         },
         [
             companionTable,
+            existingIndicatorIds,
             dataSet,
             alertedIndicatorIds,
             indicatorsById,
