@@ -53,10 +53,18 @@ export function useDisable2026bvFA7fsiN3TOnIndicatorUpdate() {
             );
             if (!needsResolution) return Future.success(indicators);
 
-            return compositionRoot.indicators.getRelated.execute({
-                dataSet,
-                indicatorIdsToIgnore: existingIndicatorIds,
-            });
+            return compositionRoot.indicators.getRelated
+                .execute({
+                    dataSet,
+                    indicatorIdsToIgnore: existingIndicatorIds,
+                })
+                .mapError(error => {
+                    console.error(
+                        "Could not resolve relatedDataElements for outcomes",
+                        error.message
+                    );
+                    return error;
+                });
         },
         [compositionRoot]
     );
