@@ -78,6 +78,7 @@
         "source-map-explorer": "^2.5.3",
         "ts-node": "^10.9.1",
         "ts-prune": "^0.10.3",
+        "tsx": "4.21.0",
         "typedoc": "^0.25.1",
         "typescript": "5.2.2",
         "vite": "^4.2.0",
@@ -112,9 +113,10 @@
         "localize": "yarn update-po && d2-i18n-generate -n d2-dataset-configuration -p ./i18n/ -o ./src/locales/",
         "update-po": "yarn extract-pot && find i18n/ -name '*.po' -exec msgmerge --backup=off -U {} i18n/en.pot \\;",
         "prepare": "husky install",
-        "migrate-period-dates": "npx ts-node src/scripts/migrate-dataset-period-dates",
-        "migrate-ds-project": "npx ts-node src/scripts/migrate-dataset-project.ts",
-        "add-core-competency": "npx ts-node src/scripts/add-core-compentency-to-datasets.ts"
+        "migrate-period-dates": "tsx src/scripts/migrate-dataset-period-dates",
+        "migrate-ds-project": "tsx src/scripts/migrate-dataset-project.ts",
+        "add-core-competency": "tsx src/scripts/add-core-compentency-to-datasets.ts",
+        "remove-old-projects": "tsx src/scripts/move-old-projects.ts"
     },
     "manifest.webapp": {
         "name": "New DC App",
