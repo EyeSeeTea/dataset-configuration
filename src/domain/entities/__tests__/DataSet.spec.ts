@@ -2,6 +2,11 @@ import { DataSet, DataSetAttrs } from "$/domain/entities/DataSet";
 import { Permission } from "$/domain/entities/Permission";
 import { Project } from "$/domain/entities/Project";
 import { getErrorMessageFromErrors } from "$/domain/entities/generic/Error";
+import {
+    projectWithoutGroupsTest,
+    projectWithoutRegionTest,
+    swAccessGroups,
+} from "$/domain/entities/__tests__/sharingFixtures";
 import { configTest } from "$/utils/tests";
 import { Maybe } from "$/utils/ts-utils";
 import { getUid } from "$/utils/uid";
@@ -82,6 +87,52 @@ describe("DataSet", () => {
         expect(result).toHaveLength(0);
 
         expectUserGroups(dataSetToSave);
+    });
+
+    it("should report derived origin when project user groups match a region", async () => {
+        const dataSet = createDataSet({}).updateProject(projectTest, configTest);
+
+        expect(dataSet.getAccessOrigin(configTest)).toBe("derived");
+    });
+
+    it("should fallback to the project user groups when region derivation is empty", async () => {
+        const dataSet = createDataSet({}).updateProject(projectWithoutRegionTest, configTest);
+
+        expect(dataSet.access).toEqual(swAccessGroups);
+        expect(dataSet.getAccessOrigin(configTest)).toBe("projectFallback");
+    });
+
+    it("should not copy project users on fallback, only user groups", async () => {
+        const dataSet = createDataSet({}).updateProject(projectWithoutRegionTest, configTest);
+
+        expect(dataSet.access.every(access => access.type === "groups")).toBe(true);
+    });
+
+    it("should have empty access when project has no user groups in its sharing", async () => {
+        const dataSet = createDataSet({}).updateProject(projectWithoutGroupsTest, configTest);
+
+        expect(dataSet.access).toEqual([]);
+        expect(dataSet.getAccessOrigin(configTest)).toBe("none");
+    });
+
+    it("should keep fallback groups when updating access from region codes", async () => {
+        const dataSet = createDataSet({}).updateProject(projectWithoutRegionTest, configTest);
+
+        const updatedDataSet = dataSet.updateAccessFromRegionsCodes(["AF"], configTest);
+
+        const fallbackGroups = updatedDataSet.access.filter(access =>
+            access.name.startsWith("SW_")
+        );
+        expect(fallbackGroups).toEqual(swAccessGroups);
+        expectUserGroups(updatedDataSet);
+    });
+
+    it("should replace region groups when updating access from region codes", async () => {
+        const dataSet = createDataSet({}).updateProject(projectTest, configTest);
+
+        const updatedDataSet = dataSet.updateAccessFromRegionsCodes([], configTest);
+
+        expect(updatedDataSet.access).toEqual([]);
     });
 });
 

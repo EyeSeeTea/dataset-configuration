@@ -48,6 +48,7 @@ export type DataSetAttrs = {
 export type OrgUnit = { id: Id; code: string; name: string; path: Id[] };
 export type AccessData = { id: Id; permissions: Permissions; name: string; type: AccessType };
 export type AccessType = "users" | "groups";
+export type AccessOrigin = "derived" | "projectFallback" | "none";
 
 export type CoreCompetency = { id: Id; name: string; code: string };
 export type DisabledField = {
@@ -112,11 +113,17 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     updateAccessFromRegionsCodes(codes: string[], config: Config): DataSet {
-        const access = codes.flatMap(code => {
+        const regionCodes = config.regions.map(region => region.code);
+        const nonRegionAccess = this.access.filter(access => {
+            if (access.type !== "groups") return false;
+            const code = Project.extractCode(access.name);
+            return !code || !regionCodes.includes(code);
+        });
+        const accessFromCodes = codes.flatMap(code => {
             const userGroups = config.userGroups.filter(userGroup => userGroup.code === code);
             return this.buildAccessGroups(userGroups);
         });
-        return this._update({ access: access });
+        return this._update({ access: [...nonRegionAccess, ...accessFromCodes] });
     }
 
     update<K extends keyof DataSet>(fieldName: K, value: DataSet[K]): DataSet {
@@ -317,7 +324,20 @@ export class DataSet extends Struct<DataSetAttrs>() {
         return this.buildAccessGroups(userGroups);
     }
 
+    getAccessOrigin(config: Config): AccessOrigin {
+        const derivedAccess = this.deriveAccessFromProject(this.project, config);
+        if (derivedAccess.length > 0) return "derived";
+        return this.getProjectGroupAccess(this.project).length > 0 ? "projectFallback" : "none";
+    }
+
     private getAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
+        if (!project) return [];
+
+        const derivedAccess = this.deriveAccessFromProject(project, config);
+        return derivedAccess.length > 0 ? derivedAccess : this.getProjectGroupAccess(project);
+    }
+
+    private deriveAccessFromProject(project: Maybe<Project>, config: Config): AccessData[] {
         if (!project || !project.code) return [];
 
         const regionCodes = config.regions
@@ -329,6 +349,11 @@ export class DataSet extends Struct<DataSetAttrs>() {
         );
 
         return this.buildAccessGroups(userGroups);
+    }
+
+    private getProjectGroupAccess(project: Maybe<Project>): AccessData[] {
+        if (!project) return [];
+        return project.access.filter(access => access.type === "groups");
     }
 
     private buildAccessGroups(userGroups: UserGroup[]): AccessData[] {

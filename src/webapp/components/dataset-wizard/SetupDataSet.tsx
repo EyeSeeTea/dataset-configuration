@@ -87,6 +87,8 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
         [config, onChange, setProjectModalOpen, dataSet]
     );
 
+    const accessOrigin = dataSet.project ? dataSet.getAccessOrigin(config) : undefined;
+
     return (
         <Grid container spacing={2}>
             <Grid item xs={12}>
@@ -104,6 +106,20 @@ const SetupDataSet_ = React.memo((props: SetupDataSetProps) => {
                     }}
                     value={dataSet.project?.name ?? ""}
                 />
+                {accessOrigin === "projectFallback" && (
+                    <Typography variant="body2" color="textSecondary">
+                        {i18n.t(
+                            "Sharing settings is not available for this project/org. unit. The dataset will inherit the sharing settings of the linked project."
+                        )}
+                    </Typography>
+                )}
+                {accessOrigin === "none" && (
+                    <Typography variant="body2" color="error">
+                        {i18n.t(
+                            "Sharing settings is not available and the linked project has no user groups in its sharing settings. The dataset will be saved without sharing settings."
+                        )}
+                    </Typography>
+                )}
             </Grid>
 
             <Grid item xs={12}>
