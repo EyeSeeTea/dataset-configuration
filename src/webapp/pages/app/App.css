@@ -1,0 +1,128 @@
+html {
+    background-color: #f3f3f3;
+    font-family: Roboto, Arial, sans-serif;
+    overflow-y: scroll;
+}
+
+body {
+    margin: 0;
+}
+
+li {
+    line-height: 1.75;
+}
+
+.dropdown {
+    width: 100%;
+}
+
+.dropdown > div {
+    margin-left: 0;
+}
+
+.dropdown-resetmargins > div {
+    margin-inline-start: 0;
+    margin-block-start: 0;
+}
+
+.dropdown-resetmargins > label {
+    margin-inline-start: 0;
+}
+
+.dropdown-resetmargins div[role="button"] {
+    color: #000;
+}
+
+tr:has(.MuiAlert-message) {
+    background-color: rgb(255, 238, 238);
+}
+
+.dataset-table div[data-test="search"] {
+    padding-inline-start: 0.4em;
+}
+
+.dropdown-disaggregates {
+    display: flex;
+    flex-direction: column;
+    row-gap: 2em;
+    max-width: 600px;
+}
+
+.indicator-row {
+    display: flex;
+    padding-block: 1em;
+}
+
+.indicator-row p {
+    margin: 0;
+}
+
+.indicator-row button {
+    margin-left: auto;
+}
+
+.periods-text {
+    padding: 0.5em 0;
+}
+
+.dataelement-header {
+    border: 1px solid rgb(224, 224, 224);
+    padding: 0.5em;
+}
+
+.dataelement-row {
+    border: 1px solid rgb(224, 224, 224);
+    max-width: 33vw;
+    overflow: hidden;
+    padding: 0.5em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding-block-start: 1em;
+}
+
+.setting-form-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    padding: 1em;
+}
+
+.settings-tabs {
+    background-color: rgb(228, 228, 228);
+}
+
+.settings-tabs button[role="tab"] {
+    flex-basis: 50% !important;
+    max-width: none;
+}
+
+.datepicker > .Mui-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.datepicker input.Mui-disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* 
+  Workaround to change the background color for selected items in dropdowns
+  because d2-ui-components uses its own theme provider.
+  TODO: add a prop to make theme configurable in d2-ui-components
+  https://github.com/EyeSeeTea/d2-ui-components/blob/development/src/dropdown/GenericDropdown.tsx#L26C7-L26C24
+*/
+li.Mui-selected {
+    background-color: rgb(253 90 0 / 50%) !important;
+}
+
+.search-box-indicators {
+    width: 33% !important;
+    max-width: 350px;
+}
