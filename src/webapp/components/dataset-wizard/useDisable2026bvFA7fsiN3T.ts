@@ -1,8 +1,9 @@
 import _ from "$/domain/entities/generic/Collection";
 import React from "react";
-import { Indicator } from "$/domain/entities/Indicator";
+import { Indicator, IndicatorType } from "$/domain/entities/Indicator";
 import { DataSet, DisabledField } from "$/domain/entities/DataSet";
 import { Id } from "@eyeseetea/d2-api";
+import { Maybe } from "$/utils/ts-utils";
 import { HashMap } from "$/domain/entities/generic/HashMap";
 import { CategoryCombination } from "$/domain/entities/CategoryCombination";
 import { useAppContext } from "$/webapp/contexts/app-context";
@@ -16,65 +17,6 @@ export function useDisable2026bvFA7fsiN3TOnIndicatorUpdate() {
     const { compositionRoot } = useAppContext();
 
     const categoryCombinationsMap = React.useRef(HashMap.empty<Id, CategoryCombination>());
-
-    const disable2026bvFA7fsiN3T = React.useCallback(
-        (props: { indicators: Indicator[]; dataSet: DataSet }) => {
-            const { indicators, dataSet } = props;
-            if (dataSet.project?.startDate === undefined) return Future.success(dataSet);
-
-            const startDate = new Date(dataSet.project?.startDate);
-            const indicatorsWithCocToDisable = getIndicatorsWith2026bvFA7fsiN3T(indicators);
-
-            if (
-                !(startDate.getFullYear() >= yearToDisable && indicatorsWithCocToDisable.size > 0)
-            ) {
-                return Future.success(dataSet);
-            }
-
-            const combinationIds = indicatorsWithCocToDisable
-                .map(indicator => indicator.categories.map(category => category.disaggregationId))
-                .flatten()
-                .compact()
-                .value();
-            return getAndCacheCategoryCombinations(combinationIds).map(comboMap => {
-                if (comboMap) {
-                    const disabledFields = indicatorsWithCocToDisable
-                        .flatMap(({ indicator, categories }) =>
-                            _(categories)
-                                .compactMap(({ disaggregationId }) => {
-                                    const combination = comboMap.get(disaggregationId);
-
-                                    if (!combination) return;
-                                    else {
-                                        return combination.optionsCombos
-                                            .filter(coc =>
-                                                coc.options.some(
-                                                    option => option.id === cocToDisable
-                                                )
-                                            )
-                                            .map<DisabledField>(coc => ({
-                                                dataElementId: indicator.id,
-                                                optionComboId: coc.id,
-                                                competencyId: indicator.coreCompetency.id,
-                                                type: indicator.type,
-                                            }));
-                                    }
-                                })
-                                .flatten()
-                        )
-                        .concat(dataSet.disabledFields)
-                        .uniqBy(
-                            field =>
-                                `${field.dataElementId}.${field.optionComboId}.${field.type}.${field.competencyId}`
-                        )
-                        .value();
-                    return dataSet.setDisabledFields(disabledFields);
-                }
-                return dataSet;
-            });
-        },
-        []
-    );
 
     const getAndCacheCategoryCombinations = React.useCallback(
         (combinationsIds: Id[]) => {
@@ -100,30 +42,127 @@ export function useDisable2026bvFA7fsiN3TOnIndicatorUpdate() {
         [compositionRoot]
     );
 
+    const resolveOutcomeRelatedDataElements = React.useCallback(
+        (props: { indicators: Indicator[]; dataSet: DataSet; existingIndicatorIds: Id[] }) => {
+            const { indicators, dataSet, existingIndicatorIds } = props;
+            const needsResolution = indicators.some(
+                indicator =>
+                    indicator.type === "outcomes" &&
+                    indicator.relatedDataElements.length === 0 &&
+                    !existingIndicatorIds.includes(indicator.id)
+            );
+            if (!needsResolution) return Future.success(indicators);
+
+            return compositionRoot.indicators.getRelated
+                .execute({
+                    dataSet,
+                    indicatorIdsToIgnore: existingIndicatorIds,
+                })
+                .mapError(error => {
+                    console.error(
+                        "Could not resolve relatedDataElements for outcomes",
+                        error.message
+                    );
+                    return error;
+                });
+        },
+        [compositionRoot]
+    );
+
+    const disable2026bvFA7fsiN3T = React.useCallback(
+        (props: { indicators: Indicator[]; dataSet: DataSet; existingIndicatorIds: Id[] }) => {
+            const { indicators, dataSet, existingIndicatorIds } = props;
+            if (dataSet.project?.startDate === undefined) return Future.success(dataSet);
+
+            const startDate = new Date(dataSet.project.startDate);
+            if (startDate.getFullYear() < yearToDisable) return Future.success(dataSet);
+
+            // Resolve outcome relatedDataElements here so disabling applies even if the
+            // disaggregation step (where they are normally loaded) is skipped.
+            return resolveOutcomeRelatedDataElements({
+                indicators,
+                dataSet,
+                existingIndicatorIds,
+            }).flatMap(resolvedIndicators => {
+                const dataSetWithIndicators = dataSet.setIndicators(resolvedIndicators);
+                const disableTargets = getDisableTargetsWith2026bvFA7fsiN3T(resolvedIndicators);
+                if (disableTargets.length === 0) return Future.success(dataSetWithIndicators);
+
+                const combinationIds = _(disableTargets)
+                    .map(target => target.disaggregationId)
+                    .uniq()
+                    .value();
+                return getAndCacheCategoryCombinations(combinationIds).map(comboMap => {
+                    const disabledFields = _(disableTargets)
+                        .flatMap(target =>
+                            _(comboMap.get(target.disaggregationId)?.optionsCombos ?? [])
+                                .filter(coc =>
+                                    coc.options.some(option => option.id === cocToDisable)
+                                )
+                                .map<DisabledField>(coc => ({
+                                    dataElementId: target.dataElementId,
+                                    optionComboId: coc.id,
+                                    competencyId: target.competencyId,
+                                    type: target.type,
+                                }))
+                        )
+                        .concat(dataSetWithIndicators.disabledFields)
+                        .uniqBy(
+                            field =>
+                                `${field.dataElementId}.${field.optionComboId}.${field.type}.${field.competencyId}`
+                        )
+                        .value();
+                    return dataSetWithIndicators.setDisabledFields(disabledFields);
+                });
+            });
+        },
+        [getAndCacheCategoryCombinations, resolveOutcomeRelatedDataElements]
+    );
+
     return {
         disable2026bvFA7fsiN3T,
     };
 }
 
-function getIndicatorsWith2026bvFA7fsiN3T(indicators: Indicator[]) {
-    return _(indicators).compactMap(indicator => {
-        const disaggregation = indicator.disaggregation;
-        if (!disaggregation) return;
+type DisableTarget = {
+    dataElementId: Id;
+    disaggregationId: Id;
+    competencyId: Id;
+    type: IndicatorType;
+};
 
-        const categories = disaggregation.categories
-            .map(category => ({
-                category,
-                disaggregationId: disaggregation.id,
-            }))
-            .filter(
-                ({ category, disaggregationId }) =>
-                    disaggregationId && category.options.some(option => option.id === cocToDisable)
-            )
-            .map(({ category, disaggregationId }) => ({ category, disaggregationId }));
-        if (categories?.length) {
-            return { indicator, categories };
-        }
-    });
+// Outputs render the indicator itself; outcomes render their relatedDataElements, so the
+// disabled field must key on the rendered element to reach the data-entry form.
+function getDisableTargetsWith2026bvFA7fsiN3T(indicators: Indicator[]): DisableTarget[] {
+    return _(indicators)
+        .flatMap(indicator => {
+            const dataElementDisaggregations =
+                indicator.type === "outcomes"
+                    ? indicator.relatedDataElements
+                          .filter(dataElement => !dataElement.isComment)
+                          .map(dataElement => ({
+                              dataElementId: dataElement.id,
+                              disaggregation: dataElement.disaggregation,
+                          }))
+                    : [{ dataElementId: indicator.id, disaggregation: indicator.disaggregation }];
+
+            return _(dataElementDisaggregations).compactMap(
+                ({ dataElementId, disaggregation }): Maybe<DisableTarget> => {
+                    if (!disaggregation) return undefined;
+                    const hasOptionToDisable = disaggregation.categories.some(category =>
+                        category.options.some(option => option.id === cocToDisable)
+                    );
+                    if (!hasOptionToDisable) return undefined;
+                    return {
+                        dataElementId,
+                        disaggregationId: disaggregation.id,
+                        competencyId: indicator.coreCompetency.id,
+                        type: indicator.type,
+                    };
+                }
+            );
+        })
+        .value();
 }
 
 export function disableCategoryOptionFor2026(optionIds: string[], projectStartDate?: string) {
