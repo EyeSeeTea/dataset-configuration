@@ -328,17 +328,31 @@ function setIndicatorMatching(indicatorMatching_) {
         }
     };
 
-    var applyPeriodDates = function () {
+    var formatDate = function (date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return [day, month, year].join("/");
+    };
+
+    // Reason: v42 never populates dhis2.de.periodChoices, so getSelectedPeriod() always returns
+    // undefined. currentPeriodId and #selectedPeriodId are both supported by its legacy shim.
+    var getSelectedPeriodYear = function () {
         /* eslint-disable no-undef */
-        const selectedPeriod = dhis2.de.getSelectedPeriod();
-        if (!selectedPeriod || !selectedPeriod.startDate) return;
+        const periodId =
+            (window.dhis2 && dhis2.de && dhis2.de.currentPeriodId) || $("#selectedPeriodId").val();
+        return periodId ? String(periodId).slice(0, 4) : undefined;
+    };
+
+    var applyPeriodDates = function () {
+        const periodYear = getSelectedPeriodYear();
+        if (!periodYear) return;
         const getDate = isoDate => (isoDate ? new Date(isoDate.split("T")[0]) : null);
         const getFormatDate = isoDate =>
-            isoDate ? formatDate(new Date(isoDate.split("T")[0]), "dd/MM/yyyy") : null;
-        const startDate = selectedPeriod.startDate;
-        const periodYear = startDate.split("-")[0];
+            isoDate ? formatDate(new Date(isoDate.split("T")[0])) : null;
         const today = new Date();
-        console.debug("applyPeriodDates", { periodDates, selectedPeriod, periodYear, today });
+        console.debug("applyPeriodDates", { periodDates, periodYear, today });
 
         ["output", "outcome"].forEach(type => {
             const obj = (periodDates[type] || {})[periodYear];
