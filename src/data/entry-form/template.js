@@ -1,4 +1,3 @@
-var _ = window._;
 var $ = window.$;
 var periodDates = {};
 var indicatorMatching = [];
@@ -13,42 +12,36 @@ function setIndicatorMatching(indicatorMatching_) {
 }
 
 (function () {
-    _.mixin({
-        cartesianProduct: function (args) {
-            return _.reduce(
-                args,
-                function (a, b) {
-                    return _.flatten(
-                        _.map(a, function (x) {
-                            return _.map(b, function (y) {
-                                return x.concat([y]);
-                            });
-                        }),
-                        true
-                    );
-                },
-                [[]]
-            );
-        },
+    // Reason: the v42 data entry app no longer exposes lodash to custom forms
+    const last = xs => xs[xs.length - 1];
 
-        groupConsecutiveBy: function (xs, mapper) {
-            mapper = mapper || _.identity;
-            var reducer = (acc, x) => {
-                if (_.isEmpty(acc)) {
-                    return acc.concat([[x]]);
-                } else {
-                    var last = _.last(acc);
-                    if (_.isEqual(mapper(_.last(last)), mapper(x))) {
-                        last.push(x);
-                        return acc;
-                    } else {
-                        return acc.concat([[x]]);
-                    }
-                }
-            };
-            return _(xs).reduce(reducer, []);
-        },
-    });
+    const range = n => Array.from(Array(n), (_value, index) => index);
+
+    const uniq = xs => Array.from(new Set(xs));
+
+    const max = xs => (xs.length === 0 ? undefined : xs.reduce((a, b) => Math.max(a, b)));
+
+    const zip = arrays =>
+        range(max(arrays.map(array => array.length)) ?? 0).map(index =>
+            arrays.map(array => array[index])
+        );
+
+    const isEqual = (a, b) =>
+        Array.isArray(a) && Array.isArray(b)
+            ? a.length === b.length && a.every((x, index) => isEqual(x, b[index]))
+            : a === b;
+
+    // Groups adjacent items sharing the same mapped key: [a1, a2, b1] -> [[a1, a2], [b1]]
+    const groupConsecutiveBy = (xs, mapper = x => x) =>
+        xs.reduce((groups, x) => {
+            const lastGroup = last(groups);
+            return lastGroup && isEqual(mapper(last(lastGroup)), mapper(x))
+                ? [...groups.slice(0, -1), [...lastGroup, x]]
+                : [...groups, [x]];
+        }, []);
+
+    const groupCocsByCategory = (cocs, categoryIndex) =>
+        groupConsecutiveBy(cocs, coc => coc.cos.slice(0, categoryIndex + 1));
 
     var debugElapsed = (label, fn) => {
         var start = new Date().getTime();
@@ -90,53 +83,57 @@ function setIndicatorMatching(indicatorMatching_) {
                     .find("thead tr")
                     .get()
                     .map(tr =>
-                        _.chain($(tr).find("th[scope=col]").get())
-                            .map(th => [
-                                repeat(parseInt($(th).attr("colspan")), $(th).text().trim()),
-                            ])
-                            .flatten()
-                            .value()
+                        $(tr)
+                            .find("th[scope=col]")
+                            .get()
+                            .flatMap(th =>
+                                repeat(parseInt($(th).attr("colspan")), $(th).text().trim())
+                            )
                     );
 
-                var categoryOptions = _.zip.apply(null, allCategoryOptions);
+                var categoryOptions = zip(allCategoryOptions);
                 var uniqCategories = allCategoryOptions.map(categoryOptions =>
-                    _.uniq(categoryOptions)
+                    uniq(categoryOptions)
                 );
                 if (categoryOptions.length !== cocIds.length) {
                     alert("Error: parsing of form failed");
                 }
-                var cocs = _.zip(categoryOptions, cocIds).map(pair => ({
+                var cocs = zip([categoryOptions, cocIds]).map(pair => ({
                     cos: pair[0],
                     id: pair[1],
                 }));
 
-                var rows = _.chain(table.find("tbody tr").get())
+                var rows = table
+                    .find("tbody tr")
+                    .get()
                     .map($)
-                    .map(tr => {
-                        var td = tr.find("td:first-child");
-                        var tdId = td.attr("id");
+                    .flatMap(tr => {
+                        const td = tr.find("td:first-child");
+                        const tdId = td.attr("id");
+                        if (!tdId) return [];
 
-                        if (tdId) {
-                            var deId = tdId.split("-")[0];
-                            var deName = td.text().trim();
-                            var valuesByCocId = _.chain(tr.find("td .entryfield").get())
+                        const valuesByCocId = Object.fromEntries(
+                            tr
+                                .find("td .entryfield")
+                                .get()
                                 .map($)
                                 .map(input => {
-                                    var cocId = input.attr("id").split("-")[1];
+                                    const cocId = input.attr("id").split("-")[1];
                                     return [cocId, { td: input.parent("td"), coc: cocId }];
                                 })
-                                .object()
-                                .value();
-                            return {
-                                de: { id: deId, name: deName, td: td },
+                        );
+
+                        return [
+                            {
+                                de: {
+                                    id: tdId.split("-")[0],
+                                    name: td.text().trim(),
+                                    td: td,
+                                },
                                 valuesByCocId: valuesByCocId,
-                            };
-                        } else {
-                            return null;
-                        }
-                    })
-                    .compact()
-                    .value();
+                            },
+                        ];
+                    });
 
                 var data = {
                     group: table.find("nrcinfoheader").text().trim(),
@@ -172,35 +169,32 @@ function setIndicatorMatching(indicatorMatching_) {
         if (categoryIndex >= nCategories - 1 || tableFitsInViewport(table)) {
             return [table];
         } else {
-            return _.chain(data.cocs)
-                .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
-                .map((splitCocs, splitTableIndex) =>
-                    splitTables(_.extend({}, data, { cocs: splitCocs }), {
-                        categoryIndex: categoryIndex + 1,
-                        tableIndex: options.tableIndex + splitTableIndex,
-                    })
-                )
-                .flatten(1)
-                .value();
+            return groupCocsByCategory(data.cocs, categoryIndex).flatMap(
+                (splitCocs, splitTableIndex) =>
+                    splitTables(
+                        { ...data, cocs: splitCocs },
+                        {
+                            categoryIndex: categoryIndex + 1,
+                            tableIndex: options.tableIndex + splitTableIndex,
+                        }
+                    )
+            );
         }
     };
 
     var buildTable = function (data, renderDataElementInfo) {
         var getValues = row => data.cocs.map(coc => row.valuesByCocId[coc.id]);
         var nCategories = data.categories.length;
-        var categoryThsList = _.range(nCategories).map(categoryIndex => {
-            return _.chain(data.cocs)
-                .groupConsecutiveBy(coc => coc.cos.slice(0, categoryIndex + 1))
-                .map(group => {
-                    var label = group[0].cos[categoryIndex];
-                    return $("<th>", {
-                        class: "nrcdataheader",
-                        colspan: group.length,
-                        scope: "col",
-                    }).text(label);
-                })
-                .value();
-        });
+        var categoryThsList = range(nCategories).map(categoryIndex =>
+            groupCocsByCategory(data.cocs, categoryIndex).map(group => {
+                var label = group[0].cos[categoryIndex];
+                return $("<th>", {
+                    class: "nrcdataheader",
+                    colspan: group.length,
+                    scope: "col",
+                }).text(label);
+            })
+        );
 
         return $("<table>", { id: "sectionTable", class: "sectionTable", cellspacing: "0" }).append(
             [
@@ -281,11 +275,14 @@ function setIndicatorMatching(indicatorMatching_) {
     };
 
     var renumerateInputFields = function () {
+        // Reason: a non-numeric tabindex would otherwise poison max to NaN, collapsing lastIndex to 0
         var lastIndex =
-            _.chain($("[tabindex]").get())
-                .map(x => parseInt($(x).attr("tabindex")))
-                .max()
-                .value() || 0;
+            max(
+                $("[tabindex]")
+                    .get()
+                    .map(x => parseInt($(x).attr("tabindex")))
+                    .filter(tabIndex => !Number.isNaN(tabIndex))
+            ) || 0;
         $("#contentDiv .entryfield").each((i, input) =>
             $(input).attr("tabindex", lastIndex + i + 1)
         );
@@ -491,6 +488,8 @@ function setIndicatorMatching(indicatorMatching_) {
         $("#selectedPeriodId").change(applyPeriodDates);
         loadJs("../dhis-web-commons/bootstrap/js/bootstrap.min.js");
         loadCss("../dhis-web-commons/bootstrap/css/bootstrap.min.css");
+        // Reason: the v42 data entry app no longer loads FontAwesome, used for the accordion arrows
+        loadCss("../dhis-web-commons/font-awesome/css/font-awesome.min.css");
     };
 
     $(init);
