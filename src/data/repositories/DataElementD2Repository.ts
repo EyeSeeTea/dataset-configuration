@@ -4,6 +4,7 @@ import { COMMENT_SUFIX, DataElement } from "$/domain/entities/DataElement";
 import { Future, FutureData } from "$/domain/entities/generic/Future";
 import { DataElementRepository } from "$/domain/repositories/DataElementRepository";
 import { D2Api } from "$/types/d2-api";
+import { isValidUid } from "$/utils/uid";
 
 export class DataElementD2Repository implements DataElementRepository {
     constructor(private api: D2Api) {}
@@ -68,7 +69,11 @@ export class DataElementD2Repository implements DataElementRepository {
                         categoryOptionCombos: { id: true, displayName: true },
                     },
                 },
-                filter: { identifiable: { in: identifiables } },
+                filter: {
+                    id: { in: identifiables.filter(isValidUid) },
+                    code: { in: identifiables.filter(value => !isValidUid(value)) },
+                },
+                rootJunction: "OR",
                 paging: false,
             })
         ).map(response => {

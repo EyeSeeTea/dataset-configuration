@@ -5,7 +5,7 @@
     padding: 1px 4px 1px 4px;
 }
 
-.formSection input[data-indicator-match-target="true"]:disabled  {
+.formSection input[data-indicator-match-target="true"]:disabled {
     background: #ffebcd !important;
 }
 
@@ -24,11 +24,10 @@
 }
 
 .formSection th {
-    font-weight: normal;
-    font-size: 14px;
+    color: #39547d;
+    font-weight: bold;
     text-align: center;
     white-space: normal !important;
-    max-width: 75px;
     background-color: #eaf7fb;
     max-width: 200px;
 }
@@ -200,13 +199,27 @@
     margin-top: 5px;
 }
 
+#contentDiv .formSection.sectionContainer {
+    width: fit-content;
+}
+
 .page p,
 .page td,
 .page th,
 .page input,
 .page select,
-.page textarea {
+.page textarea,
+#contentDiv p,
+#contentDiv td,
+#contentDiv input,
+#contentDiv select,
+#contentDiv textarea {
+    font-family: LiberationSans, arial, sans-serif;
     font-size: 9pt;
+}
+
+#contentDiv th {
+    font-size: 13px;
 }
 
 .page th {

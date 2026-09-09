@@ -85,7 +85,7 @@ export class D2CompanionRuleParser {
         } else if (first?.type === "atomic") {
             return [{ type: "atomic", code: first.code.trim() }, rest];
         } else {
-            throw new Error(`Unexpected token in factor: ${first}`);
+            throw new Error(`Unexpected token in factor: ${JSON.stringify(first)}`);
         }
     }
 
