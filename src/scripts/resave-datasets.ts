@@ -53,6 +53,7 @@ function main() {
                         ? "Pass --data-set-ids <ids>, or --all to resave every data set"
                         : "--data-set-ids contained no valid ids"
                 );
+                console.error(`Arguments received: ${process.argv.slice(2).join(" ")}`);
                 process.exit(1);
             }
 
