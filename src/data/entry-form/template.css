@@ -5,7 +5,7 @@
     padding: 1px 4px 1px 4px;
 }
 
-.formSection input[data-indicator-match-target="true"]:disabled  {
+.formSection input[data-indicator-match-target="true"]:disabled {
     background: #ffebcd !important;
 }
 

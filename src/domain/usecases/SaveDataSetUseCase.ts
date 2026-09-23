@@ -72,13 +72,14 @@ export class SaveDataSetUseCase {
     private saveProject(dataSet: DataSet, user: User): FutureData<Stats> {
         if (!dataSet.project) return Future.success(Stats.empty());
         return this.projectRepository.getById(dataSet.project.id).flatMap(project => {
-            if(!project.canEdit(user)) return Future.success(Stats.empty());
+            if (!project.canEdit(user)) return Future.success(Stats.empty());
 
             const orgUnitsAreEqual = this.compareOrgUnits(project, dataSet);
             if (orgUnitsAreEqual) return Future.success(Stats.empty());
-            return this.projectRepository.save(project.setOrgUnits(dataSet.orgUnits))
+            return this.projectRepository
+                .save(project.setOrgUnits(dataSet.orgUnits))
                 .flatMapError(error => {
-                    console.warn("Error saving project, ignoring updates. \n", String(error))
+                    console.warn("Error saving project, ignoring updates. \n", String(error));
                     return Future.success(Stats.empty());
                 });
         });
