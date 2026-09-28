@@ -13,7 +13,7 @@ This file documents every entry in the `resolutions` block of `package.json`. Ea
     -   **`parent/child` silently fails when the parent is not a root-level dependency.** It needs a `**/parent/child` wildcard prefix instead. `styled-components/postcss` binds without it because `styled-components` is a direct dependency.
     -   **A scoped entry that binds to nothing produces no warning.** Always confirm with `yarn why <pkg>` after installing: a successful `yarn install` proves nothing about whether the entry applied.
 -   **An override can force a parent past the range it declares.** That is a compatibility override, not a free action: each entry that does so names the consumer code path that was checked.
--   **`yarn audit` and GitHub/Dependabot disagree.** They score against different advisory sources, so use `yarn audit` as a directional signal and confirm what is really open against the Dependabot alerts.
+-   **`yarn audit` and GitHub/Dependabot disagree.** They score against different advisory sources, so the same finding can appear in only one of them or with a different severity. Any finding either one reports that has a published fix is in scope.
 
 ---
 
@@ -37,7 +37,7 @@ This file documents every entry in the `resolutions` block of `package.json`. Ea
 
 -   **Why:** `@eyeseetea/d2-api@1.21.0-beta.2` and `@eyeseetea/d2-ui-components@2.13.0-beta.5` both request `lodash` at exactly `4.17.21`. The direct dependency was also moved from `4.17.21` to `^4.18.1`, but that alone does not lift the copies those two libraries request. Every other consumer asks for a range 4.18.x satisfies, so the tree holds a single 4.18.1. The floor is 4.18.1, not 4.18.0: npm deprecates 4.18.0 as a bad release.
 -   **Fixes:** GHSA-r5fr-rjxr-66jc (high); GHSA-f23m-r3pf-42rh, GHSA-xxjr-mmjv-4gpg (medium).
--   **Drop when:** `@eyeseetea/d2-api` and `@eyeseetea/d2-ui-components` both stop pinning lodash exactly. Remove it only if `yarn why lodash` shows nothing but 4.18.x without it.
+-   **Drop when:** `@eyeseetea/d2-api` and `@eyeseetea/d2-ui-components` both request `lodash >= 4.18.1` natively. Remove it only if `yarn why lodash` shows nothing but 4.18.1 or later without it.
 
 #### `**/react-linkify/linkify-it: ^5.0.2`
 
@@ -47,7 +47,7 @@ This file documents every entry in the `resolutions` block of `package.json`. Ea
 
 #### `node-fetch: ^2.6.7`
 
--   **Why:** `d2@31.10.2` and `@eyeseetea/d2-ui-components → @dhis2/d2-ui-core → d2@31.7.0` reach `isomorphic-fetch@2.2.1`, which requests `node-fetch@^1.0.1`; the fix is on 2.6.7, which that range cannot reach. Has to stay a range so `cross-fetch@4` (`^2.6.12`) is not held below its own range. This **forces `isomorphic-fetch` across a major**; its Node entry only calls `realFetch(url, options)` and re-exports `Response`, `Headers` and `Request`, all still exported by node-fetch 2, and a request through it against a local server returns the expected response. Not in the browser bundle: `isomorphic-fetch` maps to `whatwg-fetch` there. Resolves to 2.7.0.
+-   **Why:** `d2@31.10.2`, `@eyeseetea/d2-ui-components → @dhis2/d2-ui-core → d2@31.7.0` and `@dhis2/d2-ui-core → material-ui@0.20.2 → recompose@0.26.0 → fbjs@0.8.18` reach `isomorphic-fetch@2.2.1`, which requests `node-fetch@^1.0.1`; the fix is on 2.6.7, which that range cannot reach. Has to stay a range so `cross-fetch@4` (`^2.6.12`) is not held below its own range. This **forces `isomorphic-fetch` across a major**; its Node entry only calls `realFetch(url, options)` and re-exports `Response`, `Headers` and `Request`, all still exported by node-fetch 2, and a request through it against a local server returns the expected response. Not in the browser bundle: `isomorphic-fetch` maps to `whatwg-fetch` there. Resolves to 2.7.0.
 -   **Fixes:** GHSA-r683-j2x4-v87g (high): secure headers forwarded across a cross-host redirect.
 -   **Drop when:** the `^1.0.1` consumer leaves the tree. Verify with `yarn why node-fetch`.
 
