@@ -33,9 +33,9 @@ This file documents every entry in the `resolutions` block of `package.json`. Ea
 -   **Fixes:** GHSA-4mjr-xmp4-gh2g, GHSA-q8mj-m7cp-5q26, GHSA-6rw7-vpxm-498p (medium); GHSA-w7fw-mjwx-w883 (low).
 -   **Drop when:** `@eyeseetea/d2-api` requests `qs >= 6.16.0` natively.
 
-#### `lodash: ^4.18.0`
+#### `lodash: ^4.18.1`
 
--   **Why:** `@eyeseetea/d2-api@1.21.0-beta.2` and `@eyeseetea/d2-ui-components@2.13.0-beta.5` both request `lodash` at exactly `4.17.21`. The direct dependency was also moved from `4.17.21` to `^4.18.0`, but that alone does not lift the copies those two libraries request. Every other consumer asks for a range 4.18.x satisfies, so the tree holds a single 4.18.1.
+-   **Why:** `@eyeseetea/d2-api@1.21.0-beta.2` and `@eyeseetea/d2-ui-components@2.13.0-beta.5` both request `lodash` at exactly `4.17.21`. The direct dependency was also moved from `4.17.21` to `^4.18.1`, but that alone does not lift the copies those two libraries request. Every other consumer asks for a range 4.18.x satisfies, so the tree holds a single 4.18.1. The floor is 4.18.1, not 4.18.0: npm deprecates 4.18.0 as a bad release.
 -   **Fixes:** GHSA-r5fr-rjxr-66jc (high); GHSA-f23m-r3pf-42rh, GHSA-xxjr-mmjv-4gpg (medium).
 -   **Drop when:** `@eyeseetea/d2-api` and `@eyeseetea/d2-ui-components` both stop pinning lodash exactly. Remove it only if `yarn why lodash` shows nothing but 4.18.x without it.
 
