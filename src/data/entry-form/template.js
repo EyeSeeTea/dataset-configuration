@@ -59,7 +59,9 @@ function setIndicatorMatching(indicatorMatching_) {
     };
 
     var loadJs = function (url, cb) {
-        $.getScript(url, cb);
+        $("<script/>", { src: url })
+            .on("load", cb || function () {})
+            .appendTo(document.head);
     };
 
     var repeat = function (times, n) {
