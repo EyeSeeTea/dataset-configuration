@@ -78,8 +78,18 @@ function setIndicatorMatching(indicatorMatching_) {
             .forEach((table, _count) => {
                 if (tableFitsInViewport(table)) return;
                 splitedTablesCount++;
-                var firstRow = table.find("tbody tr:first-child td .entryfield");
-                if (firstRow.size() === 0) return;
+                var firstRow = table
+                    .find("tbody tr")
+                    .get()
+                    .map(tr => $(tr).find("td .entryfield"))
+                    .reduce(
+                        (widest, fields) => (fields.size() > widest.size() ? fields : widest),
+                        $()
+                    );
+                if (firstRow.size() === 0) {
+                    console.debug("[split] no row with entry fields, skipping table");
+                    return;
+                }
                 var cocIds = firstRow.get().map(input => $(input).attr("id").split("-")[1]);
                 var allCategoryOptions = table
                     .find("thead tr")
