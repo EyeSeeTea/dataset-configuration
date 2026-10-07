@@ -137,6 +137,9 @@ export class D2ApiIndicator {
         const isMandatory = d2Groups.some(deg => deg.id === config[groupType].coreIndicator.id);
         const isLocal = d2Groups.some(deg => deg.id === config[groupType].localIndicator.id);
         const isDonor = d2Groups.some(deg => deg.id === config[groupType].donorIndicator.id);
+        const isLocalDonor = d2Groups.some(
+            deg => deg.id === config[groupType].localDonorIndicator.id
+        );
 
         if (isMandatory) {
             return "mandatory";
@@ -144,6 +147,8 @@ export class D2ApiIndicator {
             return "local";
         } else if (isDonor) {
             return "donor";
+        } else if (isLocalDonor) {
+            return "localDonor";
         } else {
             return "suggested";
         }
