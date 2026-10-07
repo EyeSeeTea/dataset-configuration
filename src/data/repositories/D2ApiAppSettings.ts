@@ -181,6 +181,7 @@ export class D2ApiAppSettings {
                                     in: compactValues([
                                         metadataCodes.dataElementGroups.localIndicator,
                                         metadataCodes.dataElementGroups.donorIndicator,
+                                        metadataCodes.dataElementGroups.localDonorIndicator,
                                         metadataCodes.dataElementGroups.individualsIndicator,
                                         metadataCodes.dataElementGroups.householdsIndicator,
                                     ]),
@@ -216,6 +217,7 @@ export class D2ApiAppSettings {
                                     in: compactValues([
                                         metadataCodes.indicatorGroup.donorIndicator,
                                         metadataCodes.indicatorGroup.localIndicator,
+                                        metadataCodes.indicatorGroup.localDonorIndicator,
                                     ]),
                                 },
                             },

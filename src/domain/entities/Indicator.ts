@@ -48,7 +48,7 @@ export type IndicatorAttrs = {
     }>;
 };
 
-export type IndicatorScope = "mandatory" | "local" | "donor" | "suggested";
+export type IndicatorScope = "mandatory" | "local" | "localDonor" | "donor" | "suggested";
 export const indicatorTypes = ["outputs", "outcomes"] as const;
 export type IndicatorType = UnionFromValues<typeof indicatorTypes>;
 
