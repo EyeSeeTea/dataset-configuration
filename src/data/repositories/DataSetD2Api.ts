@@ -113,11 +113,16 @@ export class DataSetD2Api {
             this.api.models.dataSets.get({
                 pageSize: options.paging.pageSize,
                 page: options.paging.page,
+                // Reason: the :in: operator on an attribute value throws a 500 on 2.40 and 2.42,
+                // see DHIS2-20193
                 filter: options.filters.projectsIds
                     ? {
-                          [attributes.project.id]: { in: options.filters.projectsIds },
+                          [attributes.project.id]: options.filters.projectsIds.map(id => ({
+                              eq: id,
+                          })),
                       }
                     : undefined,
+                rootJunction: "OR",
                 fields: dataSetFieldsWithOrgUnits,
             })
         ).flatMap(d2Response => {
