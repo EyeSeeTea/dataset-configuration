@@ -72,10 +72,11 @@ export class Project extends Struct<ProjectAttrs>() {
 
     canEdit(user: User): boolean {
         return user.userGroups.some(userGroup =>
-            this.access.some(access =>
-                access.type === "groups" &&
-                access.permissions.metadata.write &&
-                access.id === userGroup.id
+            this.access.some(
+                access =>
+                    access.type === "groups" &&
+                    access.permissions.metadata.write &&
+                    access.id === userGroup.id
             )
         );
     }
