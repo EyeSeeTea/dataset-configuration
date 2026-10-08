@@ -88,6 +88,16 @@ Add core competency to dataSets
  yarn run add-core-competency -u 'http://localhost:8080' --username 'username' --password 'password' --data-set-ids="id1,id2,id3" --core-competency-code="MPC"
 ```
 
+Resave dataSets so their custom forms are regenerated from the current template (a template change only reaches a dataSet when it is saved again)
+
+```bash
+ yarn run resave-datasets -u 'http://localhost:8080' --username 'username' --password 'password' --data-set-ids="id1,id2,id3"
+```
+
+Use `--all` instead of `--data-set-ids` to resave every dataSet in the instance; it must be passed explicitly, an empty `--data-set-ids` is rejected. Prefer explicit ids: saving also rewrites sections and category metadata, not only the entry form.
+
+This script runs through `vite-node`, not `tsx`, because the form templates are imported with Vite's `?raw` suffix.
+
 ### Misc Notes
 
 -   Requests to DHIS2 will be transparently proxied (see `vite.config.ts` -> `server.proxy`) from `http://localhost:8081/dhis2/xyz` to `${VITE_DHIS2_BASE_URL}/xyz`. This prevents CORS and cross-domain problems.
