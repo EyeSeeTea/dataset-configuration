@@ -200,7 +200,13 @@
 }
 
 #contentDiv .formSection.sectionContainer {
-    width: fit-content;
+    max-width: 100%;
+}
+
+/* Reason: floatThead reflows against its own wrapper, so a scroll parent it does not own makes it loop */
+#contentDiv .floatThead-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .page p,
