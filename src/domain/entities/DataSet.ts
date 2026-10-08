@@ -429,5 +429,5 @@ export class DataSet extends Struct<DataSetAttrs>() {
 }
 
 const matchingIndicatorSourceScope: IndicatorScope[] = ["mandatory", "suggested"];
-const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "donor"];
+const matchingIndicatorTargetScope: IndicatorScope[] = ["local", "localDonor", "donor"];
 const matchingIndicatorType = "outputs";

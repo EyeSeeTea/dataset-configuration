@@ -62,7 +62,8 @@ export type IndicatorsColumns = {
 const scopes = [
     { text: "Global Mandatory", value: "mandatory" },
     { text: "Global Suggested", value: "suggested" },
-    { text: "Donor", value: "donor" },
+    { text: "Global Donor", value: "donor" },
+    { text: "Local Donor", value: "localDonor" },
     { text: "Local", value: "local" },
 ];
 
