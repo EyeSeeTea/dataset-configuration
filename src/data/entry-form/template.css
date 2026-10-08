@@ -9,6 +9,10 @@
     background: #ffebcd !important;
 }
 
+#contentDiv tr:has(input[data-indicator-match-target="true"]) td {
+    background-color: #f1f1f1;
+}
+
 .formSection h3 {
     color: #000;
     font-size: 16px;
