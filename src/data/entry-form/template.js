@@ -470,7 +470,7 @@ function setIndicatorMatching(indicatorMatching_) {
             return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         }
 
-        function debounce(func, wait) {
+        function debounce(func, delayMs) {
             let timeout;
             return function executedFunction(...args) {
                 const later = () => {
@@ -478,7 +478,7 @@ function setIndicatorMatching(indicatorMatching_) {
                     func(...args);
                 };
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(later, delayMs);
             };
         }
     };
