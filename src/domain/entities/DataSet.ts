@@ -185,7 +185,7 @@ export class DataSet extends Struct<DataSetAttrs>() {
             .map(({ source, target }) => [
                 this.validateIndicatorMatchingByRole(source, "source", indicatorMap),
                 this.validateIndicatorMatchingByRole(target, "target", indicatorMap),
-                this.validateIndicatorMatchingCategoryCombo(source, indicatorMap),
+                this.validateIndicatorMatchingCategoryCombo(source, target, indicatorMap),
             ])
             .flatten()
             .compact()
@@ -229,11 +229,12 @@ export class DataSet extends Struct<DataSetAttrs>() {
     }
 
     private validateIndicatorMatchingCategoryCombo(
-        id: Id,
+        sourceId: Id,
+        targetId: Id,
         indicatorMap: HashMap<Id, Indicator>
     ): Maybe<ValidationError<DataSet>> {
-        const sourceIndicator = indicatorMap.get(id);
-        const targetIndicator = indicatorMap.get(id);
+        const sourceIndicator = indicatorMap.get(sourceId);
+        const targetIndicator = indicatorMap.get(targetId);
 
         const sourceCCId = sourceIndicator?.disaggregation?.id;
         const targetCCId = targetIndicator?.disaggregation?.id;

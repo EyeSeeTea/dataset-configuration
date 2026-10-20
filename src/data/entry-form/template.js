@@ -433,6 +433,7 @@ function setIndicatorMatching(indicatorMatching_) {
             const updateTarget = () => {
                 try {
                     const result = evaluateExpression(expression, sourceIds, cocId);
+                    if (targetElement.value === result) return;
                     targetElement.value = result;
 
                     targetElement.dispatchEvent(new Event("change", { bubbles: true }));
@@ -442,9 +443,11 @@ function setIndicatorMatching(indicatorMatching_) {
                 }
             };
 
+            const scheduleUpdate = debounce(updateTarget, 300);
+
             sourceElements.forEach(sourceElement => {
-                sourceElement.addEventListener("change", updateTarget);
-                sourceElement.addEventListener("input", debounce(updateTarget, 300));
+                sourceElement.addEventListener("change", scheduleUpdate);
+                sourceElement.addEventListener("input", scheduleUpdate);
             });
         }
 
