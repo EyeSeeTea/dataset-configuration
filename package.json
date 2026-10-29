@@ -16,7 +16,7 @@
         "@dhis2/d2-i18n-extract": "1.0.8",
         "@dhis2/d2-i18n-generate": "1.2.0",
         "@dhis2/ui": "6.12.0",
-        "@eyeseetea/d2-api": "1.21.0-beta.2",
+        "@eyeseetea/d2-api": "1.21.0-beta.3",
         "@eyeseetea/d2-ui-components": "2.13.0-beta.5",
         "@material-ui/core": "4.12.4",
         "@material-ui/icons": "4.11.3",
@@ -83,6 +83,7 @@
         "typescript": "5.2.2",
         "vite": "^4.2.0",
         "vite-bundle-visualizer": "^0.6.0",
+        "vite-node": "0.32.4",
         "vite-plugin-checker": "^0.6.2",
         "vite-plugin-eslint": "^1.8.1",
         "vite-plugin-node-stdlib-browser": "^0.2.1",
@@ -116,7 +117,8 @@
         "migrate-period-dates": "tsx src/scripts/migrate-dataset-period-dates",
         "migrate-ds-project": "tsx src/scripts/migrate-dataset-project.ts",
         "add-core-competency": "tsx src/scripts/add-core-compentency-to-datasets.ts",
-        "remove-old-projects": "tsx src/scripts/move-old-projects.ts"
+        "remove-old-projects": "tsx src/scripts/move-old-projects.ts",
+        "resave-datasets": "NODE_ENV=production vite-node src/scripts/resave-datasets.ts --"
     },
     "manifest.webapp": {
         "name": "New DC App",

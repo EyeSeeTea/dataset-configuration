@@ -20,6 +20,7 @@ import templateVelocity from "$/data/entry-form/template.vm?raw";
 import templateJs from "$/data/entry-form/template.js?raw";
 import templateCss from "$/data/entry-form/template.css?raw";
 import { toISODateWithoutTimezone } from "$/utils/date";
+import { IndicatorMatch } from "$/domain/entities/IndicatorMatch";
 
 function getCategoryCombo(dataSetElement: DataSetTemplate["dataSetElements"][0]) {
     const { categoryCombo } = dataSetElement;
@@ -101,14 +102,53 @@ const getVisibleOptionCombos = (
     dataElements: Ref[]
 ) => optionCombos.filter(coc => dataElements.some(de => !greyedFields[`${de.id}.${coc.id}`]));
 
-const getGroupedItems = (sections: SectionTemplate[]) =>
+function placeMatchedIndicators<T extends { id: string }>(
+    indicators: T[],
+    matching: IndicatorMatch[]
+): T[][] {
+    const ids = new Set(indicators.map(indicator => indicator.id));
+    const sourceByTarget = HashMap.fromPairs(
+        _(matching)
+            .filter(({ source, target }) => source !== target && ids.has(source) && ids.has(target))
+            .uniqBy(({ target }) => target)
+            .map(({ source, target }): [string, string] => [target, source])
+            .value()
+    );
+    const targetsBySource = _(indicators)
+        .filter(indicator => sourceByTarget.hasKey(indicator.id))
+        .groupBy(indicator => sourceByTarget.get(indicator.id));
+
+    const place = (indicator: T): T[] => [
+        indicator,
+        ...(targetsBySource.get(indicator.id) ?? []).flatMap(place),
+    ];
+
+    const trees = indicators.filter(indicator => !sourceByTarget.hasKey(indicator.id)).map(place);
+    const placedIds = new Set(trees.flat().map(indicator => indicator.id));
+    const indicatorsWithoutRoot = indicators
+        .filter(indicator => !placedIds.has(indicator.id))
+        .map(indicator => [indicator]);
+    return [...trees, ...indicatorsWithoutRoot];
+}
+
+const placeUnderSources = (items: ItemsSection[], matching: IndicatorMatch[]): ItemsSection[] =>
+    placeMatchedIndicators(items, matching).flatMap(([root, ...targets]) =>
+        root
+            ? [root, ...targets.map(item => ({ ...item, theme: root.theme, group: root.group }))]
+            : []
+    );
+
+const getGroupedItems = (sections: SectionTemplate[], matching: IndicatorMatch[]) =>
     _(sections)
         .toHashMap(section => {
             const groupedValues = HashMap.fromObject(section.items).values();
             const groupedItemsForSection = groupByKeys(
-                _(groupedValues)
-                    .sortBy(x => x.displayName)
-                    .value(),
+                placeUnderSources(
+                    _(groupedValues)
+                        .sortBy(x => x.displayName)
+                        .value(),
+                    matching
+                ),
                 ["theme", "group"]
             );
             return [section.id, groupedItemsForSection];
@@ -186,7 +226,8 @@ const getContext = (
     dataset: DataSetTemplate,
     sections: SectionTemplate[],
     allCategoryCombos: D2ApiCategoryComboType[],
-    disabledFields: DisabledField[]
+    disabledFields: DisabledField[],
+    matching: IndicatorMatch[]
 ) => {
     const categoryComboByDataElementId = _(dataset.dataSetElements)
         .toHashMap(dse => [dse.dataElement.id, getCategoryCombo(dse)])
@@ -256,7 +297,7 @@ const getContext = (
             dataElementDecoration: dataset.dataElementDecoration,
         },
         sections: sections,
-        groupedItems: map(getGroupedItems(sections)),
+        groupedItems: map(getGroupedItems(sections, matching)),
         orderedCategoryOptionCombos: map(orderedCategoryOptionCombos),
         orderedCategories: map(orderedCategories),
         greyedFields: map(greyedFields),
@@ -284,9 +325,14 @@ const convertToSections = (
     categoryCombos: D2ApiCategoryComboType[],
     existingSections: D2Section[]
 ): SectionTemplate[] => {
-    const result = _(dataSet.indicators ?? [])
-        .groupBy(indicator => `${indicator.type}_${indicator.coreCompetency.id}`)
-        .mapValues(([key, indicators]) => {
+    const indicatorTrees = placeMatchedIndicators(
+        dataSet.indicators ?? [],
+        dataSet.indicatorMatching ?? []
+    );
+    const result = _(indicatorTrees)
+        .groupBy(([root]) => `${root?.type}_${root?.coreCompetency.id}`)
+        .mapValues(([key, trees]) => {
+            const indicators = trees.flat();
             const [type, _sectionGroupId] = key.split("_");
             const coreCompetency = indicators[0]?.coreCompetency;
             if (!coreCompetency || !type)
@@ -373,7 +419,13 @@ const getTemplate = (
     const { disabledFields } = dataSetToSave;
     const periods = generatePeriods(dataSet, d2Config) ?? {};
     const indicatorMatchingRef = generateIndicatorMatchingReference(dataSetToSave);
-    const context = getContext(dataSet, templateSections, categoryCombos, disabledFields);
+    const context = getContext(
+        dataSet,
+        templateSections,
+        categoryCombos,
+        disabledFields,
+        dataSetToSave.indicatorMatching ?? []
+    );
     const config = { env: "development", escape: false };
     const view = velocity.render(templateVelocity, context, {}, config);
     return `
