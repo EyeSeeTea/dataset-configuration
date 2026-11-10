@@ -432,9 +432,9 @@ function setIndicatorMatching(indicatorMatching_) {
         function attachListeners(sourceElements, targetElement, expression, sourceIds, cocId) {
             const updateTarget = () => {
                 try {
-                    const result = evaluateExpression(expression, sourceIds, cocId);
-                    if (targetElement.value === result) return;
-                    targetElement.value = result;
+                    const value = String(evaluateExpression(expression, sourceIds, cocId) ?? "");
+                    if (targetElement.value === value) return;
+                    targetElement.value = value;
 
                     targetElement.dispatchEvent(new Event("change", { bubbles: true }));
                 } catch (error) {
