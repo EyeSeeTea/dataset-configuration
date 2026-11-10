@@ -248,7 +248,7 @@ function setIndicatorMatching(indicatorMatching_) {
                             $("<td>", { class: "nrcindicatorName" })
                                 .css("opacity", renderDataElementInfo ? 1 : 0)
                                 .html(row.de.name),
-                            getValues(row).map(val => val.td.clone()),
+                            getValues(row).map(val => val.td),
                             data.showRowTotals ? $("<td>").append(rowTotal) : null
                         );
                     }),
