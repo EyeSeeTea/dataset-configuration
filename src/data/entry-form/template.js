@@ -248,7 +248,7 @@ function setIndicatorMatching(indicatorMatching_) {
                             $("<td>", { class: "nrcindicatorName" })
                                 .css("opacity", renderDataElementInfo ? 1 : 0)
                                 .html(row.de.name),
-                            getValues(row).map(val => val.td.clone()),
+                            getValues(row).map(val => val.td),
                             data.showRowTotals ? $("<td>").append(rowTotal) : null
                         );
                     }),
@@ -432,9 +432,9 @@ function setIndicatorMatching(indicatorMatching_) {
         function attachListeners(sourceElements, targetElement, expression, sourceIds, cocId) {
             const updateTarget = () => {
                 try {
-                    const result = evaluateExpression(expression, sourceIds, cocId);
-                    if (targetElement.value === result) return;
-                    targetElement.value = result;
+                    const value = String(evaluateExpression(expression, sourceIds, cocId) ?? "");
+                    if (targetElement.value === value) return;
+                    targetElement.value = value;
 
                     targetElement.dispatchEvent(new Event("change", { bubbles: true }));
                 } catch (error) {
